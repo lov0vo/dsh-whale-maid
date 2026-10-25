@@ -9,9 +9,20 @@
  * Therefore every runtime asset is inlined here:
  *   - `src/pet.css`            -> a JS string, injected into <head> by the plugin
  *   - `src/sprites/*.png`      -> base64 `data:` URLs
+ *   - `src/runtime.js`         -> shared state, events, small helpers (1.1.0)
+ *   - `src/lines.js`           -> companion text banks + keyword topics (1.1.0)
+ *   - `src/growth.js`          -> growth / quests / achievements / sign-in (1.1.0)
+ *   - `src/fx.js`              -> status chip + particle layer (1.1.0)
  *   - `src/pet.js`             -> the ported pet component
- *   - `src/settings.js`        -> the settings section
+ *   - `src/settings.js`        -> the original settings section
+ *   - `src/panel.js`           -> the companion settings section (1.1.0)
+ *   - `src/signals.js`         -> work-status DOM detector (1.1.0)
+ *   - `src/care.js`            -> proactive care + small talk (1.1.0)
+ *   - `src/zones.js`           -> hit zones + triple tap (1.1.0)
  *   - `src/plugin.js`          -> slot registration + public API
+ *
+ * Every file is plain script (no import/export); they share one closure, so a
+ * `function` declaration in any of them is visible to all the others.
  *
  * Usage: node build.mjs
  */
@@ -23,6 +34,21 @@ import { fileURLToPath } from 'node:url';
 const root = dirname(fileURLToPath(import.meta.url));
 const pkg = JSON.parse(readFileSync(join(root, 'package.json'), 'utf8'));
 const MODULE_ID = pkg.name;
+
+/** Concatenation order. runtime first (shared state), plugin last (apply). */
+const SOURCES = [
+	'src/runtime.js',
+	'src/lines.js',
+	'src/growth.js',
+	'src/fx.js',
+	'src/pet.js',
+	'src/settings.js',
+	'src/panel.js',
+	'src/signals.js',
+	'src/care.js',
+	'src/zones.js',
+	'src/plugin.js',
+];
 
 /** Sheet name -> expected frame count. Must mirror the ANIM table in src/pet.js. */
 const SHEETS = {
@@ -81,16 +107,14 @@ for (const [name, frames] of Object.entries(SHEETS)) {
 }
 
 const stylesheet = readText('src/pet.css');
-const pet = readText('src/pet.js');
-const settings = readText('src/settings.js');
-const plugin = readText('src/plugin.js');
 
-for (const [name, source] of [
-	['src/pet.js', pet],
-	['src/settings.js', settings],
-	['src/plugin.js', plugin],
-]) {
-	if (/^\s*(import|export)\s/m.test(source)) fail(name + ': must not use import/export; the bundle is a classic script');
+const sources = [];
+for (const relative of SOURCES) {
+	const source = readText(relative);
+	if (/^\s*(import|export)\s/m.test(source)) {
+		fail(relative + ': must not use import/export; the bundle is a classic script');
+	}
+	sources.push({ relative, source: source.trim() });
 }
 
 const out = [
@@ -117,15 +141,7 @@ const out = [
 	...Object.entries(sprites).map(([name, url]) => '      ' + name + ': ' + JSON.stringify(url) + ','),
 	'    };',
 	'',
-	'    /* ---- src/pet.js ---- */',
-	pet.trim(),
-	'',
-	'    /* ---- src/settings.js ---- */',
-	settings.trim(),
-	'',
-	'    /* ---- src/plugin.js ---- */',
-	plugin.trim(),
-	'',
+	...sources.flatMap((entry) => ['    /* ---- ' + entry.relative + ' ---- */', entry.source, '']),
 	"    return { inject: ['slots'], apply: apply };",
 	'  },',
 	'});',
@@ -146,5 +162,5 @@ console.log('sheets:');
 console.log(report.join('\n'));
 console.log('');
 console.log('  sprite bytes   ' + totalBytes + ' B (' + kb(totalBytes) + ')');
-console.log('  client.js      ' + out.length + ' B (' + kb(Buffer.byteLength(out)) + ')');
+console.log('  client.js      ' + Buffer.byteLength(out) + ' B (' + kb(Buffer.byteLength(out)) + ')');
 console.log('  written to     ' + target);

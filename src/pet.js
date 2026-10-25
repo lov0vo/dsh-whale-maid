@@ -736,7 +736,77 @@ function WhaleGirl() {
 		resetSleep: resetSleep,
 		stopWalk: stopWalk,
 		say: say,
+		/* 1.1.0 — reached by the companion modules through DWM_RUNTIME.api */
+		spawnHeart: spawnHeart,
+		setState: setAnimState,
 	};
+
+	/* --- 1.1.0: bridge for the companion modules -------------------------
+	 * The work-status link, the proactive care loop and the hit zones all live
+	 * in their own files and need to drive this component from outside it. They
+	 * go through `latest.current`, which is refreshed on every render, so the
+	 * bridge never holds a stale closure over `options`. */
+	useEffect(function () {
+		DWM_RUNTIME.api = {
+			say: function (message) {
+				latest.current.say(message);
+			},
+			runSequence: function (steps, fallback) {
+				latest.current.runSequence(steps, fallback);
+			},
+			resetSleep: function () {
+				latest.current.resetSleep();
+			},
+			stopWalk: function () {
+				latest.current.stopWalk();
+			},
+			spawnHeart: function () {
+				latest.current.spawnHeart();
+			},
+			setState: function (next) {
+				latest.current.setState(next);
+			},
+			state: function () {
+				return stateRef.current;
+			},
+			root: function () {
+				return rootRef.current;
+			}
+		};
+		DWM_RUNTIME.ready = true;
+		DWM_RUNTIME.startedAt = dwmNow();
+
+		/* a forced pose: `hold` keeps it until the next command */
+		function onForceState(event) {
+			var detail = event && event.detail ? event.detail : {};
+			var next = typeof detail.state === 'string' ? detail.state : 'idle';
+			if (!ANIM[next]) return;
+			if (detail.hold === true) {
+				var timers = sequenceTimers.current;
+				for (var i = 0; i < timers.length; i++) clearTimeout(timers[i]);
+				sequenceTimers.current = [];
+				latest.current.setState(next);
+			} else {
+				latest.current.runSequence([[next, Math.max(400, Number(detail.ms) || 1200)]]);
+			}
+		}
+		window.addEventListener(DWM_EVENT_STATE, onForceState);
+		if (typeof dwmAttachZones === 'function') dwmAttachZones(rootRef.current);
+
+		return function () {
+			window.removeEventListener(DWM_EVENT_STATE, onForceState);
+			if (typeof dwmDetachZones === 'function') dwmDetachZones();
+			DWM_RUNTIME.ready = false;
+			DWM_RUNTIME.api = null;
+		};
+	}, []);
+
+	/* --- 1.1.0: mirror the live pose for the companion modules ----------- */
+	useEffect(function () {
+		DWM_RUNTIME.state = animState;
+		DWM_RUNTIME.frame = frame;
+		DWM_RUNTIME.flip = flip;
+	}, [animState, frame, flip]);
 
 	/* --- idle life: think now and then, wander now and then -------------- */
 	useEffect(function () {
@@ -928,5 +998,9 @@ function WhaleGirl() {
 				'♥',
 			);
 		}),
+		/* 1.1.0 — companion layers. Both render nothing until they are asked to,
+		 * so with every companion switch off the DOM is identical to 1.0.0. */
+		h(DwmChip, null),
+		h(DwmFxLayer, null),
 	);
 }

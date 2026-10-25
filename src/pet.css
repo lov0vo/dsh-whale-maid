@@ -154,3 +154,84 @@
 @keyframes dwm-bubbles {0%,62%{opacity:0}68%{opacity:.9}to{opacity:0;transform:translateY(-26px)}}
 
 @keyframes dwm-heart-pop {0%{opacity:0;transform:translateY(0)scale(.6)}15%{opacity:1}to{opacity:0;transform:translateY(-46px)scale(1.15)}}
+
+/* ---- 1.1.0 companion layers: status chip + particle FX ---- */
+
+.dwm-root .dwm-chip {position:absolute;right:calc(100% + 6px);top:6%;max-width:40vw;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;pointer-events:none;border:1px solid var(--line);background:var(--surface);color:var(--ink);box-shadow:var(--shadow-md);border-radius:999px;padding:3px 9px;font-size:11px;line-height:1.4;animation:dwm-pop-in var(--duration-fast) var(--ease)}
+
+.dwm-root .dwm-chip-work {color:var(--brand-dark)}
+
+.dwm-root .dwm-chip-ok {color:#3f9e77}
+
+.dwm-root .dwm-chip-error,.dwm-root .dwm-chip-mood {color:var(--accent-coral)}
+
+.dwm-root .dwm-fx-layer {pointer-events:none;position:absolute;inset:0;overflow:visible}
+
+.dwm-root .dwm-fx {position:absolute;bottom:26px;font-size:14px;line-height:1;opacity:0;animation:1.5s ease-out forwards dwm-fx-rise}
+
+.dwm-root .dwm-fx-heart {color:var(--accent-coral)}
+
+.dwm-root .dwm-fx-star {color:#e8b53a}
+
+.dwm-root .dwm-fx-sparkle {color:var(--brand-border)}
+
+.dwm-root .dwm-fx-note {color:var(--brand-dark)}
+
+@keyframes dwm-fx-rise {0%{opacity:0;transform:translate(-50%,0) scale(.6)}15%{opacity:1}to{opacity:0;transform:translate(calc(-50% + var(--dwm-fx-drift,0px)),-52px) scale(1.1)}}
+
+/* ---- 1.1.0 companion panel (settings.section, second section) ---- */
+
+.dwm-panel-hero {display:flex;align-items:center;gap:12px;border:1px solid var(--dsw-alias-border-l1,#eceef2);border-radius:12px;padding:10px 12px;background:var(--dsw-alias-bg-layer-2,#f7f8fa)}
+
+.dwm-panel-level {font-weight:700;font-size:18px;color:var(--dsw-alias-brand-primary,#2f5fbf);font-variant-numeric:tabular-nums}
+
+.dwm-panel-hero-text {display:flex;flex-direction:column;gap:2px;font-size:12px}
+
+.dwm-panel-hero-text strong {font-size:13px}
+
+.dwm-panel-hero-text span {color:var(--dsw-alias-label-secondary,#5b6270)}
+
+.dwm-panel-title {margin:6px 0 0;font-size:13px;font-weight:600}
+
+.dwm-panel-muted {color:var(--dsw-alias-label-secondary,#5b6270);margin:0;font-size:12px}
+
+.dwm-panel-stat {align-items:center;gap:2px 12px;grid-template-columns:1fr auto;display:grid;font-size:12px}
+
+.dwm-panel-stat-label {color:var(--dsw-alias-label-secondary,#5b6270)}
+
+.dwm-panel-stat-value {font-variant-numeric:tabular-nums}
+
+.dwm-panel-bar {background:var(--dsw-alias-border-l1,#eceef2);border-radius:999px;grid-column:1/-1;height:6px;overflow:hidden}
+
+.dwm-panel-bar-fill {border-radius:999px;height:100%;transition:width .3s var(--ease);display:block}
+
+.dwm-panel-bar-mood {background:linear-gradient(90deg,#f0a5a0,#ef7a6d)}
+
+.dwm-panel-bar-satiety {background:linear-gradient(90deg,#9fd6b4,#4fae7d)}
+
+.dwm-panel-bar-affinity {background:linear-gradient(90deg,#a9c3ef,#2f5fbf)}
+
+.dwm-panel-quests {flex-direction:column;gap:6px;margin:0;padding:0;list-style:none;display:flex}
+
+.dwm-panel-quest {align-items:center;justify-content:space-between;gap:10px;font-size:12px;display:flex}
+
+.dwm-panel-quest.is-claimed {opacity:.55}
+
+.dwm-panel-board {align-items:center;gap:6px;flex-wrap:wrap;display:flex}
+
+.dwm-panel-cell {width:26px;height:26px;border:1px solid var(--dsw-alias-border-l2,#e2e4ea);border-radius:8px;justify-content:center;align-items:center;font-size:12px;display:inline-flex;color:var(--dsw-alias-label-tertiary,#8b93a1)}
+
+.dwm-panel-cell.is-on {background:rgb(47 95 191 / 12%);border-color:rgb(47 95 191 / 35%);color:inherit}
+
+.dwm-panel-achievements {flex-wrap:wrap;gap:6px;display:flex}
+
+.dwm-ach {align-items:center;gap:5px;border:1px solid var(--dsw-alias-border-l2,#e2e4ea);border-radius:999px;padding:3px 9px;font-size:11px;display:inline-flex;color:var(--dsw-alias-label-tertiary,#8b93a1);filter:grayscale(1);opacity:.6}
+
+.dwm-ach.is-on {filter:none;opacity:1;color:inherit;background:rgb(47 95 191 / 8%);border-color:rgb(47 95 191 / 35%)}
+
+.dwm-ach-icon {font-size:12px;line-height:1}
+
+.dwm-panel-diary {flex-direction:column;gap:4px;margin:0;padding:0;font-size:12px;list-style:none;display:flex;color:var(--dsw-alias-label-secondary,#5b6270)}
+
+@media (prefers-reduced-motion:reduce) {.dwm-root .dwm-fx,.dwm-root .dwm-chip{animation:none}.dwm-root .dwm-fx{display:none}}
+

@@ -1,14 +1,19 @@
 /*
  * dsh-whale-maid — client registration.
  *
- * Three contributions, all through slots:
+ * Contributions, all through slots:
  *   1. the sprite stylesheet, injected once and removed on unload;
  *   2. the pet itself, registered into `shell.overlay` — the frame-wide overlay
  *      slot, which is the documented seat for an overlay whose placement is
  *      known. The pet is `position: fixed` and wanders the whole viewport, so it
  *      must outlive any single panel;
  *   3. a settings section, so the parameters the extraction exposed are
- *      adjustable in-product.
+ *      adjustable in-product;
+ *   4. (1.1.0) a second settings section for the companion features — kept
+ *      separate so the original section keeps its exact behaviour and layout;
+ *   5. (1.1.0) two long-lived observers: the work-status link and the proactive
+ *      care loop. Both are registered with `ctx.effect`, so unloading the plugin
+ *      removes every timer and listener.
  *
  * Plus a small public API on `window.dshWhaleMaid` for scripting.
  */
@@ -51,7 +56,7 @@ function createPublicApi() {
 		},
 		/** Forget everything this plugin stored (position, feeds, options, greeting). */
 		forget: function () {
-			[KEY_POS, KEY_FEEDS, KEY_GREETED, KEY_OPTIONS].forEach(function (key) {
+			[KEY_POS, KEY_FEEDS, KEY_GREETED, KEY_OPTIONS, KEY_GROWTH, KEY_COMPANION].forEach(function (key) {
 				try {
 					window.localStorage.removeItem(key);
 				} catch (error) {
@@ -60,6 +65,96 @@ function createPublicApi() {
 			});
 			window.dispatchEvent(new CustomEvent(RESET_POS_EVENT));
 			window.dispatchEvent(new CustomEvent(OPTIONS_EVENT));
+			window.dispatchEvent(new CustomEvent(DWM_EVENT_GROWTH));
+			window.dispatchEvent(new CustomEvent(DWM_EVENT_COMPANION));
+		},
+
+		/* --- 1.1.0 companion API (additive) --------------------------------- */
+
+		/** Companion switches (work link, care, chip, zones, chatter …). */
+		companion: dwmReadCompanion,
+		/** Merge a partial companion object and apply it live. */
+		setCompanion: function (patch) {
+			return dwmWriteCompanion(patch);
+		},
+		/** Read-only snapshot of the growth state (level, mood, quests, achievements …). */
+		growth: function () {
+			return dwmGrowthSnapshot();
+		},
+		/** Check in for today. Returns null when it was already done today. */
+		signin: function () {
+			return dwmGrowthSignin();
+		},
+		/** Claim a finished daily quest by index. */
+		claimQuest: function (index) {
+			return dwmGrowthClaimQuest(index);
+		},
+		/** Wipe growth data (level, mood, quests, achievements, diary). */
+		resetGrowth: function () {
+			return dwmGrowthReset();
+		},
+		/** What the work-status detector currently sees. */
+		work: function () {
+			var work = DWM_RUNTIME.work;
+			return {
+				active: work.active,
+				phase: work.phase,
+				held: work.held,
+				sessions: work.sessions,
+				since: work.since,
+				changedAt: work.changedAt
+			};
+		},
+		/**
+		 * Re-run the work-status detector right now and return its verdict.
+		 * Handy when she does not seem to react: if this stays `idle` while a turn
+		 * is clearly running, the host changed its DOM contract.
+		 */
+		scanNow: function () {
+			dwmScanSignals();
+			return {
+				active: DWM_RUNTIME.work.active,
+				phase: DWM_RUNTIME.work.phase,
+				held: DWM_RUNTIME.work.held
+			};
+		},
+		/** Everything the companion modules know about the current state. */
+		diagnose: function () {
+			return {
+				ready: DWM_RUNTIME.ready,
+				pose: DWM_RUNTIME.state,
+				frame: DWM_RUNTIME.frame,
+				work: {
+					active: DWM_RUNTIME.work.active,
+					phase: DWM_RUNTIME.work.phase,
+					held: DWM_RUNTIME.work.held,
+					sessions: DWM_RUNTIME.work.sessions
+				},
+				options: readOptions(),
+				companion: dwmReadCompanion(),
+				growth: dwmGrowthSnapshot()
+			};
+		},
+		/** Which hit zone a tap at normalised (0..1) coordinates falls in. */
+		zoneAt: function (nx, ny) {
+			return dwmHitZone(Number(nx) || 0, Number(ny) || 0);
+		},
+		/** What she would make of a message: coarse topic + keyword reaction id. */
+		probe: function (text) {
+			var keyword = dwmMatchKeyword(String(text || ''));
+			return { topic: dwmClassifyTopic(String(text || '')), keyword: keyword ? keyword.id : null };
+		},
+		/** Show a status chip without going through the pet. */
+		chip: function (text, tone, ms) {
+			dwmChip(String(text || ''), tone, ms);
+		},
+		/** Spawn particles: kind = heart | star | sparkle | note. */
+		fx: function (kind, count) {
+			dwmFx(kind, count);
+		},
+		/** Force a pose from the ten-state table; hold=true keeps it. */
+		pose: function (state, ms, hold) {
+			dwmForceState(state, ms, hold);
 		},
 	};
 }
@@ -85,6 +180,25 @@ function apply(ctx) {
 		);
 	});
 
+	/* 1.1.0 — companion settings sit right after the original section. */
+	ctx.slots.inject('settings.section', function () {
+		return ctx.slots.register(
+			{
+				name: 'settings.section',
+				id: 'dsh-whale-maid-companion',
+				order: 61,
+				label: function () {
+					return resolveLanguage(readOptions().language) === 'zh' ? '鲸鱼女仆 · 成长' : 'Whale girl · Companion';
+				},
+			},
+			CompanionPanel,
+		);
+	});
+
+	/* 1.1.0 — the two observers. Both return their own cleanup function. */
+	ctx.effect(dwmStartSignals, 'dsh-whale-maid: work-status link');
+	ctx.effect(dwmStartCare, 'dsh-whale-maid: companion care loop');
+
 	ctx.effect(function () {
 		window.dshWhaleMaid = createPublicApi();
 		return function () {
@@ -92,3 +206,4 @@ function apply(ctx) {
 		};
 	}, 'dsh-whale-maid: public API');
 }
+
