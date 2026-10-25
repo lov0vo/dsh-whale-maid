@@ -1,0 +1,156 @@
+/*
+ * dsh-whale-maid — sprite pet stylesheet.
+ *
+ * Source: the `dwm*` rule block of deepseek1024.com
+ * (https://deepseek1024.com/assets/index-D3coedsb.css), copied rule-for-rule so
+ * the extracted pet keeps its original motion: 3D sway, drag tilt, float, pop-in
+ * bubble, bubble dots, heart particles, depth layer and shine.
+ *
+ * Three kinds of edits were made:
+ *   1. The site's own CSS variables (--line/--surface/--ink/...) are re-declared
+ *      on `.dwm-root` with DSH theme tokens (--dsw-alias-*) as the first
+ *      choice and the original site values as fallbacks, so the bubble and the
+ *      two action buttons follow the Harness light/dark theme instead of
+ *      assuming the store site's palette.
+ *   2. `--dwm-size` is driven by `--dwm-pet-size`, so the plugin's `size` option
+ *      can resize the pet.
+ *   3. Every descendant rule is scoped under `.dwm-root`, which lifts it
+ *      from (0,1,0) to (0,2,0). This is required, not cosmetic: the pet body and
+ *      the two action buttons are `<button type="button">`, and the Harness
+ *      shell ships button rules of the form `button[attr]` at specificity
+ *      (0,1,1) that beat a bare class selector. Without scoping, the host's
+ *      border-radius and background won and the round action buttons rendered as
+ *      squircles over a stray host-coloured panel behind the pet.
+ * Everything else — including the artwork colours, the perspective, the depth
+ * blur and the keyframes — is the original.
+ */
+
+.dwm-root {
+	--dwm-size: var(--dwm-pet-size, 110px);
+
+	/* Theme bridge: DSH alias tokens first, original site values as fallback. */
+	--line: var(--dsw-alias-border-l2, #e2e4ea);
+	--line-strong: var(--dsw-alias-border-l3, #cfd3dd);
+	--surface: var(--dsw-alias-bg-layer-2, #fff);
+	--surface-hover: var(--dsw-alias-interactive-bg-hover, #f4f5f8);
+	--ink: var(--dsw-alias-label-primary, #1c1f26);
+	--brand-dark: var(--dsw-alias-brand-primary, #2f5fbf);
+	--brand-border: var(--dsw-alias-brand-primary, #2f5fbf);
+	--accent-coral: #ef7a6d; /* artwork colour: heart particles */
+	--shadow-rgb: 18 20 30;
+	--shadow-sm: 0 1px 2px rgb(var(--shadow-rgb) / 12%);
+	--shadow-md: 0 6px 18px rgb(var(--shadow-rgb) / 16%);
+	--shadow-focus: 0 0 0 3px rgb(47 95 191 / 32%);
+	--lift: translateY(-1px);
+	--ease: cubic-bezier(.22,.61,.36,1);
+	--duration-fast: .14s;
+
+	z-index: 60;
+	width: var(--dwm-size);
+	height: var(--dwm-size);
+	perspective: 600px;
+	/* `shell.overlay` is rendered as `.overlayLayer > *` with a rule that forces
+	   `pointer-events:auto` on every direct child (specificity 0,1,1). A plain
+	   class rule would lose and the whole pet box would swallow clicks meant for
+	   the app behind it, so this must be `!important` (the inline style in the
+	   component says the same thing). Only the pet body re-enables events. */
+	pointer-events: none !important;
+	position: fixed;
+}
+
+.dwm-root .dwm {cursor:grab;pointer-events:auto;touch-action:none;width:100%;height:100%;transform:rotateX(var(--dwm-tilt-x,0deg)) rotateY(var(--dwm-tilt-y,0deg));transform-style:preserve-3d;background:0 0;border:0;padding:0;margin:0;font:inherit;color:inherit;box-sizing:border-box;appearance:none;-webkit-appearance:none;transition:transform .14s ease-out;position:absolute;inset:0}
+
+.dwm-root .dwm:hover,.dwm-root .dwm:focus-visible {cursor:grab}
+
+.dwm-root .dwm:focus-visible {box-shadow:var(--shadow-focus);outline:none}
+
+.dwm-root .dwm.is-dragging {cursor:grabbing;touch-action:none;-webkit-user-select:none;user-select:none;transition:none}
+
+.dwm-root .dwm-flip {width:100%;height:100%;transform-style:preserve-3d;transition:transform .3s var(--ease);display:block}
+
+.dwm-root .dwm-3d {width:100%;height:100%;transform-style:preserve-3d;will-change:transform;animation:8s ease-in-out infinite alternate dwm-sway;display:block}
+
+.dwm-root .dwm-sprite.dwm-depth {filter:blur(6px)brightness(.5)saturate(.75);pointer-events:none;position:absolute;inset:0;transform:translateZ(-32px)}
+
+.dwm-root .dwm-sprite {image-rendering:pixelated;filter:drop-shadow(0 12px 10px rgb(var(--shadow-rgb) / 30%));background-repeat:no-repeat;position:absolute;inset:0}
+
+.dwm-root .dwm-sprite.is-tilt {animation:.9s ease-in-out infinite alternate dwm-tilt}
+
+.dwm-root .dwm-sprite.is-float {animation:2.6s ease-in-out infinite dwm-float}
+
+/* Site glare layer: same #ffffff42 radial gradient as the store. The store can paint it
+ * over the whole box because its page is light; on a dark theme that reads as a pale
+ * rounded rectangle behind the character, so the component masks this layer with the
+ * current sprite frame and the highlight only lands on the character itself. The 18%
+ * radius is dropped because the mask already defines the visible shape. */
+.dwm-root .dwm-shine {pointer-events:none;background:radial-gradient(120% 70% at 32% 16%,#ffffff42,#0000 55%);position:absolute;inset:0;transform:translateZ(10px)}
+
+.dwm-root .dwm-shadow {background:rgb(var(--shadow-rgb) / 14%);pointer-events:none;border-radius:50%;height:10px;position:absolute;bottom:-4px;left:10%;right:10%}
+
+.dwm-root .dwm-pop {pointer-events:none;flex-direction:column;align-items:flex-end;gap:6px;display:flex;position:absolute;bottom:calc(100% + 10px);right:0}
+
+.dwm-root .dwm-bubble {box-sizing:border-box;border:1px solid var(--line);background:var(--surface);max-width:min(250px,100vw - 32px);box-shadow:var(--shadow-md);color:var(--ink);pointer-events:auto;animation:dwm-pop-in var(--duration-fast) var(--ease);border-radius:12px 12px 2px;margin:0;padding:8px 12px;font-size:13px;line-height:1.5}
+
+.dwm-root .dwm-menu {pointer-events:auto;gap:6px;display:flex}
+
+.dwm-root .dwm-action {border:1px solid var(--line);background:var(--surface);width:36px;height:36px;box-shadow:var(--shadow-sm);color:var(--brand-dark);cursor:pointer;box-sizing:border-box;margin:0;padding:0;font:inherit;appearance:none;-webkit-appearance:none;transition:border-color var(--duration-fast) var(--ease), background-color var(--duration-fast) var(--ease), transform var(--duration-fast) var(--ease);border-radius:50%;justify-content:center;align-items:center;display:inline-flex}
+
+.dwm-root .dwm-action:hover {border-color:var(--line-strong);background:var(--surface-hover);transform:var(--lift)}
+
+.dwm-root .dwm-action:focus-visible {box-shadow:var(--shadow-focus);outline:none}
+
+.dwm-root .dwm-bubble-dot {background:var(--brand-border);opacity:0;pointer-events:none;border-radius:50%;width:5px;height:5px;animation:6s ease-in infinite dwm-bubbles;position:absolute;bottom:18px;right:22%}
+
+.dwm-root .dwm-bubble-dot:nth-child(4) {animation-delay:2s;bottom:26px;right:18%}
+
+.dwm-root .dwm-bubble-dot:nth-child(5) {animation-delay:4s;bottom:24px;right:26%}
+
+.dwm-root .dwm-heart {color:var(--accent-coral);pointer-events:none;font-size:16px;line-height:1;animation:1.2s ease-out forwards dwm-heart-pop;position:absolute;bottom:26px;left:50%}
+
+@media (width<=680px) {.dwm-root:not([data-dwm-pet-size]){--dwm-pet-size:72px}.dwm-root .dwm-action{width:44px;height:44px}}
+
+@media (prefers-reduced-motion:reduce) {.dwm-root .dwm-3d,.dwm-root .dwm-sprite,.dwm-root .dwm-bubble-dot{animation:none}.dwm-root .dwm-depth{display:none}.dwm-root .dwm,.dwm-root .dwm-flip{transition:none}.dwm-root .dwm-bubble-dot{display:none}}
+
+/* ---- settings panel (plugin addition, not part of the source site) ---- */
+
+.dwm-settings {color:var(--dsw-alias-label-primary,#1c1f26);display:flex;flex-direction:column;gap:14px;font-size:13px;line-height:1.5}
+
+.dwm-settings-hint {color:var(--dsw-alias-label-secondary,#5b6270);margin:0;font-size:12px}
+
+.dwm-settings-row {display:flex;flex-direction:column;gap:6px}
+
+.dwm-settings-row-head {display:flex;justify-content:space-between;align-items:baseline;gap:12px}
+
+.dwm-settings-label {font-weight:600}
+
+.dwm-settings-value {color:var(--dsw-alias-label-secondary,#5b6270);font-variant-numeric:tabular-nums;font-size:12px}
+
+.dwm-settings input[type="range"] {accent-color:var(--dsw-alias-brand-primary,#2f5fbf);width:100%;margin:0}
+
+.dwm-settings select {border:1px solid var(--dsw-alias-border-l2,#e2e4ea);background:var(--dsw-alias-bg-layer-1,#fff);color:inherit;border-radius:8px;padding:5px 8px;font:inherit}
+
+.dwm-settings-checks {display:flex;flex-wrap:wrap;gap:8px 18px}
+
+.dwm-settings-check {align-items:center;gap:6px;display:inline-flex;cursor:pointer}
+
+.dwm-settings-check input {accent-color:var(--dsw-alias-brand-primary,#2f5fbf);margin:0}
+
+.dwm-settings-actions {border-top:1px solid var(--dsw-alias-border-l1,#eceef2);gap:8px;padding-top:12px;display:flex;flex-wrap:wrap}
+
+.dwm-settings button {border:1px solid var(--dsw-alias-border-l2,#e2e4ea);background:var(--dsw-alias-bg-layer-1,#fff);color:inherit;border-radius:8px;padding:5px 12px;font:inherit;cursor:pointer}
+
+.dwm-settings button:hover {background:var(--dsw-alias-interactive-bg-hover,#f4f5f8)}
+
+.dwm-settings button:focus-visible {box-shadow:0 0 0 3px rgb(47 95 191 / 32%);outline:none}
+
+@keyframes dwm-sway {0%{transform:rotateY(-5deg)rotateX(1.5deg)}to{transform:rotateY(5deg)rotateX(-1.5deg)}}
+
+@keyframes dwm-tilt {0%{rotate(-6deg)}to{rotate(6deg)}}
+
+@keyframes dwm-float {0%,to{translateY(0)}50%{translateY(-4px)}}
+
+@keyframes dwm-pop-in {0%{opacity:0;transform:translateY(4px)scale(.96)}to{opacity:1;transform:none}}
+
+@keyframes dwm-bubbles {0%,62%{opacity:0}68%{opacity:.9}to{opacity:0;transform:translateY(-26px)}}
+
+@keyframes dwm-heart-pop {0%{opacity:0;transform:translateY(0)scale(.6)}15%{opacity:1}to{opacity:0;transform:translateY(-46px)scale(1.15)}}

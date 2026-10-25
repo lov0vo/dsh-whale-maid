@@ -1,0 +1,9 @@
+# dsh-whale-maid bundle patch.
+#
+# Inserts one Loader row named after the package. The row itself does nothing on
+# the Host (`index.js` has an empty `apply`); it exists so the package mounts and
+# the Client module loader picks up the `dsh.client` section of package.json,
+# which is what actually renders the pet.
+- insert:
+    - id: whale-maid
+      name: dsh-whale-maid
