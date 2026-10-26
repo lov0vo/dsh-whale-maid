@@ -468,7 +468,7 @@
 	50% { transform: translateY(-4px); }
 }
 
-/* The portrait is an <img data-dwm-portrait> that `dwmPortraitShow()` in
+/* The portrait is a div[data-dwm-portrait] that `dwmPortraitShow()` in
  * src/runtime.js appends to <body> — it is NOT a sibling of `.dwm-root`, so the
  * old `.dwm-root ~ [data-dwm-portrait]` sibling selector never matched and
  * the reduced-motion opt-out silently did nothing. Target the attribute
