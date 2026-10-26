@@ -1,148 +1,262 @@
 /*
- * dsh-whale-maid — body-part lines (2.5.0).
+ * dsh-whale-maid — per-part zone lines (appended, never replacing the originals).
  *
- * Same shape as every other extra bank: merged into DWM_LINES at load time, so
- * dwmPickLine() finds them with no extra wiring. Tone follows the reference
- * plugin: self-referential "鲸鱼娘", calls the user "主人", teasing but never
- * explicit, one emoji at most.
+ * The original patHead / patBelly / patTail banks live in src/lines.js and are
+ * untouched: every zone below draws from its own bank *and* from the original
+ * one, so nothing that used to be said has been removed.
+ *
+ * Tone: whale-girl / master, teasing and suggestive but never explicit, at most
+ * one emoji per line. Chinese lines carry no emoji by design — the reference
+ * plugin keeps them plain and so do we.
  */
 
 var DWM_LINES_PARTS = {
-	zh: {
-		patHorn: [
-			'呆毛不能揪啦，那是鲸鱼娘的雷达天线📡',
-			'摸这里……主人是想看我脸红吗',
-			'角角痒痒的，主人轻一点嘛',
-			'再摸下去，呆毛要打结了😳',
-			'头顶只有主人能碰，记住了吗',
-			'你手心的温度传过来了……有点犯规',
-			'呆毛被压弯了，明天要重新定型',
-			'这样顺着摸，鲸鱼娘会想赖着不动的',
+	patHorn: {
+		zh: [
+			'别、别碰那里，会酥的。',
+			'呆毛被摸到的时候，我腿会软。',
+			'主人一碰这个，我就藏不住表情了。',
+			'呜，那里最敏感了，你知道的。',
+			'手指绕一圈，我心跳就乱了。',
+			'呆毛是感应器，你一动我就知道。',
+			'再摸一下…就一下。',
+			'被摸到这里，算越界了哦。',
+			'我尾巴都翘起来了，别看我。',
+			'主人手法太熟练了，可疑。',
+			'这样摸，我会忍不住想蹭你。',
+			'呆毛立起来了，都怪你。',
+			'轻轻一下就好，太用力我受不了。',
+			'摸完要负责的，知道吗？',
 		],
-		patEar: [
-			'耳鳍很薄的，主人别太用力🐋',
-			'耳朵会自己动的，尤其听到主人的声音',
-			'别对着耳朵说话，会酥的',
-			'这样摸耳朵，鲸鱼娘会走神的',
-			'耳鳍是敏感的地方，主人不知道吗😏',
-			'痒……主人是故意的吧',
-			'耳鳍一抖一抖的，压不住啦',
-			'再吹一口气试试，我可要咬人了',
-		],
-		patFace: [
-			'脸、脸红了，别盯着看',
-			'眼睛里有主人哦，看清了吗',
-			'睫毛要乱了，主人负责吗',
-			'这样捏脸，会变成奇怪的形状的😳',
-			'靠太近了……呼吸都听见了',
-			'想亲就直说，别一直摸脸颊',
-			'脸颊烫烫的，是主人的手太暖了',
-			'再看下去，鲸鱼娘要先移开视线了',
-		],
-		patHand: [
-			'手在这里，要牵一下吗',
-			'十指扣住的话，就不放开了哦',
-			'手有点凉，借主人的手暖一下',
-			'别捏指尖啦，那里最敏感',
-			'这只手刚擦过桌子……还是牵着吧',
-			'主人握手好用力，是舍不得吗',
-			'手心出汗了，别笑我',
-			'牵久一点也没关系，反正我不松',
-		],
-		patWaist: [
-			'腰很细的，主人抱轻一点',
-			'这样搂腰……鲸鱼娘会站不稳的',
-			'腰上痒，别用手指画圈',
-			'围裙带子松了，帮我系一下？',
-			'背后被抱住的话，就逃不掉了🐋',
-			'主人的手放这里，有点危险哦😏',
-			'腰被量过尺寸，是主人量的那次',
-			'再往上一点就不行了……真的',
-		],
-		patFeet: [
-			'脚不可以挠，真的不可以',
-			'袜子会脏的，主人别乱碰',
-			'站久了腿软，扶我一下嘛',
-			'膝枕可以，但只许躺一会儿',
-			'脚底板怕痒，别试',
-			'主人看这么久，是喜欢吗',
-			'鞋子会掉的，别拽',
-			'被你握着脚踝，有点说不出话',
+		en: [
+			'Not there, it tickles all the way down.',
+			'One touch and my knees forget how to work.',
+			'You know exactly where to make me lose composure.',
+			'A finger traced there and my heart stumbles.',
+			'Careful, my tail gives me away.',
+			'You spoil me and I start wanting more.',
 		],
 	},
-	en: {
-		patHorn: [
-			'Not the ahoge — that is my radar antenna 📡',
-			'You are touching it... are you trying to make me blush?',
-			'It tickles up there, be gentle.',
-			'Keep going and it will knot up 😳',
-			'Only you are allowed to touch the top of my head.',
-			'Your hand is warm... that is a bit unfair.',
-			'You bent my ahoge. I will have to restyle it.',
-			'Stroking it like that makes me want to stay put.',
+	patEar: {
+		zh: [
+			'在耳边说话，很犯规。',
+			'耳朵会自己动，不听话。',
+			'小声一点…我都听见了。',
+			'被吹气的话，我会缩起来。',
+			'耳鳍很薄的，轻一点。',
+			'主人离得太近了，我心跳好吵。',
+			'别对着耳朵呼吸，痒。',
+			'被咬了会记住一辈子的。',
+			'我听得见你咽口水的声音。',
+			'摸耳朵等于摸心口，真的。',
+			'耳鳍抖了一下，被你看到了。',
+			'这样贴着说话，我什么都答不上来。',
+			'再靠近一点，我就赖着不走了。',
+			'耳朵红了吧？别看。',
 		],
-		patEar: [
-			'My ear fins are thin, easy now 🐋',
-			'They move on their own, especially at your voice.',
-			'Do not whisper into them, I will melt.',
-			'Touching my ears makes me lose focus.',
-			'Did you know the ear fins are sensitive? 😏',
-			'That tickles... you are doing it on purpose, right?',
-			'They keep twitching, I cannot stop them.',
-			'Blow on them again and I might bite.',
-		],
-		patFace: [
-			'My face is red — stop staring.',
-			'You are in my eyes. Can you see yourself?',
-			'My lashes will get messy. Your fault?',
-			'Squish it and I will end up a weird shape 😳',
-			'Too close... I can hear you breathing.',
-			'If you want to kiss me, just say so.',
-			'My cheek is hot. Your hand is too warm.',
-			'Keep looking and I will have to look away first.',
-		],
-		patHand: [
-			'My hand is here. Hold it?',
-			'Interlock our fingers and I will not let go.',
-			'My hands are cold — lend me yours.',
-			'Not the fingertips, they are the most sensitive.',
-			'I just wiped the table with that hand... hold it anyway.',
-			'You are gripping so hard. Do not want to let go?',
-			'My palm is sweating. Do not laugh.',
-			'Hold it as long as you like. I am not letting go.',
-		],
-		patWaist: [
-			'My waist is small, hold me gently.',
-			'Holding me there makes my knees weak.',
-			'It tickles — stop drawing circles.',
-			'My apron strap came loose. Tie it for me?',
-			'If you hug me from behind, I cannot escape 🐋',
-			'Your hand there is a little dangerous 😏',
-			'You are the one who measured my waist, remember?',
-			'Any higher and I really cannot allow it.',
-		],
-		patFeet: [
-			'Not the feet. Really, not the feet.',
-			'My socks will get dirty, do not touch.',
-			'My legs give out after standing. Help me?',
-			'You may use my lap as a pillow — but only briefly.',
-			'The soles are ticklish. Do not try it.',
-			'You have been looking a while. Do you like them?',
-			'My shoes will come off, stop pulling.',
-			'Held by the ankle like that, I cannot speak.',
+		en: [
+			'Whispering that close is unfair.',
+			'My fins move on their own, I cannot help it.',
+			'I can hear you swallow from here.',
+			'Breathe on it and I curl right up.',
+			'Touching my ear is touching my heart.',
+			'Stay this close and I am not leaving.',
 		],
 	},
+	patFace: {
+		zh: [
+			'脸好烫，都是你害的。',
+			'别一直看，会不好意思。',
+			'手指擦过脸颊的时候，我屏住呼吸了。',
+			'捏脸可以，捏太久要收费。',
+			'我脸红了？…那你还看。',
+			'被捧着下巴，我什么都答应。',
+			'离这么近，是要亲上来吗？',
+			'脸颊被点了一下，心也跟着点了一下。',
+			'不许笑，我知道我脸红了。',
+			'这样摸，我会以为你喜欢我。',
+			'眼睛闭上就不害羞了。',
+			'手指停在脸上的时间，有点长。',
+			'摸脸的人要负责到底。',
+			'再揉一下，我就撒娇了。',
+		],
+		en: [
+			'My cheeks are burning and it is your fault.',
+			'Stop staring, I cannot keep a straight face.',
+			'Hold my chin like that and I agree to anything.',
+			'You are this close — are you going to kiss me?',
+			'Rub it once more and I whine for attention.',
+			'Whoever touches my face has to take responsibility.',
+		],
+	},
+	patHand: {
+		zh: [
+			'手指可以牵着吗？就一会儿。',
+			'掌心好热，是你的还是我的。',
+			'十指扣起来的话，就松不开了。',
+			'被握住手腕，我动不了了。',
+			'你的手比我大一圈，好过分。',
+			'手背被亲一下，我会记很久。',
+			'捏我手指是在撒娇吗？',
+			'这样牵着走，像情侣。',
+			'手心出汗了，别笑我。',
+			'手被拉住，我就跟着走了。',
+			'指节被摩挲，酥到心里。',
+			'握紧一点，我怕走散。',
+			'手借你一会儿，要还的。',
+			'牵着我的手，就别看别人了。',
+		],
+		en: [
+			'Can we hold hands, just for a while?',
+			'Your palm is so warm I forget whose it is.',
+			'Lace our fingers and I will not let go.',
+			'Hold my wrist like that and I stop moving.',
+			'Kiss the back of my hand and I will remember it.',
+			'Hold on tighter, I do not want to get lost.',
+		],
+	},
+	patWaist: {
+		zh: [
+			'腰很细的，一掐就软。',
+			'别搂那么紧，我会想靠过去。',
+			'手指放在腰侧，很危险。',
+			'腰带松了，你赔。',
+			'被揽住腰的时候，我整个人都贴过去了。',
+			'这里怕痒，你明知道。',
+			'扶着我的腰，是想让我坐下吗？',
+			'腰被圈住，跑不掉了。',
+			'轻轻一按，我就没力气了。',
+			'抱腰比牵手更过分哦。',
+			'你的手别往上，也别往下。',
+			'被搂着的时候，我心跳全在你手心。',
+			'腰上留印子的话，会被看出来的。',
+			'这样抱着，我就不想动了。',
+		],
+		en: [
+			'My waist is soft, one squeeze and I fold.',
+			'Do not hold me that tight, I will lean in.',
+			'A hand on my waist is a dangerous thing.',
+			'Circled like this, I cannot run anywhere.',
+			'Press there and my strength just leaves.',
+			'Held at the waist, my heartbeat is all in your palm.',
+		],
+	},
+	patBellyPart: {
+		zh: [
+			'肚子被摸会痒，别闹。',
+			'围裙上有小鲸鱼，你摸到了吗？',
+			'这里没有赘肉，真的。',
+			'摸肚子是想投喂吗？',
+			'被揉肚子，我会像猫一样。',
+			'吃饱了这里会鼓一点，不许笑。',
+			'衣服下摆别掀。',
+			'肚子贴着你的手，暖。',
+			'这样揉下去我会睡着的。',
+			'围裙口袋里有小鱼干，自己拿。',
+			'被摸这里，我有点不好意思。',
+			'手下留情，我怕痒又怕停。',
+			'肚子是弱点，只给你碰。',
+			'再揉一会儿，就一会儿。',
+		],
+		en: [
+			'My belly is ticklish, do not tease.',
+			'The little whale on my apron — did you find it?',
+			'Rub it like that and I purr like a cat.',
+			'Hands under the hem are not allowed.',
+			'My belly against your hand is warm.',
+			'That is my weak spot, and only yours.',
+		],
+	},
+	patHeadPart: {
+		zh: [
+			'头发被摸得乱糟糟了。',
+			'顺着发丝往下，我会闭眼睛。',
+			'摸头可以，别把我当小孩。',
+			'被你这样顺着摸，我想撒娇。',
+			'发带要掉了…你故意的吧。',
+			'摸头的时候手好温柔，我有点受不了。',
+			'再摸一下，我就把头靠过去。',
+			'头发上还有海的味道吗？',
+			'这样摸，我会以为你在宠我。',
+			'头皮发麻，是舒服的那种。',
+			'别停下…我是说随你。',
+			'摸久了，我会睡着的。',
+			'发梢被绕在指间，我心跳好快。',
+			'主人摸头的手法，越来越熟练了。',
+		],
+		en: [
+			'My hair is a mess now, and I do not mind.',
+			'Stroke it down and my eyes close on their own.',
+			'Pat my head, but do not treat me like a child.',
+			'Keep going and I will lean my head on you.',
+			'My scalp tingles — the good kind.',
+			'Do not stop. Or do. I am not deciding.',
+		],
+	},
+	patTailPart: {
+		zh: [
+			'尾巴不能随便摸的。',
+			'尾鳍很敏感，轻一点。',
+			'被抓住尾巴，我会软下去。',
+			'尾巴自己会摇，不怪我。',
+			'摸尾巴是要负责的。',
+			'这里连着心口，真的。',
+			'尾巴尖最怕痒。',
+			'别拉，会疼…也不会松。',
+			'尾巴缠上来了，是它自己想。',
+			'顺着鳞片摸，很舒服。',
+			'尾鳍张开了，别笑。',
+			'尾巴比嘴诚实。',
+			'这样摸，我会一直跟着你。',
+			'尾巴借你玩，别太用力。',
+		],
+		en: [
+			'My tail is not for just anyone.',
+			'The fluke is sensitive, go easy.',
+			'Grab my tail and I go soft.',
+			'It wags on its own, do not blame me.',
+			'My tail is more honest than my mouth.',
+			'Play with it gently and I will follow you around.',
+		],
+	},
+	patFeet: {
+		zh: [
+			'鞋带松了，帮我系一下？',
+			'脚踝很细的，别用力。',
+			'被抬起来的话，我会站不稳。',
+			'脚底怕痒，真的怕。',
+			'走了一天，有点酸。',
+			'别盯着看，会害羞。',
+			'袜口那里最敏感。',
+			'抱起来的时候，脚会晃。',
+			'轻轻捏一下就好，谢谢主人。',
+			'脚踝被握住，我整个人都僵了。',
+			'想让我跳起来吗？',
+			'这里不许亲。',
+			'鞋子是你挑的，我记得。',
+			'脚冷了，借我一点温度。',
+		],
+		en: [
+			'My shoelace is loose, would you tie it?',
+			'My ankle is slim, be gentle.',
+			'Lift me like that and I lose my footing.',
+			'My soles are ticklish, truly.',
+			'Hold my ankle and I freeze all over.',
+			'My feet are cold, lend me some warmth.',
+		],
+	}
 };
 
 (function mergePartLines(table) {
 	if (typeof DWM_LINES !== 'object' || DWM_LINES === null) return;
-	for (var lang in table) {
-		if (!Object.prototype.hasOwnProperty.call(table, lang)) continue;
-		if (typeof DWM_LINES[lang] !== 'object' || DWM_LINES[lang] === null) DWM_LINES[lang] = {};
-		for (var bank in table[lang]) {
-			if (!Object.prototype.hasOwnProperty.call(table[lang], bank)) continue;
-			var existing = Array.isArray(DWM_LINES[lang][bank]) ? DWM_LINES[lang][bank] : [];
-			DWM_LINES[lang][bank] = existing.concat(table[lang][bank]);
+	['zh', 'en'].forEach(function (language) {
+		if (typeof DWM_LINES[language] !== 'object' || DWM_LINES[language] === null) DWM_LINES[language] = {};
+		for (var bank in table) {
+			if (!Object.prototype.hasOwnProperty.call(table, bank)) continue;
+			var source = table[bank][language] || [];
+			if (source.length === 0) continue;
+			var existing = Array.isArray(DWM_LINES[language][bank]) ? DWM_LINES[language][bank] : [];
+			DWM_LINES[language][bank] = existing.concat(source);
 		}
-	}
+	});
 })(DWM_LINES_PARTS);

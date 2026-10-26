@@ -470,7 +470,7 @@
 
 /* The portrait is an <img data-dwm-portrait> that `dwmPortraitShow()` in
  * src/runtime.js appends to <body> — it is NOT a sibling of `.dwm-root`, so the
- * old `.dwm-root ~ img[data-dwm-portrait]` sibling selector never matched and
+ * old `.dwm-root ~ [data-dwm-portrait]` sibling selector never matched and
  * the reduced-motion opt-out silently did nothing. Target the attribute
  * directly instead.
  *
@@ -478,12 +478,12 @@
  * it can sit above the sprite, so it must stay click-through; runtime.js sets
  * that inline and this rule is the stylesheet-level guarantee that a portrait
  * can never eat a drag or a click meant for the pet. */
-img[data-dwm-portrait] {
+[data-dwm-portrait] {
 	pointer-events: none;
 }
 
 @media (prefers-reduced-motion: reduce) {
-	img[data-dwm-portrait] { animation: none !important; }
+	[data-dwm-portrait] { animation: none !important; }
 }
 
 
@@ -530,4 +530,14 @@ img[data-dwm-portrait] {
 
 .dwm-preview-cell:hover {
 	filter: brightness(.96);
+}
+
+/* three-cell pose sheets: discrete step through the frames, no JS timer */
+@keyframes dwm-pose-cycle {
+	0%, 33.32% { background-position: 0% 0; }
+	33.33%, 66.65% { background-position: 50% 0; }
+	66.66%, 100% { background-position: 100% 0; }
+}
+@media (prefers-reduced-motion: reduce) {
+	[data-dwm-portrait] { animation: none !important; background-position: 0% 0 !important; }
 }

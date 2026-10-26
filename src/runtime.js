@@ -363,21 +363,24 @@ function dwmPortraitShow(result, ms, hold) {
 	}
 	if (!rect || !(Number(rect.width) > 0)) return false;
 	dwmHidePose();
-	var strays = document.querySelectorAll ? document.querySelectorAll('img[data-dwm-portrait]') : [];
+	var strays = document.querySelectorAll ? document.querySelectorAll('[data-dwm-portrait]') : [];
 	for (var s = 0; s < strays.length; s += 1) {
 		if (strays[s] && strays[s].parentNode) strays[s].parentNode.removeChild(strays[s]);
 	}
 
 	var node = null;
 	try {
-		node = document.createElement('img');
+		node = document.createElement('div');
 		node.setAttribute('data-dwm-portrait', result.pose || '');
 		node.setAttribute('aria-hidden', 'true');
-		node.setAttribute('alt', '');
-		node.src = result.image;
 		var style = node.style;
+		/* the pose sheet holds three cells side by side: step through them with CSS */
+		style.backgroundImage = 'url(' + result.image + ')';
+		style.backgroundRepeat = 'no-repeat';
+		style.backgroundSize = '300% 100%';
+		style.backgroundPosition = '0% 0';
 		style.position = 'fixed';
-		style.animation = 'dwm-portrait-float 2.8s ease-in-out infinite';
+		style.animation = 'dwm-pose-cycle 0.9s steps(1) infinite, dwm-portrait-float 2.8s ease-in-out infinite';
 		dwmPortraitHideSprite(true);
 		style.left = rect.left + 'px';
 		style.top = rect.top + 'px';

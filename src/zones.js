@@ -80,9 +80,15 @@ var DWM_ZONES = [
 ];
 
 var DWM_ZONE_BANK = {
-	head: 'patHead', horn: 'patHorn', ear: 'patEar', face: 'patFace',
-	belly: 'patBelly', hand: 'patHand', waist: 'patWaist', feet: 'patFeet',
-	tail: 'patTail'
+	horn: ['patHorn', 'patHead'],
+	ear: ['patEar', 'patHead'],
+	face: ['patFace', 'patHead'],
+	head: ['patHeadPart', 'patHead'],
+	waist: ['patWaist', 'patBelly'],
+	hand: ['patHand', 'patBelly'],
+	belly: ['patBellyPart', 'patBelly'],
+	feet: ['patFeet', 'patBelly'],
+	tail: ['patTailPart', 'patTail'],
 };
 var DWM_ZONE_FX = {
 	head: 'heart', belly: 'sparkle', tail: 'note',
@@ -112,7 +118,7 @@ function dwmZoneReact(zone) {
 	var companion = dwmReadCompanion();
 	if (!companion.zones) return;
 	var language = dwmUiLanguage();
-	var bank = DWM_ZONE_BANK[zone] || 'patHead';
+	var banks = DWM_ZONE_BANK[zone] || ['patHead'];
 	var now = dwmNow();
 	/* Remember the tap so the pet's own click handler does not talk over it. */
 	DWM_RUNTIME.lastZoneAt = now;
@@ -133,7 +139,7 @@ function dwmZoneReact(zone) {
 	var type = 'pat-' + zone;
 	dwmGrowthApply(type);
 	dwmFx(DWM_ZONE_FX[zone] || 'heart', 2);
-	dwmSpeak(dwmPickLine(bank, language));
+	dwmSpeak(dwmPickLineFrom(banks, language));
 }
 
 function dwmAttachZones(element) {

@@ -17,7 +17,7 @@ window.__ModuleLoader__.load({
     var h = React.createElement;
 
     /* ---- src/pet.css ---- */
-    var STYLESHEET = "/*\n * dsh-whale-maid — sprite pet stylesheet.\n *\n * Source: the `dwm*` rule block of deepseek1024.com\n * (https://deepseek1024.com/assets/index-D3coedsb.css), copied rule-for-rule so\n * the extracted pet keeps its original motion: 3D sway, drag tilt, float, pop-in\n * bubble, bubble dots, heart particles, depth layer and shine.\n *\n * Three kinds of edits were made:\n *   1. The site's own CSS variables (--line/--surface/--ink/...) are re-declared\n *      on `.dwm-root` with DSH theme tokens (--dsw-alias-*) as the first\n *      choice and the original site values as fallbacks, so the bubble and the\n *      two action buttons follow the Harness light/dark theme instead of\n *      assuming the store site's palette.\n *   2. `--dwm-size` is driven by `--dwm-pet-size`, so the plugin's `size` option\n *      can resize the pet.\n *   3. Every descendant rule is scoped under `.dwm-root`, which lifts it\n *      from (0,1,0) to (0,2,0). This is required, not cosmetic: the pet body and\n *      the two action buttons are `<button type=\"button\">`, and the Harness\n *      shell ships button rules of the form `button[attr]` at specificity\n *      (0,1,1) that beat a bare class selector. Without scoping, the host's\n *      border-radius and background won and the round action buttons rendered as\n *      squircles over a stray host-coloured panel behind the pet.\n * Everything else — including the artwork colours, the perspective, the depth\n * blur and the keyframes — is the original.\n */\n\n.dwm-root {\n\t--dwm-size: var(--dwm-pet-size, 110px);\n\n\t/* Theme bridge: DSH alias tokens first, original site values as fallback. */\n\t--line: var(--dsw-alias-border-l2, #e2e4ea);\n\t--line-strong: var(--dsw-alias-border-l3, #cfd3dd);\n\t--surface: var(--dsw-alias-bg-layer-2, #fff);\n\t--surface-hover: var(--dsw-alias-interactive-bg-hover, #f4f5f8);\n\t--ink: var(--dsw-alias-label-primary, #1c1f26);\n\t--brand-dark: var(--dsw-alias-brand-primary, #2f5fbf);\n\t--brand-border: var(--dsw-alias-brand-primary, #2f5fbf);\n\t--accent-coral: #ef7a6d; /* artwork colour: heart particles */\n\t--shadow-rgb: 18 20 30;\n\t--shadow-sm: 0 1px 2px rgb(var(--shadow-rgb) / 12%);\n\t--shadow-md: 0 6px 18px rgb(var(--shadow-rgb) / 16%);\n\t--shadow-focus: 0 0 0 3px rgb(47 95 191 / 32%);\n\t--lift: translateY(-1px);\n\t--ease: cubic-bezier(.22,.61,.36,1);\n\t--duration-fast: .14s;\n\n\tz-index: 60;\n\twidth: var(--dwm-size);\n\theight: var(--dwm-size);\n\tperspective: 600px;\n\t/* `shell.overlay` is rendered as `.overlayLayer > *` with a rule that forces\n\t   `pointer-events:auto` on every direct child (specificity 0,1,1). A plain\n\t   class rule would lose and the whole pet box would swallow clicks meant for\n\t   the app behind it, so this must be `!important` (the inline style in the\n\t   component says the same thing). Only the pet body re-enables events. */\n\tpointer-events: none !important;\n\tposition: fixed;\n}\n\n.dwm-root .dwm {cursor:grab;pointer-events:auto;touch-action:none;width:100%;height:100%;transform:rotateX(var(--dwm-tilt-x,0deg)) rotateY(var(--dwm-tilt-y,0deg)) rotate(var(--dwm-drag-angle,0deg));transform-style:preserve-3d;background:0 0;border:0;padding:0;margin:0;font:inherit;color:inherit;box-sizing:border-box;appearance:none;-webkit-appearance:none;transition:transform .14s ease-out;position:absolute;inset:0}\n\n.dwm-root .dwm:hover,.dwm-root .dwm:focus-visible {cursor:grab}\n\n.dwm-root .dwm:focus-visible {box-shadow:var(--shadow-focus);outline:none}\n\n.dwm-root .dwm.is-dragging {cursor:grabbing;touch-action:none;-webkit-user-select:none;user-select:none;transition:none}\n\n.dwm-root .dwm-flip {width:100%;height:100%;transform-style:preserve-3d;transition:transform .3s var(--ease);display:block}\n\n/* Release squash (the \"she lands\" beat when a drag is let go).\n *\n * `animation` is a shorthand, so the original `animation: dwm-squash ...` here\n * *replaced* the `dwm-sway` animation declared on `.dwm-3d` below: both keyframe\n * sets animate `transform`, so the 3D sway disappeared for the whole 320ms (the\n * pet snapped from her swayed 3D pose into a flat 2D plane and back) and, once\n * the class came off, `dwm-sway` restarted at 0% instead of continuing its 8s\n * cycle — a visible jump on every release.\n *\n * The fix is to stop making the two animations compete for one property: keep\n * `dwm-sway` in the list (it owns `transform`, and keeping the same name at the\n * same index means the running animation is not restarted) and drive the squash\n * through the independent `scale` property, which composes with `transform`\n * instead of overriding it. `.dwm` (the parent) keeps its inline\n * `--dwm-tilt-x/y` / `--dwm-drag-angle` transform; it is a different element, so\n * the drag tilt and the release squash now show at the same time. */\n.dwm-root .dwm-3d.is-squash {\n\tanimation:\n\t\t8s ease-in-out infinite alternate dwm-sway,\n\t\t320ms cubic-bezier(.34, 1.3, .64, 1) dwm-squash;\n}\n\n@keyframes dwm-squash {\n\t0% { scale: 1 1; }\n\t45% { scale: 1.05 .96; }\n\t100% { scale: 1 1; }\n}\n\n.dwm-root .dwm-3d {width:100%;height:100%;transform-style:preserve-3d;will-change:transform;animation:8s ease-in-out infinite alternate dwm-sway;display:block}\n\n.dwm-root .dwm-sprite.dwm-depth {filter:blur(6px)brightness(.5)saturate(.75);pointer-events:none;position:absolute;inset:0;transform:translateZ(-32px)}\n\n/* The artwork itself. It is decorative: it sits over the whole box, so leaving\n * it hit-testable only made it the pointer target for a button that already\n * handles the gesture. `pointer-events: none` here, while `.dwm` and the two\n * wrappers (`.dwm-flip`, `.dwm-3d`) keep `auto` via `inherit` at the bottom of\n * this file, is the split that keeps drag/click working. */\n.dwm-root .dwm-sprite {image-rendering:pixelated;filter:drop-shadow(0 12px 10px rgb(var(--shadow-rgb) / 30%));background-repeat:no-repeat;position:absolute;inset:0;pointer-events:none}\n\n.dwm-root .dwm-sprite.is-tilt {animation:.9s ease-in-out infinite alternate dwm-tilt}\n\n.dwm-root .dwm-sprite.is-float {animation:2.6s ease-in-out infinite dwm-float}\n\n/* Site glare layer: same #ffffff42 radial gradient as the store. The store can paint it\n * over the whole box because its page is light; on a dark theme that reads as a pale\n * rounded rectangle behind the character, so the component masks this layer with the\n * current sprite frame and the highlight only lands on the character itself. The 18%\n * radius is dropped because the mask already defines the visible shape. */\n.dwm-root .dwm-shine {pointer-events:none;background:radial-gradient(120% 70% at 32% 16%,#ffffff42,#0000 55%);position:absolute;inset:0;transform:translateZ(10px)}\n\n.dwm-root .dwm-shadow {background:rgb(var(--shadow-rgb) / 14%);pointer-events:none;border-radius:50%;height:10px;position:absolute;bottom:-4px;left:10%;right:10%}\n\n/* `z-index: 2` because the bubble/menu container is the *first* child of\n * `.dwm-root`, and `.dwm` (with its `transform`, hence its own stacking context)\n * comes after it: at equal `z-index: auto` the sprite painted over the pop, and\n * the `data-dwm-work` halo on `.dwm-3d::after` (inset -12%, so it reaches ~13px\n * above the box) washed over the bottom of the speech bubble during a running\n * turn. Lifting the pop above the sprite fixes both. */\n.dwm-root .dwm-pop {pointer-events:none;flex-direction:column;align-items:flex-end;gap:6px;display:flex;position:absolute;bottom:calc(100% + 10px);right:0;z-index:2}\n\n.dwm-root .dwm-bubble {box-sizing:border-box;border:1px solid var(--line);background:var(--surface);max-width:min(250px,100vw - 32px);box-shadow:var(--shadow-md);color:var(--ink);pointer-events:auto;animation:dwm-pop-in var(--duration-fast) var(--ease);border-radius:12px 12px 2px;margin:0;padding:8px 12px;font-size:13px;line-height:1.5}\n\n.dwm-root .dwm-menu {pointer-events:auto;gap:6px;display:flex}\n\n.dwm-root .dwm-action {border:1px solid var(--line);background:var(--surface);width:36px;height:36px;box-shadow:var(--shadow-sm);color:var(--brand-dark);cursor:pointer;box-sizing:border-box;margin:0;padding:0;font:inherit;appearance:none;-webkit-appearance:none;transition:border-color var(--duration-fast) var(--ease), background-color var(--duration-fast) var(--ease), transform var(--duration-fast) var(--ease);border-radius:50%;justify-content:center;align-items:center;display:inline-flex}\n\n.dwm-root .dwm-action:hover {border-color:var(--line-strong);background:var(--surface-hover);transform:var(--lift)}\n\n.dwm-root .dwm-action:focus-visible {box-shadow:var(--shadow-focus);outline:none}\n\n.dwm-root .dwm-bubble-dot {background:var(--brand-border);opacity:0;pointer-events:none;border-radius:50%;width:5px;height:5px;animation:6s ease-in infinite dwm-bubbles;position:absolute;bottom:18px;right:22%}\n\n.dwm-root .dwm-bubble-dot:nth-child(4) {animation-delay:2s;bottom:26px;right:18%}\n\n.dwm-root .dwm-bubble-dot:nth-child(5) {animation-delay:4s;bottom:24px;right:26%}\n\n.dwm-root .dwm-heart {color:var(--accent-coral);pointer-events:none;font-size:16px;line-height:1;animation:1.2s ease-out forwards dwm-heart-pop;position:absolute;bottom:26px;left:50%}\n\n@media (width<=680px) {.dwm-root:not([data-dwm-pet-size]){--dwm-pet-size:72px}.dwm-root .dwm-action{width:44px;height:44px}}\n\n/* Quest text and achievement names are plain labels; the classes exist\n   so the structure snapshot test can assert them. */\n.dwm-root .dwm-panel-quest-text {\n\tcolor: var(--dsw-alias-label-secondary, #6b7280);\n\tfont-size: 12px;\n\tline-height: 1.4;\n}\n.dwm-root .dwm-ach-name {\n\tcolor: var(--dsw-alias-label-primary, #1c1f26);\n\tfont-size: 12px;\n\tline-height: 1.4;\n}\n\n/* `.is-squash` is listed explicitly: it is (0,3,0) and would otherwise outrank\n   the (0,2,0) `.dwm-root .dwm-3d` below, so a caller that adds the class itself\n   could still animate a squash for a user who asked for no motion. */\n@media (prefers-reduced-motion:reduce) {.dwm-root .dwm-3d,.dwm-root .dwm-3d.is-squash,.dwm-root .dwm-sprite,.dwm-root .dwm-bubble-dot{animation:none}.dwm-root .dwm-depth{display:none}.dwm-root .dwm,.dwm-root .dwm-flip{transition:none}.dwm-root .dwm-bubble-dot{display:none}}\n\n/* ---- settings panel (plugin addition, not part of the source site) ---- */\n\n.dwm-settings {color:var(--dsw-alias-label-primary,#1c1f26);display:flex;flex-direction:column;gap:14px;font-size:13px;line-height:1.5}\n\n.dwm-settings-hint {color:var(--dsw-alias-label-secondary,#5b6270);margin:0;font-size:12px}\n\n.dwm-settings-row {display:flex;flex-direction:column;gap:6px}\n\n.dwm-settings-row-head {display:flex;justify-content:space-between;align-items:baseline;gap:12px}\n\n.dwm-settings-label {font-weight:600}\n\n.dwm-settings-value {color:var(--dsw-alias-label-secondary,#5b6270);font-variant-numeric:tabular-nums;font-size:12px}\n\n.dwm-settings input[type=\"range\"] {accent-color:var(--dsw-alias-brand-primary,#2f5fbf);width:100%;margin:0}\n\n.dwm-settings select {border:1px solid var(--dsw-alias-border-l2,#e2e4ea);background:var(--dsw-alias-bg-layer-1,#fff);color:inherit;border-radius:8px;padding:5px 8px;font:inherit}\n\n.dwm-settings-checks {display:flex;flex-wrap:wrap;gap:8px 18px}\n\n.dwm-settings-check {align-items:center;gap:6px;display:inline-flex;cursor:pointer}\n\n.dwm-settings-check input {accent-color:var(--dsw-alias-brand-primary,#2f5fbf);margin:0}\n\n.dwm-settings-actions {border-top:1px solid var(--dsw-alias-border-l1,#eceef2);gap:8px;padding-top:12px;display:flex;flex-wrap:wrap}\n\n.dwm-settings button {border:1px solid var(--dsw-alias-border-l2,#e2e4ea);background:var(--dsw-alias-bg-layer-1,#fff);color:inherit;border-radius:8px;padding:5px 12px;font:inherit;cursor:pointer}\n\n.dwm-settings button:hover {background:var(--dsw-alias-interactive-bg-hover,#f4f5f8)}\n\n.dwm-settings button:focus-visible {box-shadow:0 0 0 3px rgb(47 95 191 / 32%);outline:none}\n\n@keyframes dwm-sway {0%{transform:rotateY(-5deg)rotateX(1.5deg)}to{transform:rotateY(5deg)rotateX(-1.5deg)}}\n\n@keyframes dwm-tilt {0%{rotate(-6deg)}to{rotate(6deg)}}\n\n@keyframes dwm-float {0%,to{translateY(0)}50%{translateY(-4px)}}\n\n@keyframes dwm-pop-in {0%{opacity:0;transform:translateY(4px)scale(.96)}to{opacity:1;transform:none}}\n\n@keyframes dwm-bubbles {0%,62%{opacity:0}68%{opacity:.9}to{opacity:0;transform:translateY(-26px)}}\n\n@keyframes dwm-heart-pop {0%{opacity:0;transform:translateY(0)scale(.6)}15%{opacity:1}to{opacity:0;transform:translateY(-46px)scale(1.15)}}\n\n/* ---- 1.1.0 companion layers: status chip + particle FX ---- */\n\n.dwm-root .dwm-fx-layer {pointer-events:none;position:absolute;inset:0;overflow:visible}\n\n.dwm-root .dwm-fx {position:absolute;bottom:26px;font-size:14px;line-height:1;opacity:0;animation:1.5s ease-out forwards dwm-fx-rise}\n\n.dwm-root .dwm-fx-heart {color:var(--accent-coral)}\n\n.dwm-root .dwm-fx-star {color:#e8b53a}\n\n.dwm-root .dwm-fx-sparkle {color:var(--brand-border)}\n\n.dwm-root .dwm-fx-note {color:var(--brand-dark)}\n\n@keyframes dwm-fx-rise {0%{opacity:0;transform:translate(-50%,0) scale(.6)}15%{opacity:1}to{opacity:0;transform:translate(calc(-50% + var(--dwm-fx-drift,0px)),-52px) scale(1.1)}}\n\n/* ---- 1.1.0 companion panel (settings.section, second section) ---- */\n\n.dwm-panel-hero {display:flex;align-items:center;gap:12px;border:1px solid var(--dsw-alias-border-l1,#eceef2);border-radius:12px;padding:10px 12px;background:var(--dsw-alias-bg-layer-2,#f7f8fa)}\n\n.dwm-panel-level {font-weight:700;font-size:18px;color:var(--dsw-alias-brand-primary,#2f5fbf);font-variant-numeric:tabular-nums}\n\n.dwm-panel-hero-text {display:flex;flex-direction:column;gap:2px;font-size:12px}\n\n.dwm-panel-hero-text strong {font-size:13px}\n\n.dwm-panel-hero-text span {color:var(--dsw-alias-label-secondary,#5b6270)}\n\n.dwm-panel-title {margin:6px 0 0;font-size:13px;font-weight:600}\n\n.dwm-panel-muted {color:var(--dsw-alias-label-secondary,#5b6270);margin:0;font-size:12px}\n\n.dwm-panel-stat {align-items:center;gap:2px 12px;grid-template-columns:1fr auto;display:grid;font-size:12px}\n\n.dwm-panel-stat-label {color:var(--dsw-alias-label-secondary,#5b6270)}\n\n.dwm-panel-stat-value {font-variant-numeric:tabular-nums}\n\n.dwm-panel-bar {background:var(--dsw-alias-border-l1,#eceef2);border-radius:999px;grid-column:1/-1;height:6px;overflow:hidden}\n\n.dwm-panel-bar-fill {border-radius:999px;height:100%;transition:width .3s var(--ease);display:block}\n\n.dwm-panel-bar-mood {background:linear-gradient(90deg,#f0a5a0,#ef7a6d)}\n\n.dwm-panel-bar-satiety {background:linear-gradient(90deg,#9fd6b4,#4fae7d)}\n\n.dwm-panel-bar-affinity {background:linear-gradient(90deg,#a9c3ef,#2f5fbf)}\n\n.dwm-panel-quests {flex-direction:column;gap:6px;margin:0;padding:0;list-style:none;display:flex}\n\n.dwm-panel-quest {align-items:center;justify-content:space-between;gap:10px;font-size:12px;display:flex}\n\n.dwm-panel-quest.is-claimed {opacity:.55}\n\n.dwm-panel-board {align-items:center;gap:6px;flex-wrap:wrap;display:flex}\n\n.dwm-panel-cell {width:26px;height:26px;border:1px solid var(--dsw-alias-border-l2,#e2e4ea);border-radius:8px;justify-content:center;align-items:center;font-size:12px;display:inline-flex;color:var(--dsw-alias-label-tertiary,#8b93a1)}\n\n.dwm-panel-cell.is-on {background:rgb(47 95 191 / 12%);border-color:rgb(47 95 191 / 35%);color:inherit}\n\n.dwm-panel-achievements {flex-wrap:wrap;gap:6px;display:flex}\n\n.dwm-ach {align-items:center;gap:5px;border:1px solid var(--dsw-alias-border-l2,#e2e4ea);border-radius:999px;padding:3px 9px;font-size:11px;display:inline-flex;color:var(--dsw-alias-label-tertiary,#8b93a1);filter:grayscale(1);opacity:.6}\n\n.dwm-ach.is-on {filter:none;opacity:1;color:inherit;background:rgb(47 95 191 / 8%);border-color:rgb(47 95 191 / 35%)}\n\n.dwm-ach-icon {font-size:12px;line-height:1}\n\n.dwm-panel-diary {flex-direction:column;gap:4px;margin:0;padding:0;font-size:12px;list-style:none;display:flex;color:var(--dsw-alias-label-secondary,#5b6270)}\n\n@media (prefers-reduced-motion:reduce) {.dwm-root .dwm-fx,.dwm-root .dwm-fx{display:none}}\n\n\n/* --- typewriter caret (1.2.1) ----------------------------------------- */\n.dwm-root .dwm-caret {\n\tdisplay: inline-block;\n\twidth: 2px;\n\theight: 1em;\n\tmargin-left: 1px;\n\tvertical-align: -0.15em;\n\tbackground: currentColor;\n\topacity: 0.75;\n\tanimation: dwm-caret 0.9s steps(2, start) infinite;\n}\n\n@keyframes dwm-caret {\n\t0%,\n\t49% {\n\t\topacity: 0.75;\n\t}\n\t50%,\n\t100% {\n\t\topacity: 0;\n\t}\n}\n\n@media (prefers-reduced-motion: reduce) {\n\t.dwm-root .dwm-caret {\n\t\tanimation: none;\n\t}\n}\n\n/* --- bubble sizing (1.2.1) -------------------------------------------- */\n/* The pop container is shrink-to-fit inside a 110px root, which used to\n   wrap every bubble into a narrow column. Let it size to the text instead. */\n.dwm-root .dwm-pop {\n\twidth: max-content;\n\tmax-width: min(250px, 100vw - 32px);\n}\n\n/* --- bubble tones (1.3.0) --------------------------------------------- */\n/* The status chip is gone; the tone now tints the single speech bubble. */\n.dwm-root .dwm-bubble-work {\n\tborder-color: var(--dsw-alias-brand-primary, #2f5fbf);\n}\n.dwm-root .dwm-bubble-ok {\n\tborder-color: var(--dsw-alias-state-success-primary, #3fb950);\n}\n.dwm-root .dwm-bubble-error {\n\tborder-color: var(--dsw-alias-state-error-primary, #e5534b);\n}\n\n/* ---- 1.3.0 weather companion ---- */\n\n.dwm-panel-weather {display:flex;flex-direction:column;gap:8px}\n.dwm-panel-weather-line {color:var(--dsw-alias-label-secondary,#5b6270);font-size:12px;font-variant-numeric:tabular-nums}\n.dwm-panel-weather-row {display:flex;align-items:center;gap:8px}\n.dwm-panel-weather-input {\n\tflex:1 1 auto;\n\tmin-width:0;\n\tpadding:6px 10px;\n\tborder:1px solid var(--dsw-alias-border-l2,#e2e4ea);\n\tborder-radius:8px;\n\tbackground:var(--dsw-alias-bg-layer-1,#fff);\n\tcolor:var(--dsw-alias-label-primary,#1c1f26);\n\tfont:inherit;\n\tfont-size:12px;\n\tappearance:none;\n\t-webkit-appearance:none;\n}\n.dwm-panel-weather-input:focus-visible {outline:2px solid var(--dsw-alias-brand-primary,#2f5fbf);outline-offset:1px}\n.dwm-panel-weather-button {\n\tflex:0 0 auto;\n\tpadding:6px 12px;\n\tborder:1px solid var(--dsw-alias-border-l2,#e2e4ea);\n\tborder-radius:8px;\n\tbackground:var(--dsw-alias-bg-layer-2,#f7f8fa);\n\tcolor:var(--dsw-alias-label-primary,#1c1f26);\n\tfont:inherit;\n\tfont-size:12px;\n\tcursor:pointer;\n\tappearance:none;\n\t-webkit-appearance:none;\n}\n.dwm-panel-weather-button:hover {background:var(--dsw-alias-interactive-bg-hover,#eef0f4)}\n\n/* weather particles reuse the existing FX layer */\n.dwm-root .dwm-fx-rain {color:#5b93e0}\n.dwm-root .dwm-fx-snow {color:#9fc7e8}\n\n/* ---- 1.4.0: work glow, focus rings, recall button, save box ---- */\n\n/* A soft halo while a turn is running, so the state reads at a glance. */\n.dwm-root[data-dwm-work='1'] .dwm-3d::after {\n\tcontent: \"\";\n\tposition: absolute;\n\tinset: -12%;\n\tborder-radius: 50%;\n\tbackground: radial-gradient(closest-side, rgb(120 180 255 / 32%), rgb(120 180 255 / 0%) 72%);\n\tanimation: dwm-glow 2.6s ease-in-out infinite;\n\tpointer-events: none;\n\ttransform: translateZ(-8px);\n}\n\n@keyframes dwm-glow {\n\t0%,\n\t100% {\n\t\topacity: 0.35;\n\t}\n\t50% {\n\t\topacity: 0.9;\n\t}\n}\n\n/* Keyboard users need to see where they are. */\n.dwm-root .dwm:focus-visible,\n.dwm-root .dwm-action:focus-visible,\n.dwm-root .dwm-recall:focus-visible {\n\toutline: 2px solid var(--dsw-alias-brand-primary, #4b8bf5);\n\toutline-offset: 3px;\n\tborder-radius: 14px;\n}\n\n/* Hidden: everything disappears except the recall button. */\n.dwm-root.dwm-root-hidden .dwm-pop,\n.dwm-root.dwm-root-hidden .dwm,\n.dwm-root.dwm-root-hidden .dwm-shadow,\n.dwm-root.dwm-root-hidden .dwm-bubble-dot,\n.dwm-root.dwm-root-hidden .dwm-fx-layer {\n\tdisplay: none;\n}\n\n.dwm-root .dwm-recall {\n\tposition: absolute;\n\tright: 0;\n\tbottom: 0;\n\twidth: 36px;\n\theight: 36px;\n\tdisplay: grid;\n\tplace-items: center;\n\tfont-size: 18px;\n\tline-height: 1;\n\tborder-radius: 50%;\n\tborder: 1px solid var(--dsw-alias-border-l2, #e2e4ea);\n\tbackground: var(--dsw-alias-bg-layer-2, #fff);\n\tcolor: var(--dsw-alias-label-primary, #1c1f26);\n\tcursor: pointer;\n\tbox-shadow: 0 1px 3px rgb(0 0 0 / 12%);\n\topacity: 0.82;\n\tbox-sizing: border-box;\n\tpadding: 0;\n}\n\n.dwm-root .dwm-recall:hover {\n\topacity: 1;\n}\n\n.dwm-panel-save .dwm-panel-textarea {\n\twidth: 100%;\n\tbox-sizing: border-box;\n\tresize: vertical;\n\tfont: inherit;\n\tfont-size: 12px;\n\tline-height: 1.5;\n\tpadding: 8px;\n\tborder-radius: 8px;\n\tborder: 1px solid var(--dsw-alias-border-l2, #e2e4ea);\n\tbackground: var(--dsw-alias-bg-layer-1, #fff);\n\tcolor: var(--dsw-alias-label-primary, #1c1f26);\n}\n\n@media (prefers-reduced-motion: reduce) {\n\t.dwm-root[data-dwm-work='1'] .dwm-3d::after {\n\t\tanimation: none;\n\t\topacity: 0.5;\n\t}\n}\n\n/* 1.5.2: the single settings entry stacks options above the companion panel. */\n.dwm-settings-stack {display:flex;flex-direction:column;gap:18px}\n\n\n/* 2.1.0: pose portraits breathe instead of sitting dead still. */\n@keyframes dwm-portrait-float {\n\t0%, 100% { transform: translateY(0); }\n\t50% { transform: translateY(-4px); }\n}\n\n/* The portrait is an <img data-dwm-portrait> that `dwmPortraitShow()` in\n * src/runtime.js appends to <body> — it is NOT a sibling of `.dwm-root`, so the\n * old `.dwm-root ~ img[data-dwm-portrait]` sibling selector never matched and\n * the reduced-motion opt-out silently did nothing. Target the attribute\n * directly instead.\n *\n * The layer is `position: fixed` over the pet's own box at `z-index: 60`, i.e.\n * it can sit above the sprite, so it must stay click-through; runtime.js sets\n * that inline and this rule is the stylesheet-level guarantee that a portrait\n * can never eat a drag or a click meant for the pet. */\nimg[data-dwm-portrait] {\n\tpointer-events: none;\n}\n\n@media (prefers-reduced-motion: reduce) {\n\timg[data-dwm-portrait] { animation: none !important; }\n}\n\n\n/* City candidates rendered inside the weather block. */\n.dwm-root .dwm-panel-weather-candidate {\n\tdisplay: block;\n\twidth: 100%;\n\ttext-align: left;\n\tfont: inherit;\n\tcursor: pointer;\n}\n.dwm-root .dwm-panel-weather-candidate:hover {\n\tborder-color: var(--dsw-alias-brand-primary, #2f5fbf);\n}\n\n/* The two wrappers between the button and the artwork. They must keep taking\n   input (`inherit` resolves to the button's `auto`), so the drag gesture still\n   starts on the sprite even though every decorative layer inside them — the\n   sprites, the depth blur and the shine — is `pointer-events: none`. */\n.dwm-root .dwm-3d {\n\tpointer-events: inherit;\n}\n\n.dwm-root .dwm-flip {\n\tpointer-events: inherit;\n}\n\n/* 2.0.0 preview gallery (src/preview.js). These two class names are the only\n   `dwm-*` classes the sources build that had no rule here: the cell and its\n   group are styled inline in preview.js, which is why nothing looked broken, but\n   the \"every dwm-* class in JS has a CSS rule\" invariant (test/companion.test.mjs)\n   is meant to hold for the whole sheet. Keep these rules additive — the inline\n   styles still win, so they only supply what inline markup cannot: a hover\n   response and the column layout for the group. */\n.dwm-settings-group {\n\tdisplay: flex;\n\tflex-direction: column;\n\tgap: 8px;\n}\n\n.dwm-preview-cell {\n\tcursor: pointer;\n}\n\n.dwm-preview-cell:hover {\n\tfilter: brightness(.96);\n}\n";
+    var STYLESHEET = "/*\r\n * dsh-whale-maid — sprite pet stylesheet.\r\n *\r\n * Source: the `dwm*` rule block of deepseek1024.com\r\n * (https://deepseek1024.com/assets/index-D3coedsb.css), copied rule-for-rule so\r\n * the extracted pet keeps its original motion: 3D sway, drag tilt, float, pop-in\r\n * bubble, bubble dots, heart particles, depth layer and shine.\r\n *\r\n * Three kinds of edits were made:\r\n *   1. The site's own CSS variables (--line/--surface/--ink/...) are re-declared\r\n *      on `.dwm-root` with DSH theme tokens (--dsw-alias-*) as the first\r\n *      choice and the original site values as fallbacks, so the bubble and the\r\n *      two action buttons follow the Harness light/dark theme instead of\r\n *      assuming the store site's palette.\r\n *   2. `--dwm-size` is driven by `--dwm-pet-size`, so the plugin's `size` option\r\n *      can resize the pet.\r\n *   3. Every descendant rule is scoped under `.dwm-root`, which lifts it\r\n *      from (0,1,0) to (0,2,0). This is required, not cosmetic: the pet body and\r\n *      the two action buttons are `<button type=\"button\">`, and the Harness\r\n *      shell ships button rules of the form `button[attr]` at specificity\r\n *      (0,1,1) that beat a bare class selector. Without scoping, the host's\r\n *      border-radius and background won and the round action buttons rendered as\r\n *      squircles over a stray host-coloured panel behind the pet.\r\n * Everything else — including the artwork colours, the perspective, the depth\r\n * blur and the keyframes — is the original.\r\n */\r\n\r\n.dwm-root {\r\n\t--dwm-size: var(--dwm-pet-size, 110px);\r\n\r\n\t/* Theme bridge: DSH alias tokens first, original site values as fallback. */\r\n\t--line: var(--dsw-alias-border-l2, #e2e4ea);\r\n\t--line-strong: var(--dsw-alias-border-l3, #cfd3dd);\r\n\t--surface: var(--dsw-alias-bg-layer-2, #fff);\r\n\t--surface-hover: var(--dsw-alias-interactive-bg-hover, #f4f5f8);\r\n\t--ink: var(--dsw-alias-label-primary, #1c1f26);\r\n\t--brand-dark: var(--dsw-alias-brand-primary, #2f5fbf);\r\n\t--brand-border: var(--dsw-alias-brand-primary, #2f5fbf);\r\n\t--accent-coral: #ef7a6d; /* artwork colour: heart particles */\r\n\t--shadow-rgb: 18 20 30;\r\n\t--shadow-sm: 0 1px 2px rgb(var(--shadow-rgb) / 12%);\r\n\t--shadow-md: 0 6px 18px rgb(var(--shadow-rgb) / 16%);\r\n\t--shadow-focus: 0 0 0 3px rgb(47 95 191 / 32%);\r\n\t--lift: translateY(-1px);\r\n\t--ease: cubic-bezier(.22,.61,.36,1);\r\n\t--duration-fast: .14s;\r\n\r\n\tz-index: 60;\r\n\twidth: var(--dwm-size);\r\n\theight: var(--dwm-size);\r\n\tperspective: 600px;\r\n\t/* `shell.overlay` is rendered as `.overlayLayer > *` with a rule that forces\r\n\t   `pointer-events:auto` on every direct child (specificity 0,1,1). A plain\r\n\t   class rule would lose and the whole pet box would swallow clicks meant for\r\n\t   the app behind it, so this must be `!important` (the inline style in the\r\n\t   component says the same thing). Only the pet body re-enables events. */\r\n\tpointer-events: none !important;\r\n\tposition: fixed;\r\n}\r\n\r\n.dwm-root .dwm {cursor:grab;pointer-events:auto;touch-action:none;width:100%;height:100%;transform:rotateX(var(--dwm-tilt-x,0deg)) rotateY(var(--dwm-tilt-y,0deg)) rotate(var(--dwm-drag-angle,0deg));transform-style:preserve-3d;background:0 0;border:0;padding:0;margin:0;font:inherit;color:inherit;box-sizing:border-box;appearance:none;-webkit-appearance:none;transition:transform .14s ease-out;position:absolute;inset:0}\r\n\r\n.dwm-root .dwm:hover,.dwm-root .dwm:focus-visible {cursor:grab}\r\n\r\n.dwm-root .dwm:focus-visible {box-shadow:var(--shadow-focus);outline:none}\r\n\r\n.dwm-root .dwm.is-dragging {cursor:grabbing;touch-action:none;-webkit-user-select:none;user-select:none;transition:none}\r\n\r\n.dwm-root .dwm-flip {width:100%;height:100%;transform-style:preserve-3d;transition:transform .3s var(--ease);display:block}\r\n\r\n/* Release squash (the \"she lands\" beat when a drag is let go).\r\n *\r\n * `animation` is a shorthand, so the original `animation: dwm-squash ...` here\r\n * *replaced* the `dwm-sway` animation declared on `.dwm-3d` below: both keyframe\r\n * sets animate `transform`, so the 3D sway disappeared for the whole 320ms (the\r\n * pet snapped from her swayed 3D pose into a flat 2D plane and back) and, once\r\n * the class came off, `dwm-sway` restarted at 0% instead of continuing its 8s\r\n * cycle — a visible jump on every release.\r\n *\r\n * The fix is to stop making the two animations compete for one property: keep\r\n * `dwm-sway` in the list (it owns `transform`, and keeping the same name at the\r\n * same index means the running animation is not restarted) and drive the squash\r\n * through the independent `scale` property, which composes with `transform`\r\n * instead of overriding it. `.dwm` (the parent) keeps its inline\r\n * `--dwm-tilt-x/y` / `--dwm-drag-angle` transform; it is a different element, so\r\n * the drag tilt and the release squash now show at the same time. */\r\n.dwm-root .dwm-3d.is-squash {\r\n\tanimation:\r\n\t\t8s ease-in-out infinite alternate dwm-sway,\r\n\t\t320ms cubic-bezier(.34, 1.3, .64, 1) dwm-squash;\r\n}\r\n\r\n@keyframes dwm-squash {\r\n\t0% { scale: 1 1; }\r\n\t45% { scale: 1.05 .96; }\r\n\t100% { scale: 1 1; }\r\n}\r\n\r\n.dwm-root .dwm-3d {width:100%;height:100%;transform-style:preserve-3d;will-change:transform;animation:8s ease-in-out infinite alternate dwm-sway;display:block}\r\n\r\n.dwm-root .dwm-sprite.dwm-depth {filter:blur(6px)brightness(.5)saturate(.75);pointer-events:none;position:absolute;inset:0;transform:translateZ(-32px)}\r\n\r\n/* The artwork itself. It is decorative: it sits over the whole box, so leaving\r\n * it hit-testable only made it the pointer target for a button that already\r\n * handles the gesture. `pointer-events: none` here, while `.dwm` and the two\r\n * wrappers (`.dwm-flip`, `.dwm-3d`) keep `auto` via `inherit` at the bottom of\r\n * this file, is the split that keeps drag/click working. */\r\n.dwm-root .dwm-sprite {image-rendering:pixelated;filter:drop-shadow(0 12px 10px rgb(var(--shadow-rgb) / 30%));background-repeat:no-repeat;position:absolute;inset:0;pointer-events:none}\r\n\r\n.dwm-root .dwm-sprite.is-tilt {animation:.9s ease-in-out infinite alternate dwm-tilt}\r\n\r\n.dwm-root .dwm-sprite.is-float {animation:2.6s ease-in-out infinite dwm-float}\r\n\r\n/* Site glare layer: same #ffffff42 radial gradient as the store. The store can paint it\r\n * over the whole box because its page is light; on a dark theme that reads as a pale\r\n * rounded rectangle behind the character, so the component masks this layer with the\r\n * current sprite frame and the highlight only lands on the character itself. The 18%\r\n * radius is dropped because the mask already defines the visible shape. */\r\n.dwm-root .dwm-shine {pointer-events:none;background:radial-gradient(120% 70% at 32% 16%,#ffffff42,#0000 55%);position:absolute;inset:0;transform:translateZ(10px)}\r\n\r\n.dwm-root .dwm-shadow {background:rgb(var(--shadow-rgb) / 14%);pointer-events:none;border-radius:50%;height:10px;position:absolute;bottom:-4px;left:10%;right:10%}\r\n\r\n/* `z-index: 2` because the bubble/menu container is the *first* child of\r\n * `.dwm-root`, and `.dwm` (with its `transform`, hence its own stacking context)\r\n * comes after it: at equal `z-index: auto` the sprite painted over the pop, and\r\n * the `data-dwm-work` halo on `.dwm-3d::after` (inset -12%, so it reaches ~13px\r\n * above the box) washed over the bottom of the speech bubble during a running\r\n * turn. Lifting the pop above the sprite fixes both. */\r\n.dwm-root .dwm-pop {pointer-events:none;flex-direction:column;align-items:flex-end;gap:6px;display:flex;position:absolute;bottom:calc(100% + 10px);right:0;z-index:2}\r\n\r\n.dwm-root .dwm-bubble {box-sizing:border-box;border:1px solid var(--line);background:var(--surface);max-width:min(250px,100vw - 32px);box-shadow:var(--shadow-md);color:var(--ink);pointer-events:auto;animation:dwm-pop-in var(--duration-fast) var(--ease);border-radius:12px 12px 2px;margin:0;padding:8px 12px;font-size:13px;line-height:1.5}\r\n\r\n.dwm-root .dwm-menu {pointer-events:auto;gap:6px;display:flex}\r\n\r\n.dwm-root .dwm-action {border:1px solid var(--line);background:var(--surface);width:36px;height:36px;box-shadow:var(--shadow-sm);color:var(--brand-dark);cursor:pointer;box-sizing:border-box;margin:0;padding:0;font:inherit;appearance:none;-webkit-appearance:none;transition:border-color var(--duration-fast) var(--ease), background-color var(--duration-fast) var(--ease), transform var(--duration-fast) var(--ease);border-radius:50%;justify-content:center;align-items:center;display:inline-flex}\r\n\r\n.dwm-root .dwm-action:hover {border-color:var(--line-strong);background:var(--surface-hover);transform:var(--lift)}\r\n\r\n.dwm-root .dwm-action:focus-visible {box-shadow:var(--shadow-focus);outline:none}\r\n\r\n.dwm-root .dwm-bubble-dot {background:var(--brand-border);opacity:0;pointer-events:none;border-radius:50%;width:5px;height:5px;animation:6s ease-in infinite dwm-bubbles;position:absolute;bottom:18px;right:22%}\r\n\r\n.dwm-root .dwm-bubble-dot:nth-child(4) {animation-delay:2s;bottom:26px;right:18%}\r\n\r\n.dwm-root .dwm-bubble-dot:nth-child(5) {animation-delay:4s;bottom:24px;right:26%}\r\n\r\n.dwm-root .dwm-heart {color:var(--accent-coral);pointer-events:none;font-size:16px;line-height:1;animation:1.2s ease-out forwards dwm-heart-pop;position:absolute;bottom:26px;left:50%}\r\n\r\n@media (width<=680px) {.dwm-root:not([data-dwm-pet-size]){--dwm-pet-size:72px}.dwm-root .dwm-action{width:44px;height:44px}}\r\n\r\n/* Quest text and achievement names are plain labels; the classes exist\r\n   so the structure snapshot test can assert them. */\r\n.dwm-root .dwm-panel-quest-text {\r\n\tcolor: var(--dsw-alias-label-secondary, #6b7280);\r\n\tfont-size: 12px;\r\n\tline-height: 1.4;\r\n}\r\n.dwm-root .dwm-ach-name {\r\n\tcolor: var(--dsw-alias-label-primary, #1c1f26);\r\n\tfont-size: 12px;\r\n\tline-height: 1.4;\r\n}\r\n\r\n/* `.is-squash` is listed explicitly: it is (0,3,0) and would otherwise outrank\r\n   the (0,2,0) `.dwm-root .dwm-3d` below, so a caller that adds the class itself\r\n   could still animate a squash for a user who asked for no motion. */\r\n@media (prefers-reduced-motion:reduce) {.dwm-root .dwm-3d,.dwm-root .dwm-3d.is-squash,.dwm-root .dwm-sprite,.dwm-root .dwm-bubble-dot{animation:none}.dwm-root .dwm-depth{display:none}.dwm-root .dwm,.dwm-root .dwm-flip{transition:none}.dwm-root .dwm-bubble-dot{display:none}}\r\n\r\n/* ---- settings panel (plugin addition, not part of the source site) ---- */\r\n\r\n.dwm-settings {color:var(--dsw-alias-label-primary,#1c1f26);display:flex;flex-direction:column;gap:14px;font-size:13px;line-height:1.5}\r\n\r\n.dwm-settings-hint {color:var(--dsw-alias-label-secondary,#5b6270);margin:0;font-size:12px}\r\n\r\n.dwm-settings-row {display:flex;flex-direction:column;gap:6px}\r\n\r\n.dwm-settings-row-head {display:flex;justify-content:space-between;align-items:baseline;gap:12px}\r\n\r\n.dwm-settings-label {font-weight:600}\r\n\r\n.dwm-settings-value {color:var(--dsw-alias-label-secondary,#5b6270);font-variant-numeric:tabular-nums;font-size:12px}\r\n\r\n.dwm-settings input[type=\"range\"] {accent-color:var(--dsw-alias-brand-primary,#2f5fbf);width:100%;margin:0}\r\n\r\n.dwm-settings select {border:1px solid var(--dsw-alias-border-l2,#e2e4ea);background:var(--dsw-alias-bg-layer-1,#fff);color:inherit;border-radius:8px;padding:5px 8px;font:inherit}\r\n\r\n.dwm-settings-checks {display:flex;flex-wrap:wrap;gap:8px 18px}\r\n\r\n.dwm-settings-check {align-items:center;gap:6px;display:inline-flex;cursor:pointer}\r\n\r\n.dwm-settings-check input {accent-color:var(--dsw-alias-brand-primary,#2f5fbf);margin:0}\r\n\r\n.dwm-settings-actions {border-top:1px solid var(--dsw-alias-border-l1,#eceef2);gap:8px;padding-top:12px;display:flex;flex-wrap:wrap}\r\n\r\n.dwm-settings button {border:1px solid var(--dsw-alias-border-l2,#e2e4ea);background:var(--dsw-alias-bg-layer-1,#fff);color:inherit;border-radius:8px;padding:5px 12px;font:inherit;cursor:pointer}\r\n\r\n.dwm-settings button:hover {background:var(--dsw-alias-interactive-bg-hover,#f4f5f8)}\r\n\r\n.dwm-settings button:focus-visible {box-shadow:0 0 0 3px rgb(47 95 191 / 32%);outline:none}\r\n\r\n@keyframes dwm-sway {0%{transform:rotateY(-5deg)rotateX(1.5deg)}to{transform:rotateY(5deg)rotateX(-1.5deg)}}\r\n\r\n@keyframes dwm-tilt {0%{rotate(-6deg)}to{rotate(6deg)}}\r\n\r\n@keyframes dwm-float {0%,to{translateY(0)}50%{translateY(-4px)}}\r\n\r\n@keyframes dwm-pop-in {0%{opacity:0;transform:translateY(4px)scale(.96)}to{opacity:1;transform:none}}\r\n\r\n@keyframes dwm-bubbles {0%,62%{opacity:0}68%{opacity:.9}to{opacity:0;transform:translateY(-26px)}}\r\n\r\n@keyframes dwm-heart-pop {0%{opacity:0;transform:translateY(0)scale(.6)}15%{opacity:1}to{opacity:0;transform:translateY(-46px)scale(1.15)}}\r\n\r\n/* ---- 1.1.0 companion layers: status chip + particle FX ---- */\r\n\r\n.dwm-root .dwm-fx-layer {pointer-events:none;position:absolute;inset:0;overflow:visible}\r\n\r\n.dwm-root .dwm-fx {position:absolute;bottom:26px;font-size:14px;line-height:1;opacity:0;animation:1.5s ease-out forwards dwm-fx-rise}\r\n\r\n.dwm-root .dwm-fx-heart {color:var(--accent-coral)}\r\n\r\n.dwm-root .dwm-fx-star {color:#e8b53a}\r\n\r\n.dwm-root .dwm-fx-sparkle {color:var(--brand-border)}\r\n\r\n.dwm-root .dwm-fx-note {color:var(--brand-dark)}\r\n\r\n@keyframes dwm-fx-rise {0%{opacity:0;transform:translate(-50%,0) scale(.6)}15%{opacity:1}to{opacity:0;transform:translate(calc(-50% + var(--dwm-fx-drift,0px)),-52px) scale(1.1)}}\r\n\r\n/* ---- 1.1.0 companion panel (settings.section, second section) ---- */\r\n\r\n.dwm-panel-hero {display:flex;align-items:center;gap:12px;border:1px solid var(--dsw-alias-border-l1,#eceef2);border-radius:12px;padding:10px 12px;background:var(--dsw-alias-bg-layer-2,#f7f8fa)}\r\n\r\n.dwm-panel-level {font-weight:700;font-size:18px;color:var(--dsw-alias-brand-primary,#2f5fbf);font-variant-numeric:tabular-nums}\r\n\r\n.dwm-panel-hero-text {display:flex;flex-direction:column;gap:2px;font-size:12px}\r\n\r\n.dwm-panel-hero-text strong {font-size:13px}\r\n\r\n.dwm-panel-hero-text span {color:var(--dsw-alias-label-secondary,#5b6270)}\r\n\r\n.dwm-panel-title {margin:6px 0 0;font-size:13px;font-weight:600}\r\n\r\n.dwm-panel-muted {color:var(--dsw-alias-label-secondary,#5b6270);margin:0;font-size:12px}\r\n\r\n.dwm-panel-stat {align-items:center;gap:2px 12px;grid-template-columns:1fr auto;display:grid;font-size:12px}\r\n\r\n.dwm-panel-stat-label {color:var(--dsw-alias-label-secondary,#5b6270)}\r\n\r\n.dwm-panel-stat-value {font-variant-numeric:tabular-nums}\r\n\r\n.dwm-panel-bar {background:var(--dsw-alias-border-l1,#eceef2);border-radius:999px;grid-column:1/-1;height:6px;overflow:hidden}\r\n\r\n.dwm-panel-bar-fill {border-radius:999px;height:100%;transition:width .3s var(--ease);display:block}\r\n\r\n.dwm-panel-bar-mood {background:linear-gradient(90deg,#f0a5a0,#ef7a6d)}\r\n\r\n.dwm-panel-bar-satiety {background:linear-gradient(90deg,#9fd6b4,#4fae7d)}\r\n\r\n.dwm-panel-bar-affinity {background:linear-gradient(90deg,#a9c3ef,#2f5fbf)}\r\n\r\n.dwm-panel-quests {flex-direction:column;gap:6px;margin:0;padding:0;list-style:none;display:flex}\r\n\r\n.dwm-panel-quest {align-items:center;justify-content:space-between;gap:10px;font-size:12px;display:flex}\r\n\r\n.dwm-panel-quest.is-claimed {opacity:.55}\r\n\r\n.dwm-panel-board {align-items:center;gap:6px;flex-wrap:wrap;display:flex}\r\n\r\n.dwm-panel-cell {width:26px;height:26px;border:1px solid var(--dsw-alias-border-l2,#e2e4ea);border-radius:8px;justify-content:center;align-items:center;font-size:12px;display:inline-flex;color:var(--dsw-alias-label-tertiary,#8b93a1)}\r\n\r\n.dwm-panel-cell.is-on {background:rgb(47 95 191 / 12%);border-color:rgb(47 95 191 / 35%);color:inherit}\r\n\r\n.dwm-panel-achievements {flex-wrap:wrap;gap:6px;display:flex}\r\n\r\n.dwm-ach {align-items:center;gap:5px;border:1px solid var(--dsw-alias-border-l2,#e2e4ea);border-radius:999px;padding:3px 9px;font-size:11px;display:inline-flex;color:var(--dsw-alias-label-tertiary,#8b93a1);filter:grayscale(1);opacity:.6}\r\n\r\n.dwm-ach.is-on {filter:none;opacity:1;color:inherit;background:rgb(47 95 191 / 8%);border-color:rgb(47 95 191 / 35%)}\r\n\r\n.dwm-ach-icon {font-size:12px;line-height:1}\r\n\r\n.dwm-panel-diary {flex-direction:column;gap:4px;margin:0;padding:0;font-size:12px;list-style:none;display:flex;color:var(--dsw-alias-label-secondary,#5b6270)}\r\n\r\n@media (prefers-reduced-motion:reduce) {.dwm-root .dwm-fx,.dwm-root .dwm-fx{display:none}}\r\n\r\n\r\n/* --- typewriter caret (1.2.1) ----------------------------------------- */\r\n.dwm-root .dwm-caret {\r\n\tdisplay: inline-block;\r\n\twidth: 2px;\r\n\theight: 1em;\r\n\tmargin-left: 1px;\r\n\tvertical-align: -0.15em;\r\n\tbackground: currentColor;\r\n\topacity: 0.75;\r\n\tanimation: dwm-caret 0.9s steps(2, start) infinite;\r\n}\r\n\r\n@keyframes dwm-caret {\r\n\t0%,\r\n\t49% {\r\n\t\topacity: 0.75;\r\n\t}\r\n\t50%,\r\n\t100% {\r\n\t\topacity: 0;\r\n\t}\r\n}\r\n\r\n@media (prefers-reduced-motion: reduce) {\r\n\t.dwm-root .dwm-caret {\r\n\t\tanimation: none;\r\n\t}\r\n}\r\n\r\n/* --- bubble sizing (1.2.1) -------------------------------------------- */\r\n/* The pop container is shrink-to-fit inside a 110px root, which used to\r\n   wrap every bubble into a narrow column. Let it size to the text instead. */\r\n.dwm-root .dwm-pop {\r\n\twidth: max-content;\r\n\tmax-width: min(250px, 100vw - 32px);\r\n}\r\n\r\n/* --- bubble tones (1.3.0) --------------------------------------------- */\r\n/* The status chip is gone; the tone now tints the single speech bubble. */\r\n.dwm-root .dwm-bubble-work {\r\n\tborder-color: var(--dsw-alias-brand-primary, #2f5fbf);\r\n}\r\n.dwm-root .dwm-bubble-ok {\r\n\tborder-color: var(--dsw-alias-state-success-primary, #3fb950);\r\n}\r\n.dwm-root .dwm-bubble-error {\r\n\tborder-color: var(--dsw-alias-state-error-primary, #e5534b);\r\n}\r\n\r\n/* ---- 1.3.0 weather companion ---- */\r\n\r\n.dwm-panel-weather {display:flex;flex-direction:column;gap:8px}\r\n.dwm-panel-weather-line {color:var(--dsw-alias-label-secondary,#5b6270);font-size:12px;font-variant-numeric:tabular-nums}\r\n.dwm-panel-weather-row {display:flex;align-items:center;gap:8px}\r\n.dwm-panel-weather-input {\r\n\tflex:1 1 auto;\r\n\tmin-width:0;\r\n\tpadding:6px 10px;\r\n\tborder:1px solid var(--dsw-alias-border-l2,#e2e4ea);\r\n\tborder-radius:8px;\r\n\tbackground:var(--dsw-alias-bg-layer-1,#fff);\r\n\tcolor:var(--dsw-alias-label-primary,#1c1f26);\r\n\tfont:inherit;\r\n\tfont-size:12px;\r\n\tappearance:none;\r\n\t-webkit-appearance:none;\r\n}\r\n.dwm-panel-weather-input:focus-visible {outline:2px solid var(--dsw-alias-brand-primary,#2f5fbf);outline-offset:1px}\r\n.dwm-panel-weather-button {\r\n\tflex:0 0 auto;\r\n\tpadding:6px 12px;\r\n\tborder:1px solid var(--dsw-alias-border-l2,#e2e4ea);\r\n\tborder-radius:8px;\r\n\tbackground:var(--dsw-alias-bg-layer-2,#f7f8fa);\r\n\tcolor:var(--dsw-alias-label-primary,#1c1f26);\r\n\tfont:inherit;\r\n\tfont-size:12px;\r\n\tcursor:pointer;\r\n\tappearance:none;\r\n\t-webkit-appearance:none;\r\n}\r\n.dwm-panel-weather-button:hover {background:var(--dsw-alias-interactive-bg-hover,#eef0f4)}\r\n\r\n/* weather particles reuse the existing FX layer */\r\n.dwm-root .dwm-fx-rain {color:#5b93e0}\r\n.dwm-root .dwm-fx-snow {color:#9fc7e8}\r\n\r\n/* ---- 1.4.0: work glow, focus rings, recall button, save box ---- */\r\n\r\n/* A soft halo while a turn is running, so the state reads at a glance. */\r\n.dwm-root[data-dwm-work='1'] .dwm-3d::after {\r\n\tcontent: \"\";\r\n\tposition: absolute;\r\n\tinset: -12%;\r\n\tborder-radius: 50%;\r\n\tbackground: radial-gradient(closest-side, rgb(120 180 255 / 32%), rgb(120 180 255 / 0%) 72%);\r\n\tanimation: dwm-glow 2.6s ease-in-out infinite;\r\n\tpointer-events: none;\r\n\ttransform: translateZ(-8px);\r\n}\r\n\r\n@keyframes dwm-glow {\r\n\t0%,\r\n\t100% {\r\n\t\topacity: 0.35;\r\n\t}\r\n\t50% {\r\n\t\topacity: 0.9;\r\n\t}\r\n}\r\n\r\n/* Keyboard users need to see where they are. */\r\n.dwm-root .dwm:focus-visible,\r\n.dwm-root .dwm-action:focus-visible,\r\n.dwm-root .dwm-recall:focus-visible {\r\n\toutline: 2px solid var(--dsw-alias-brand-primary, #4b8bf5);\r\n\toutline-offset: 3px;\r\n\tborder-radius: 14px;\r\n}\r\n\r\n/* Hidden: everything disappears except the recall button. */\r\n.dwm-root.dwm-root-hidden .dwm-pop,\r\n.dwm-root.dwm-root-hidden .dwm,\r\n.dwm-root.dwm-root-hidden .dwm-shadow,\r\n.dwm-root.dwm-root-hidden .dwm-bubble-dot,\r\n.dwm-root.dwm-root-hidden .dwm-fx-layer {\r\n\tdisplay: none;\r\n}\r\n\r\n.dwm-root .dwm-recall {\r\n\tposition: absolute;\r\n\tright: 0;\r\n\tbottom: 0;\r\n\twidth: 36px;\r\n\theight: 36px;\r\n\tdisplay: grid;\r\n\tplace-items: center;\r\n\tfont-size: 18px;\r\n\tline-height: 1;\r\n\tborder-radius: 50%;\r\n\tborder: 1px solid var(--dsw-alias-border-l2, #e2e4ea);\r\n\tbackground: var(--dsw-alias-bg-layer-2, #fff);\r\n\tcolor: var(--dsw-alias-label-primary, #1c1f26);\r\n\tcursor: pointer;\r\n\tbox-shadow: 0 1px 3px rgb(0 0 0 / 12%);\r\n\topacity: 0.82;\r\n\tbox-sizing: border-box;\r\n\tpadding: 0;\r\n}\r\n\r\n.dwm-root .dwm-recall:hover {\r\n\topacity: 1;\r\n}\r\n\r\n.dwm-panel-save .dwm-panel-textarea {\r\n\twidth: 100%;\r\n\tbox-sizing: border-box;\r\n\tresize: vertical;\r\n\tfont: inherit;\r\n\tfont-size: 12px;\r\n\tline-height: 1.5;\r\n\tpadding: 8px;\r\n\tborder-radius: 8px;\r\n\tborder: 1px solid var(--dsw-alias-border-l2, #e2e4ea);\r\n\tbackground: var(--dsw-alias-bg-layer-1, #fff);\r\n\tcolor: var(--dsw-alias-label-primary, #1c1f26);\r\n}\r\n\r\n@media (prefers-reduced-motion: reduce) {\r\n\t.dwm-root[data-dwm-work='1'] .dwm-3d::after {\r\n\t\tanimation: none;\r\n\t\topacity: 0.5;\r\n\t}\r\n}\r\n\r\n/* 1.5.2: the single settings entry stacks options above the companion panel. */\r\n.dwm-settings-stack {display:flex;flex-direction:column;gap:18px}\r\n\r\n\r\n/* 2.1.0: pose portraits breathe instead of sitting dead still. */\r\n@keyframes dwm-portrait-float {\r\n\t0%, 100% { transform: translateY(0); }\r\n\t50% { transform: translateY(-4px); }\r\n}\r\n\r\n/* The portrait is an <img data-dwm-portrait> that `dwmPortraitShow()` in\r\n * src/runtime.js appends to <body> — it is NOT a sibling of `.dwm-root`, so the\r\n * old `.dwm-root ~ [data-dwm-portrait]` sibling selector never matched and\r\n * the reduced-motion opt-out silently did nothing. Target the attribute\r\n * directly instead.\r\n *\r\n * The layer is `position: fixed` over the pet's own box at `z-index: 60`, i.e.\r\n * it can sit above the sprite, so it must stay click-through; runtime.js sets\r\n * that inline and this rule is the stylesheet-level guarantee that a portrait\r\n * can never eat a drag or a click meant for the pet. */\r\n[data-dwm-portrait] {\r\n\tpointer-events: none;\r\n}\r\n\r\n@media (prefers-reduced-motion: reduce) {\r\n\t[data-dwm-portrait] { animation: none !important; }\r\n}\r\n\r\n\r\n/* City candidates rendered inside the weather block. */\r\n.dwm-root .dwm-panel-weather-candidate {\r\n\tdisplay: block;\r\n\twidth: 100%;\r\n\ttext-align: left;\r\n\tfont: inherit;\r\n\tcursor: pointer;\r\n}\r\n.dwm-root .dwm-panel-weather-candidate:hover {\r\n\tborder-color: var(--dsw-alias-brand-primary, #2f5fbf);\r\n}\r\n\r\n/* The two wrappers between the button and the artwork. They must keep taking\r\n   input (`inherit` resolves to the button's `auto`), so the drag gesture still\r\n   starts on the sprite even though every decorative layer inside them — the\r\n   sprites, the depth blur and the shine — is `pointer-events: none`. */\r\n.dwm-root .dwm-3d {\r\n\tpointer-events: inherit;\r\n}\r\n\r\n.dwm-root .dwm-flip {\r\n\tpointer-events: inherit;\r\n}\r\n\r\n/* 2.0.0 preview gallery (src/preview.js). These two class names are the only\r\n   `dwm-*` classes the sources build that had no rule here: the cell and its\r\n   group are styled inline in preview.js, which is why nothing looked broken, but\r\n   the \"every dwm-* class in JS has a CSS rule\" invariant (test/companion.test.mjs)\r\n   is meant to hold for the whole sheet. Keep these rules additive — the inline\r\n   styles still win, so they only supply what inline markup cannot: a hover\r\n   response and the column layout for the group. */\r\n.dwm-settings-group {\r\n\tdisplay: flex;\r\n\tflex-direction: column;\r\n\tgap: 8px;\r\n}\r\n\r\n.dwm-preview-cell {\r\n\tcursor: pointer;\r\n}\r\n\r\n.dwm-preview-cell:hover {\r\n\tfilter: brightness(.96);\r\n}\r\n\r\n/* three-cell pose sheets: discrete step through the frames, no JS timer */\r\n@keyframes dwm-pose-cycle {\r\n\t0%, 33.32% { background-position: 0% 0; }\r\n\t33.33%, 66.65% { background-position: 50% 0; }\r\n\t66.66%, 100% { background-position: 100% 0; }\r\n}\r\n@media (prefers-reduced-motion: reduce) {\r\n\t[data-dwm-portrait] { animation: none !important; background-position: 0% 0 !important; }\r\n}\r\n";
 
     /* ---- assets: served by index.js, see ASSET_BASE below ---- */
     var ASSET_BASE = "/api/dsh-whale-maid/assets/";
@@ -428,21 +428,24 @@ function dwmPortraitShow(result, ms, hold) {
 	}
 	if (!rect || !(Number(rect.width) > 0)) return false;
 	dwmHidePose();
-	var strays = document.querySelectorAll ? document.querySelectorAll('img[data-dwm-portrait]') : [];
+	var strays = document.querySelectorAll ? document.querySelectorAll('[data-dwm-portrait]') : [];
 	for (var s = 0; s < strays.length; s += 1) {
 		if (strays[s] && strays[s].parentNode) strays[s].parentNode.removeChild(strays[s]);
 	}
 
 	var node = null;
 	try {
-		node = document.createElement('img');
+		node = document.createElement('div');
 		node.setAttribute('data-dwm-portrait', result.pose || '');
 		node.setAttribute('aria-hidden', 'true');
-		node.setAttribute('alt', '');
-		node.src = result.image;
 		var style = node.style;
+		/* the pose sheet holds three cells side by side: step through them with CSS */
+		style.backgroundImage = 'url(' + result.image + ')';
+		style.backgroundRepeat = 'no-repeat';
+		style.backgroundSize = '300% 100%';
+		style.backgroundPosition = '0% 0';
 		style.position = 'fixed';
-		style.animation = 'dwm-portrait-float 2.8s ease-in-out infinite';
+		style.animation = 'dwm-pose-cycle 0.9s steps(1) infinite, dwm-portrait-float 2.8s ease-in-out infinite';
 		dwmPortraitHideSprite(true);
 		style.left = rect.left + 'px';
 		style.top = rect.top + 'px';
@@ -2251,152 +2254,266 @@ var DWM_LINES_BOND = {
 
     /* ---- src/lines-parts.js ---- */
 /*
- * dsh-whale-maid — body-part lines (2.5.0).
+ * dsh-whale-maid — per-part zone lines (appended, never replacing the originals).
  *
- * Same shape as every other extra bank: merged into DWM_LINES at load time, so
- * dwmPickLine() finds them with no extra wiring. Tone follows the reference
- * plugin: self-referential "鲸鱼娘", calls the user "主人", teasing but never
- * explicit, one emoji at most.
+ * The original patHead / patBelly / patTail banks live in src/lines.js and are
+ * untouched: every zone below draws from its own bank *and* from the original
+ * one, so nothing that used to be said has been removed.
+ *
+ * Tone: whale-girl / master, teasing and suggestive but never explicit, at most
+ * one emoji per line. Chinese lines carry no emoji by design — the reference
+ * plugin keeps them plain and so do we.
  */
 
 var DWM_LINES_PARTS = {
-	zh: {
-		patHorn: [
-			'呆毛不能揪啦，那是鲸鱼娘的雷达天线📡',
-			'摸这里……主人是想看我脸红吗',
-			'角角痒痒的，主人轻一点嘛',
-			'再摸下去，呆毛要打结了😳',
-			'头顶只有主人能碰，记住了吗',
-			'你手心的温度传过来了……有点犯规',
-			'呆毛被压弯了，明天要重新定型',
-			'这样顺着摸，鲸鱼娘会想赖着不动的',
+	patHorn: {
+		zh: [
+			'别、别碰那里，会酥的。',
+			'呆毛被摸到的时候，我腿会软。',
+			'主人一碰这个，我就藏不住表情了。',
+			'呜，那里最敏感了，你知道的。',
+			'手指绕一圈，我心跳就乱了。',
+			'呆毛是感应器，你一动我就知道。',
+			'再摸一下…就一下。',
+			'被摸到这里，算越界了哦。',
+			'我尾巴都翘起来了，别看我。',
+			'主人手法太熟练了，可疑。',
+			'这样摸，我会忍不住想蹭你。',
+			'呆毛立起来了，都怪你。',
+			'轻轻一下就好，太用力我受不了。',
+			'摸完要负责的，知道吗？',
 		],
-		patEar: [
-			'耳鳍很薄的，主人别太用力🐋',
-			'耳朵会自己动的，尤其听到主人的声音',
-			'别对着耳朵说话，会酥的',
-			'这样摸耳朵，鲸鱼娘会走神的',
-			'耳鳍是敏感的地方，主人不知道吗😏',
-			'痒……主人是故意的吧',
-			'耳鳍一抖一抖的，压不住啦',
-			'再吹一口气试试，我可要咬人了',
-		],
-		patFace: [
-			'脸、脸红了，别盯着看',
-			'眼睛里有主人哦，看清了吗',
-			'睫毛要乱了，主人负责吗',
-			'这样捏脸，会变成奇怪的形状的😳',
-			'靠太近了……呼吸都听见了',
-			'想亲就直说，别一直摸脸颊',
-			'脸颊烫烫的，是主人的手太暖了',
-			'再看下去，鲸鱼娘要先移开视线了',
-		],
-		patHand: [
-			'手在这里，要牵一下吗',
-			'十指扣住的话，就不放开了哦',
-			'手有点凉，借主人的手暖一下',
-			'别捏指尖啦，那里最敏感',
-			'这只手刚擦过桌子……还是牵着吧',
-			'主人握手好用力，是舍不得吗',
-			'手心出汗了，别笑我',
-			'牵久一点也没关系，反正我不松',
-		],
-		patWaist: [
-			'腰很细的，主人抱轻一点',
-			'这样搂腰……鲸鱼娘会站不稳的',
-			'腰上痒，别用手指画圈',
-			'围裙带子松了，帮我系一下？',
-			'背后被抱住的话，就逃不掉了🐋',
-			'主人的手放这里，有点危险哦😏',
-			'腰被量过尺寸，是主人量的那次',
-			'再往上一点就不行了……真的',
-		],
-		patFeet: [
-			'脚不可以挠，真的不可以',
-			'袜子会脏的，主人别乱碰',
-			'站久了腿软，扶我一下嘛',
-			'膝枕可以，但只许躺一会儿',
-			'脚底板怕痒，别试',
-			'主人看这么久，是喜欢吗',
-			'鞋子会掉的，别拽',
-			'被你握着脚踝，有点说不出话',
+		en: [
+			'Not there, it tickles all the way down.',
+			'One touch and my knees forget how to work.',
+			'You know exactly where to make me lose composure.',
+			'A finger traced there and my heart stumbles.',
+			'Careful, my tail gives me away.',
+			'You spoil me and I start wanting more.',
 		],
 	},
-	en: {
-		patHorn: [
-			'Not the ahoge — that is my radar antenna 📡',
-			'You are touching it... are you trying to make me blush?',
-			'It tickles up there, be gentle.',
-			'Keep going and it will knot up 😳',
-			'Only you are allowed to touch the top of my head.',
-			'Your hand is warm... that is a bit unfair.',
-			'You bent my ahoge. I will have to restyle it.',
-			'Stroking it like that makes me want to stay put.',
+	patEar: {
+		zh: [
+			'在耳边说话，很犯规。',
+			'耳朵会自己动，不听话。',
+			'小声一点…我都听见了。',
+			'被吹气的话，我会缩起来。',
+			'耳鳍很薄的，轻一点。',
+			'主人离得太近了，我心跳好吵。',
+			'别对着耳朵呼吸，痒。',
+			'被咬了会记住一辈子的。',
+			'我听得见你咽口水的声音。',
+			'摸耳朵等于摸心口，真的。',
+			'耳鳍抖了一下，被你看到了。',
+			'这样贴着说话，我什么都答不上来。',
+			'再靠近一点，我就赖着不走了。',
+			'耳朵红了吧？别看。',
 		],
-		patEar: [
-			'My ear fins are thin, easy now 🐋',
-			'They move on their own, especially at your voice.',
-			'Do not whisper into them, I will melt.',
-			'Touching my ears makes me lose focus.',
-			'Did you know the ear fins are sensitive? 😏',
-			'That tickles... you are doing it on purpose, right?',
-			'They keep twitching, I cannot stop them.',
-			'Blow on them again and I might bite.',
-		],
-		patFace: [
-			'My face is red — stop staring.',
-			'You are in my eyes. Can you see yourself?',
-			'My lashes will get messy. Your fault?',
-			'Squish it and I will end up a weird shape 😳',
-			'Too close... I can hear you breathing.',
-			'If you want to kiss me, just say so.',
-			'My cheek is hot. Your hand is too warm.',
-			'Keep looking and I will have to look away first.',
-		],
-		patHand: [
-			'My hand is here. Hold it?',
-			'Interlock our fingers and I will not let go.',
-			'My hands are cold — lend me yours.',
-			'Not the fingertips, they are the most sensitive.',
-			'I just wiped the table with that hand... hold it anyway.',
-			'You are gripping so hard. Do not want to let go?',
-			'My palm is sweating. Do not laugh.',
-			'Hold it as long as you like. I am not letting go.',
-		],
-		patWaist: [
-			'My waist is small, hold me gently.',
-			'Holding me there makes my knees weak.',
-			'It tickles — stop drawing circles.',
-			'My apron strap came loose. Tie it for me?',
-			'If you hug me from behind, I cannot escape 🐋',
-			'Your hand there is a little dangerous 😏',
-			'You are the one who measured my waist, remember?',
-			'Any higher and I really cannot allow it.',
-		],
-		patFeet: [
-			'Not the feet. Really, not the feet.',
-			'My socks will get dirty, do not touch.',
-			'My legs give out after standing. Help me?',
-			'You may use my lap as a pillow — but only briefly.',
-			'The soles are ticklish. Do not try it.',
-			'You have been looking a while. Do you like them?',
-			'My shoes will come off, stop pulling.',
-			'Held by the ankle like that, I cannot speak.',
+		en: [
+			'Whispering that close is unfair.',
+			'My fins move on their own, I cannot help it.',
+			'I can hear you swallow from here.',
+			'Breathe on it and I curl right up.',
+			'Touching my ear is touching my heart.',
+			'Stay this close and I am not leaving.',
 		],
 	},
+	patFace: {
+		zh: [
+			'脸好烫，都是你害的。',
+			'别一直看，会不好意思。',
+			'手指擦过脸颊的时候，我屏住呼吸了。',
+			'捏脸可以，捏太久要收费。',
+			'我脸红了？…那你还看。',
+			'被捧着下巴，我什么都答应。',
+			'离这么近，是要亲上来吗？',
+			'脸颊被点了一下，心也跟着点了一下。',
+			'不许笑，我知道我脸红了。',
+			'这样摸，我会以为你喜欢我。',
+			'眼睛闭上就不害羞了。',
+			'手指停在脸上的时间，有点长。',
+			'摸脸的人要负责到底。',
+			'再揉一下，我就撒娇了。',
+		],
+		en: [
+			'My cheeks are burning and it is your fault.',
+			'Stop staring, I cannot keep a straight face.',
+			'Hold my chin like that and I agree to anything.',
+			'You are this close — are you going to kiss me?',
+			'Rub it once more and I whine for attention.',
+			'Whoever touches my face has to take responsibility.',
+		],
+	},
+	patHand: {
+		zh: [
+			'手指可以牵着吗？就一会儿。',
+			'掌心好热，是你的还是我的。',
+			'十指扣起来的话，就松不开了。',
+			'被握住手腕，我动不了了。',
+			'你的手比我大一圈，好过分。',
+			'手背被亲一下，我会记很久。',
+			'捏我手指是在撒娇吗？',
+			'这样牵着走，像情侣。',
+			'手心出汗了，别笑我。',
+			'手被拉住，我就跟着走了。',
+			'指节被摩挲，酥到心里。',
+			'握紧一点，我怕走散。',
+			'手借你一会儿，要还的。',
+			'牵着我的手，就别看别人了。',
+		],
+		en: [
+			'Can we hold hands, just for a while?',
+			'Your palm is so warm I forget whose it is.',
+			'Lace our fingers and I will not let go.',
+			'Hold my wrist like that and I stop moving.',
+			'Kiss the back of my hand and I will remember it.',
+			'Hold on tighter, I do not want to get lost.',
+		],
+	},
+	patWaist: {
+		zh: [
+			'腰很细的，一掐就软。',
+			'别搂那么紧，我会想靠过去。',
+			'手指放在腰侧，很危险。',
+			'腰带松了，你赔。',
+			'被揽住腰的时候，我整个人都贴过去了。',
+			'这里怕痒，你明知道。',
+			'扶着我的腰，是想让我坐下吗？',
+			'腰被圈住，跑不掉了。',
+			'轻轻一按，我就没力气了。',
+			'抱腰比牵手更过分哦。',
+			'你的手别往上，也别往下。',
+			'被搂着的时候，我心跳全在你手心。',
+			'腰上留印子的话，会被看出来的。',
+			'这样抱着，我就不想动了。',
+		],
+		en: [
+			'My waist is soft, one squeeze and I fold.',
+			'Do not hold me that tight, I will lean in.',
+			'A hand on my waist is a dangerous thing.',
+			'Circled like this, I cannot run anywhere.',
+			'Press there and my strength just leaves.',
+			'Held at the waist, my heartbeat is all in your palm.',
+		],
+	},
+	patBellyPart: {
+		zh: [
+			'肚子被摸会痒，别闹。',
+			'围裙上有小鲸鱼，你摸到了吗？',
+			'这里没有赘肉，真的。',
+			'摸肚子是想投喂吗？',
+			'被揉肚子，我会像猫一样。',
+			'吃饱了这里会鼓一点，不许笑。',
+			'衣服下摆别掀。',
+			'肚子贴着你的手，暖。',
+			'这样揉下去我会睡着的。',
+			'围裙口袋里有小鱼干，自己拿。',
+			'被摸这里，我有点不好意思。',
+			'手下留情，我怕痒又怕停。',
+			'肚子是弱点，只给你碰。',
+			'再揉一会儿，就一会儿。',
+		],
+		en: [
+			'My belly is ticklish, do not tease.',
+			'The little whale on my apron — did you find it?',
+			'Rub it like that and I purr like a cat.',
+			'Hands under the hem are not allowed.',
+			'My belly against your hand is warm.',
+			'That is my weak spot, and only yours.',
+		],
+	},
+	patHeadPart: {
+		zh: [
+			'头发被摸得乱糟糟了。',
+			'顺着发丝往下，我会闭眼睛。',
+			'摸头可以，别把我当小孩。',
+			'被你这样顺着摸，我想撒娇。',
+			'发带要掉了…你故意的吧。',
+			'摸头的时候手好温柔，我有点受不了。',
+			'再摸一下，我就把头靠过去。',
+			'头发上还有海的味道吗？',
+			'这样摸，我会以为你在宠我。',
+			'头皮发麻，是舒服的那种。',
+			'别停下…我是说随你。',
+			'摸久了，我会睡着的。',
+			'发梢被绕在指间，我心跳好快。',
+			'主人摸头的手法，越来越熟练了。',
+		],
+		en: [
+			'My hair is a mess now, and I do not mind.',
+			'Stroke it down and my eyes close on their own.',
+			'Pat my head, but do not treat me like a child.',
+			'Keep going and I will lean my head on you.',
+			'My scalp tingles — the good kind.',
+			'Do not stop. Or do. I am not deciding.',
+		],
+	},
+	patTailPart: {
+		zh: [
+			'尾巴不能随便摸的。',
+			'尾鳍很敏感，轻一点。',
+			'被抓住尾巴，我会软下去。',
+			'尾巴自己会摇，不怪我。',
+			'摸尾巴是要负责的。',
+			'这里连着心口，真的。',
+			'尾巴尖最怕痒。',
+			'别拉，会疼…也不会松。',
+			'尾巴缠上来了，是它自己想。',
+			'顺着鳞片摸，很舒服。',
+			'尾鳍张开了，别笑。',
+			'尾巴比嘴诚实。',
+			'这样摸，我会一直跟着你。',
+			'尾巴借你玩，别太用力。',
+		],
+		en: [
+			'My tail is not for just anyone.',
+			'The fluke is sensitive, go easy.',
+			'Grab my tail and I go soft.',
+			'It wags on its own, do not blame me.',
+			'My tail is more honest than my mouth.',
+			'Play with it gently and I will follow you around.',
+		],
+	},
+	patFeet: {
+		zh: [
+			'鞋带松了，帮我系一下？',
+			'脚踝很细的，别用力。',
+			'被抬起来的话，我会站不稳。',
+			'脚底怕痒，真的怕。',
+			'走了一天，有点酸。',
+			'别盯着看，会害羞。',
+			'袜口那里最敏感。',
+			'抱起来的时候，脚会晃。',
+			'轻轻捏一下就好，谢谢主人。',
+			'脚踝被握住，我整个人都僵了。',
+			'想让我跳起来吗？',
+			'这里不许亲。',
+			'鞋子是你挑的，我记得。',
+			'脚冷了，借我一点温度。',
+		],
+		en: [
+			'My shoelace is loose, would you tie it?',
+			'My ankle is slim, be gentle.',
+			'Lift me like that and I lose my footing.',
+			'My soles are ticklish, truly.',
+			'Hold my ankle and I freeze all over.',
+			'My feet are cold, lend me some warmth.',
+		],
+	}
 };
 
 (function mergePartLines(table) {
 	if (typeof DWM_LINES !== 'object' || DWM_LINES === null) return;
-	for (var lang in table) {
-		if (!Object.prototype.hasOwnProperty.call(table, lang)) continue;
-		if (typeof DWM_LINES[lang] !== 'object' || DWM_LINES[lang] === null) DWM_LINES[lang] = {};
-		for (var bank in table[lang]) {
-			if (!Object.prototype.hasOwnProperty.call(table[lang], bank)) continue;
-			var existing = Array.isArray(DWM_LINES[lang][bank]) ? DWM_LINES[lang][bank] : [];
-			DWM_LINES[lang][bank] = existing.concat(table[lang][bank]);
+	['zh', 'en'].forEach(function (language) {
+		if (typeof DWM_LINES[language] !== 'object' || DWM_LINES[language] === null) DWM_LINES[language] = {};
+		for (var bank in table) {
+			if (!Object.prototype.hasOwnProperty.call(table, bank)) continue;
+			var source = table[bank][language] || [];
+			if (source.length === 0) continue;
+			var existing = Array.isArray(DWM_LINES[language][bank]) ? DWM_LINES[language][bank] : [];
+			DWM_LINES[language][bank] = existing.concat(source);
 		}
-	}
+	});
 })(DWM_LINES_PARTS);
 
     /* ---- src/pose-map.js ---- */
@@ -6752,9 +6869,15 @@ var DWM_ZONES = [
 ];
 
 var DWM_ZONE_BANK = {
-	head: 'patHead', horn: 'patHorn', ear: 'patEar', face: 'patFace',
-	belly: 'patBelly', hand: 'patHand', waist: 'patWaist', feet: 'patFeet',
-	tail: 'patTail'
+	horn: ['patHorn', 'patHead'],
+	ear: ['patEar', 'patHead'],
+	face: ['patFace', 'patHead'],
+	head: ['patHeadPart', 'patHead'],
+	waist: ['patWaist', 'patBelly'],
+	hand: ['patHand', 'patBelly'],
+	belly: ['patBellyPart', 'patBelly'],
+	feet: ['patFeet', 'patBelly'],
+	tail: ['patTailPart', 'patTail'],
 };
 var DWM_ZONE_FX = {
 	head: 'heart', belly: 'sparkle', tail: 'note',
@@ -6784,7 +6907,7 @@ function dwmZoneReact(zone) {
 	var companion = dwmReadCompanion();
 	if (!companion.zones) return;
 	var language = dwmUiLanguage();
-	var bank = DWM_ZONE_BANK[zone] || 'patHead';
+	var banks = DWM_ZONE_BANK[zone] || ['patHead'];
 	var now = dwmNow();
 	/* Remember the tap so the pet's own click handler does not talk over it. */
 	DWM_RUNTIME.lastZoneAt = now;
@@ -6805,7 +6928,7 @@ function dwmZoneReact(zone) {
 	var type = 'pat-' + zone;
 	dwmGrowthApply(type);
 	dwmFx(DWM_ZONE_FX[zone] || 'heart', 2);
-	dwmSpeak(dwmPickLine(bank, language));
+	dwmSpeak(dwmPickLineFrom(banks, language));
 }
 
 function dwmAttachZones(element) {
