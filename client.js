@@ -6842,6 +6842,61 @@ function dwmStopCare() {
  * `head` appears three times: the headdress/upper-hair band, then the two long
  * side strands that hang beside the face.
  */
+/*
+ * Per-frame registration against the reference frame (`idle` #0), measured from
+ * the artwork itself: `s` is the rigid scale of the drawing, `dx`/`dy` its
+ * translation in pixels. Frame (`f`) draws the character as `s * idle + d`, so a
+ * click is mapped back with `(p - d) / s` before the rectangles are tested.
+ * Derived from the centre of mass, not the bounding box — for `walk` the bbox
+ * edge moves 27px because the tail tucks in, while the body really moves 2px.
+ */
+var DWM_HIT_REG = {
+	"drag#0": [0.900, 16.0, 0.0],
+	"drag#1": [0.900, 16.0, -4.0],
+	"drag#2": [0.900, 12.0, 0.0],
+	"eat#0": [1.020, 10.0, -2.0],
+	"eat#1": [1.020, 8.0, -4.0],
+	"eat#2": [1.020, 8.0, -2.0],
+	"idle#0": [1.000, 0.0, 0.0],
+	"idle#1": [0.995, -0.5, 0.0],
+	"idle#2": [1.000, 0.0, 0.0],
+	"joy#0": [0.965, 1.5, -3.5],
+	"joy#1": [0.970, 6.0, -5.0],
+	"play#0": [0.960, 16.0, 0.0],
+	"play#1": [0.940, 12.0, -4.0],
+	"play#2": [0.960, 12.0, 8.0],
+	"sad#0": [0.920, 2.0, -8.0],
+	"sad#1": [0.940, 2.0, -12.0],
+	"sad#2": [0.920, -2.0, -8.0],
+	"sleep#0": [0.980, 12.0, 22.0],
+	"sleep#1": [0.960, 10.0, 22.0],
+	"think#0": [1.015, 3.0, 0.0],
+	"think#1": [1.030, 1.0, -4.0],
+	"think#2": [1.010, -1.5, 0.0],
+	"wake#0": [1.040, 10.0, 2.0],
+	"wake#1": [1.020, 12.0, 2.0],
+	"walk#0": [0.860, 2.0, -2.0],
+	"walk#1": [0.860, 2.0, 2.0],
+	"walk#2": [0.880, 0.0, 4.0],
+	"welcome#0": [0.940, 6.0, -4.0],
+	"welcome#1": [0.940, 10.0, -4.0],
+	"wink#0": [0.890, 1.5, -12.5],
+	"work#0": [0.970, 2.5, -4.0],
+	"work#1": [0.985, 0.5, -8.0],
+	"work#2": [0.965, -1.0, -4.0],
+	'*': [1, 0, 0],
+};
+
+function dwmHitRegistration() {
+	var runtime = typeof DWM_RUNTIME === 'object' && DWM_RUNTIME !== null ? DWM_RUNTIME : null;
+	var state = runtime && typeof runtime.state === 'string' ? runtime.state : 'idle';
+	var frame = runtime && typeof runtime.frame === 'number' ? runtime.frame : 0;
+	var entry = DWM_HIT_REG[state + '#' + frame];
+	if (!entry) entry = DWM_HIT_REG[state + '#0'];
+	if (!entry) entry = DWM_HIT_REG['*'];
+	return { s: entry[0] || 1, dx: entry[1] || 0, dy: entry[2] || 0 };
+}
+
 var DWM_ZONES = [
 	/* ahoge — the only ink above y 43, padded up to the frame edge */
 	{ id: 'horn', x0: 0.300, y0: 0.000, x1: 0.550, y1: 0.200 },
@@ -6865,7 +6920,7 @@ var DWM_ZONES = [
 	/* whale tail sweeping to the right of the dress */
 	{ id: 'tail', x0: 0.650, y0: 0.490, x1: 1.000, y1: 0.900 },
 	/* shoes, clipped by the frame's bottom edge */
-	{ id: 'feet', x0: 0.320, y0: 0.910, x1: 0.510, y1: 1.000 }
+	{ id: 'feet', x0: 0.100, y0: 0.910, x1: 0.900, y1: 1.000 }
 ];
 
 var DWM_ZONE_BANK = {
@@ -6896,6 +6951,12 @@ var DWM_ZONE_STATE = {
 };
 
 function dwmHitZone(nx, ny) {
+	/* undo the pose transform so the idle-frame rects stay valid */
+	var reg = dwmHitRegistration();
+	if (reg.s !== 1 || reg.dx !== 0 || reg.dy !== 0) {
+		nx = (nx - reg.dx / 256) / reg.s;
+		ny = (ny - reg.dy / 256) / reg.s;
+	}
 	for (var i = 0; i < DWM_ZONES.length; i++) {
 		var zone = DWM_ZONES[i];
 		if (nx >= zone.x0 && nx <= zone.x1 && ny >= zone.y0 && ny <= zone.y1) return zone.id;
