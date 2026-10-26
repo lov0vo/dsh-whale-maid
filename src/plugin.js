@@ -69,6 +69,19 @@ function createPublicApi() {
 			window.dispatchEvent(new CustomEvent(DWM_EVENT_COMPANION));
 		},
 
+		/* --- 1.4.0 save file + mood ---------------------------------------- */
+
+		/** The whole save as a formatted JSON string. */
+		exportSave: dwmSaveExport,
+		/** Import a save; returns { ok, imported, skipped, reason }. */
+		importSave: dwmSaveImport,
+		/** Wipe every key the plugin owns. */
+		clearSave: dwmSaveClear,
+		/** Mood tier 0..4 (0 = lowest). */
+		moodTier: function () {
+			return dwmMoodTier(dwmGrowthRead().mood);
+		},
+
 		/* --- 1.1.0 companion API (additive) --------------------------------- */
 
 		/** Companion switches (work link, care, chip, zones, chatter —. */
@@ -189,6 +202,7 @@ function apply(ctx) {
 		return ctx.slots.register(
 			{
 				name: 'settings.section',
+				locale: 'dsh-whale-maid',
 				id: 'dsh-whale-maid',
 				order: 60,
 				label: function () {
@@ -204,6 +218,7 @@ function apply(ctx) {
 		return ctx.slots.register(
 			{
 				name: 'settings.section',
+				locale: 'dsh-whale-maid',
 				id: 'dsh-whale-maid-companion',
 				order: 61,
 				label: function () {

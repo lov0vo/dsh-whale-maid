@@ -59,6 +59,8 @@ var SAY_EVENT = 'dsh-whale-maid:say';
 var RESET_POS_EVENT = 'dsh-whale-maid:reset-position';
 
 /* Copy lines, verbatim from the site (zh), with an English rendering. */
+var DWM_RECALL_LABEL = { zh: '唤回桌宠', en: 'Bring her back' };
+
 var TEXTS = {
 	zh: {
 		petLabel: '鲸鱼女仆',
@@ -148,6 +150,7 @@ var DEFAULT_OPTIONS = {
 	bubbleDuration: BUBBLE_MS,
 	typewriter: true, // reveal bubble text one character at a time
 	city: '北京', // weather fallback city when geolocation is unavailable
+	hidden: false, // hide the pet, leave a small 🐋 button to bring her back
 	greetings: null, // override the greeting lines
 };
 
@@ -164,6 +167,7 @@ function normalizeOptions(input) {
 	options.sleep = options.sleep !== false;
 	options.walk = options.walk !== false;
 	options.typewriter = options.typewriter !== false;
+	options.hidden = options.hidden === true;
 	var city = typeof options.city === 'string' ? options.city.trim() : '';
 	options.city = city === '' ? '北京' : city;
 	if (!Array.isArray(options.greetings) || options.greetings.length === 0) options.greetings = null;
@@ -376,6 +380,9 @@ function WhaleGirl() {
 	var setBubble = bubbleState[1];
 
 	var menuState = useState(false);
+	var workGlowState = useState(false);
+	var workGlow = workGlowState[0];
+	var setWorkGlow = workGlowState[1];
 	var menuOpen = menuState[0];
 	var setMenuOpen = menuState[1];
 
@@ -433,6 +440,7 @@ function WhaleGirl() {
 		}
 		window.addEventListener(OPTIONS_EVENT, onOptions);
 		window.addEventListener(SAY_EVENT, onSay);
+		window.addEventListener(DWM_EVENT_WORK, onWorkGlow);
 		window.addEventListener(RESET_POS_EVENT, onResetPos);
 		return function () {
 			window.removeEventListener(OPTIONS_EVENT, onOptions);
@@ -442,7 +450,11 @@ function WhaleGirl() {
 	}, []);
 
 	/* --- speech bubble ------------------------------------------------- */
-	function say(message, tone) {
+	function onWorkGlow(event) {
+		setWorkGlow(!!(event && event.detail && event.detail.active));
+	}
+
+function say(message, tone) {
 		if (bubbleTimer.current !== undefined) clearTimeout(bubbleTimer.current);
 		setBubble({ id: Date.now(), text: message, tone: tone || '' });
 		bubbleTimer.current = setTimeout(function () {
@@ -599,7 +611,33 @@ function WhaleGirl() {
 	}
 
 	/* --- click: greet, toggle the action menu, wake up ------------------- */
-	function onClick() {
+	/* Alt + arrow keys move her; Shift makes it a bigger step. */
+function onBodyKeyDown(event) {
+		if (!event || !event.altKey) return;
+		var step = event.shiftKey ? 32 : 8;
+		var dx = event.key === 'ArrowLeft' ? -step : event.key === 'ArrowRight' ? step : 0;
+		var dy = event.key === 'ArrowUp' ? -step : event.key === 'ArrowDown' ? step : 0;
+		if (dx === 0 && dy === 0) return;
+		var element = bodyRef.current;
+		if (!element) return;
+		event.preventDefault();
+		var rect = element.getBoundingClientRect();
+		var next = {
+			x: clamp(rect.left + dx, RESIZE_GAP, window.innerWidth - rect.width - RESIZE_GAP),
+			y: clamp(rect.top + dy, RESIZE_GAP, window.innerHeight - rect.height - RESIZE_GAP),
+		};
+		setPos(next);
+		writeJSON(KEY_POS, next);
+	}
+
+function onRecall() {
+		var next = normalizeOptions(Object.assign({}, readOptions(), { hidden: false }));
+		writeJSON(KEY_OPTIONS, next);
+		if (typeof setOptions === "function") setOptions(next);
+		window.dispatchEvent(new CustomEvent(OPTIONS_EVENT));
+	}
+
+function onClick() {
 		if (suppressClick.current) {
 			suppressClick.current = false;
 			return;
@@ -992,10 +1030,11 @@ function WhaleGirl() {
 		'div',
 		{
 			ref: rootRef,
-			className: 'dwm-root',
+			className: options.hidden ? 'dwm-root dwm-root-hidden' : 'dwm-root',
 			style: style,
 			'data-dwm-pet-size': options.size !== null ? String(options.size) : undefined,
 			'data-dwm-lang': language,
+			'data-dwm-work': workGlow ? '1' : undefined,
 		},
 		h(
 			'div',
@@ -1042,6 +1081,7 @@ function WhaleGirl() {
 			'button',
 			{
 				ref: bodyRef,
+				onKeyDown: onBodyKeyDown,
 				type: 'button',
 				className: 'dwm',
 				'aria-label': text.petLabel,
@@ -1082,6 +1122,20 @@ function WhaleGirl() {
 		}),
 		/* 1.1.0 — companion layers. Both render nothing until they are asked to,
 		 * so with every companion switch off the DOM is identical to 1.0.0. */
+		options.hidden
+			? h(
+					'button',
+					{
+						type: 'button',
+						className: 'dwm-recall',
+						style: { pointerEvents: 'auto' },
+						'aria-label': DWM_RECALL_LABEL[language],
+						title: DWM_RECALL_LABEL[language],
+						onClick: onRecall,
+					},
+					'🐋',
+				)
+			: null,
 		h(DwmFxLayer, null),
 	);
 }

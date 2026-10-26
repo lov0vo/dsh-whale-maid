@@ -39,9 +39,11 @@ const MODULE_ID = pkg.name;
 /** Concatenation order. runtime first (shared state), plugin last (apply). */
 const SOURCES = [
 	'src/runtime.js',
+	'src/portable.js',
 	'src/lines.js',
 	'src/lines-more.js',
 	'src/lines-weather.js',
+	'src/lines-mood.js',
 	'src/growth.js',
 	'src/fx.js',
 	'src/pet.js',

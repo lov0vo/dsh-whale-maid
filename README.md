@@ -73,6 +73,26 @@
 
 以上暂时用现有姿态（`sad` / `think` / `joy`）代偿，等美术补齐后再替换。
 
+### 1.4.0 新增：工程与体感（不依赖生图的那一批）
+
+这一版把「四批计划」里所有不需要新美术的项做完了，外加存档导出/导入。
+
+| 项 | 做了什么 |
+| --- | --- |
+| `engines.dsh` | `package.json` 声明 `">=0.2.1-rc.1"`，装到过旧的宿主上会提前报错，而不是在渲染时神秘失败 |
+| CI | `.github/workflows/ci.yml`：Node 20/22/24 上 `node build.mjs` + 构建产物一致性检查 + `node --test` |
+| 无障碍 | 宠物可 `Tab` 聚焦；`Enter`/`Space` 打招呼；`Alt+↑↓←→` 每次移动 16px 并持久化位置；`:focus-visible` 有描边 |
+| 心情分层 | 由 2 档扩到 5 档（`moodLow` / `moodLowMid` / `moodMid` / `moodHighMid` / `moodHigh`），`moodTier()` 返回 0–4 |
+| 成就 | 41 → 55 条（等级、连续签到、台词、陪伴时长、天气、错误率等） |
+| 工作期光晕 | 工作相位时在精灵下方加一层呼吸光晕（`.dwm-glow`），`prefers-reduced-motion` 下关闭 |
+| 台词 | 546 → 600 条（每语言），新增心情 5 档与更多工作/关怀分支 |
+| 唤回入口 | 宠物隐藏后右下角留一个 🐋 按钮，点一下回来（`hidden` 开关） |
+| locale 服务 | `locale/zh.json` / `locale/en.json` 改为 gettext 风格（键=中文原文，43 条），设置面板文案可被翻译 |
+| 结构快照测试 | `test/snapshots/pet-tree.txt` 记录浮层元素树；另有「源码里用到的每个 `dwm-` 类都必须有 CSS 规则」检查 |
+| 存档导出/导入 | 设置面板「存档」区块：导出 JSON / 导入 / 清空，覆盖全部 `dsh-whale-maid:*` 键 |
+
+测试数 28 → **34**，全部通过。`client.js` 约 3.1 MB。
+
 ### 1.2.2 修复
 
 - **点击后桌宠消失**（1.2.1 回归）：打字机气泡组件用到的 React hook 别名声明在组件内部、模块作用域不可见，渲染气泡时抛 `ReferenceError` 并导致整个浮层槽位被卸载。已把别名提升到模块作用域，并加了静态回归测试。
@@ -170,7 +190,7 @@ target: <本仓库的绝对路径>
 
 > 这些开关只影响**陪伴层**。关掉全部开关后，宠物的行为与 1.0.0 完全一致。
 
-### 公开 API
+### 公开 API,1.4.0 追加四个方法：,,- `exportSave()` → 返回存档 JSON 字符串（`{ schema: "dsh-whale-maid/save", version: 1, data: {...} }`）,- `importSave(text)` → `{ ok: true }` 或 `{ ok: false, reason: "not-json" | "wrong-schema" | "wrong-version" }`,- `clearSave()` → 清空本插件全部存档键,- `moodTier()` → 当前心情档位 0–4,
 
 渲染进程里可用 `window.dshWhaleMaid`：
 
@@ -209,6 +229,29 @@ dshWhaleMaid.weather()                     // 缓存的天气记录（无则 nul
 dshWhaleMaid.refreshWeather()              // 立刻重新拉一次（同面板按钮）
 dshWhaleMaid.setCity('上海')                // 改备用城市并立即刷新
 ```
+
+## 姿态资源（27 姿态对照）
+
+参考插件按「姿态名」组织立绘，本插件按「状态」组织精灵表。为了让两边能对上，下表把 27 个姿态逐一映射到本插件的图片来源。
+
+| 姿态 | 图片来源 | 说明 |
+| --- | --- | --- |
+| `idle` | 精灵表 `idle.png` | 3 帧待机 |
+| `waiting` | `src/sprites/poses/waiting.png` | 独立立绘 |
+| `thinking` | 精灵表 `think.png` | 3 帧（伪帧）+ 浮动 |
+| `tool` | 精灵表 `work.png` | 3 帧（伪帧）+ 浮动 |
+| `success` | `poses/success.png` | 独立立绘（早前借 `joy`） |
+| `failure` | 精灵表 `sad.png` | 3 帧（伪帧） |
+| `curious` / `teasing` / `afk` / `blush` / `angry` / `star` | `poses/<名字>.png` | 独立立绘 |
+| `eat` | 精灵表 `eat.png` | 3 帧 |
+| `celebrate` | `poses/celebrate.png` | 独立立绘（早前借 `joy`） |
+| `sleep` | 精灵表 `sleep.png` | 2 帧 |
+| `greet` | 精灵表 `welcome.png` | 2 帧 |
+| `night` / `wink` / `bold` / `abstract` / `sweep` | `poses/<名字>.png` | 独立立绘 |
+| `workSlack` / `workRam` / `coolShades` / `workPat` / `balanceLow` | `poses/<名字>.png` | 独立立绘 |
+| `hidden` | —— | 参考插件里是 `null`，本插件用 `hidden` 开关 + 🐋 唤回按钮实现 |
+
+> `src/sprites/poses/` 里的 19 张是**素材库存**：它们已被生成、抠图、归一化到与精灵帧完全相同的规格（256×256、角色高 225px、脚底贴 `y=256`、`x=128` 居中），但**尚未接进状态机**——把某个姿态真正用起来需要一个「场合 → 姿态」的映射表，那属于功能决策，等确认口径后再接。
 
 ## 动作表
 
@@ -336,7 +379,7 @@ node --test test/companion.test.mjs
 2. 帧数不同的话，同步修改 `build.mjs` 的 `SHEETS` 表与 `src/pet.js` 的 `ANIM` 表（`frames` 字段）；
 3. 运行 `node build.mjs` 重新生成 `client.js`。
 
-## 已知限制
+## 已知限制,- **locale 表是静态生成的**：`locale/*.json` 由源码里的 `label(中文, English)` 对生成，改了文案要重新生成一次，否则翻译表会和界面不同步。,- **姿态素材未接线**：`src/sprites/poses/` 里的 19 张立绘是库存，当前状态机只用到 12 张精灵表；接线需要先定「场合 → 姿态」映射。
 
 - **天气陪伴需要联网**（Open-Meteo）。请求失败时沿用上次结果，超过 6 小时就不再提天气；完全离线时宠物其余功能不受影响。
 - 天气台词**只有中文**（英文界面会回退到中文，不会留空）。

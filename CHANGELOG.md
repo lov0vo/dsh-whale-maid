@@ -2,6 +2,34 @@
 
 本项目遵循 [语义化版本](https://semver.org/lang/zh-CN/)。
 
+## 1.4.0 — 2026-10-26
+
+工程与体感批次：把「四批计划」里所有不需要新美术的项做完，并加上存档导出/导入。
+
+### 新增
+
+- `engines.dsh: ">=0.2.1-rc.1"` 声明；`.github/workflows/ci.yml`（Node 20/22/24 构建 + 产物一致性 + 测试）。
+- 无障碍：`Tab` 聚焦、`Enter`/`Space` 打招呼、`Alt+方向键` 16px 微调并持久化、`:focus-visible` 描边。
+- 心情分层 2 → 5 档（`moodLow/Mid/LowMid/HighMid/High`），`moodTier()` 返回 0–4；新增 `src/lines-mood.js`（每语言 5 档 × 5 条）。
+- 成就 41 → 55 条。
+- 工作相位呼吸光晕 `.dwm-glow`（reduced-motion 下关闭）。
+- 台词 546 → 600 条/语言。
+- 唤回入口：`hidden` 开关 + 右下角 🐋 按钮。
+- `locale/zh.json`、`locale/en.json` 改为 gettext 风格（43 条），设置面板文案可翻译。
+- `src/portable.js`：`exportSave()` / `importSave()` / `clearSave()`，`schema = "dsh-whale-maid/save"`、`version = 1`，导入做 schema/version/键白名单校验。
+- 测试：结构快照（`test/snapshots/pet-tree.txt`）、`dwm-` 类与 CSS 规则一致性检查、存档往返、心情档位、`hidden` 可逆、1.4.0 API 存在性。测试 28 → 34。
+
+### 变更
+
+- `scripts.test` 改用 `node --test --test-force-exit`（宠物自身持有定时器，进程不会自然退出）。
+- `src/pet.css` 补上 `.dwm-panel-quest-text`、`.dwm-ach-name` 两条缺失规则。
+
+### 暂缓（等美术 / 等口径）
+
+- 19 张姿态立绘已生成并归一化到 `src/sprites/poses/`，**未接进状态机**——需要先定「场合 → 姿态」映射（待补充）。
+- 五种形态切换、拖拽惯性物理、羁绊 Lv 解锁动作：等授权。
+- 节日表、小游戏范围、TTS 播报细节、区县级天气精度：等口径。
+
 ## 1.3.0 — 2026-10-26
 
 ### 新增

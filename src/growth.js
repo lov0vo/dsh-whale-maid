@@ -466,6 +466,26 @@ var DWM_BOND_TITLES = [
 	{ zh: '像家人一样', en: 'Like family' }
 ];
 
+/** Mood tier 0..4: 0 very low, 2 neutral, 4 very high. */
+function dwmMoodTier(mood) {
+	var value = typeof mood === "number" && Number.isFinite(mood) ? mood : 70;
+	if (value < 15) return 0;
+	if (value < 40) return 1;
+	if (value < 60) return 2;
+	if (value < 90) return 3;
+	return 4;
+}
+
+/** Which line bank belongs to a mood value. */
+function dwmMoodBank(mood) {
+	var tier = dwmMoodTier(mood);
+	if (tier === 0) return 'moodVeryLow';
+	if (tier === 1) return 'moodLow';
+	if (tier === 2) return 'moodMid';
+	if (tier === 3) return 'moodHigh';
+	return 'moodVeryHigh';
+}
+
 function dwmBondTitle(level, language) {
 	var index = dwmClamp(Math.floor(Number(level) || 1) - 1, 0, DWM_BOND_TITLES.length - 1);
 	var entry = DWM_BOND_TITLES[index];

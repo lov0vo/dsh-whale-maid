@@ -14,7 +14,7 @@ window.__ModuleLoader__.load({
     var h = React.createElement;
 
     /* ---- src/pet.css ---- */
-    var STYLESHEET = "/*\n * dsh-whale-maid — sprite pet stylesheet.\n *\n * Source: the `dwm*` rule block of deepseek1024.com\n * (https://deepseek1024.com/assets/index-D3coedsb.css), copied rule-for-rule so\n * the extracted pet keeps its original motion: 3D sway, drag tilt, float, pop-in\n * bubble, bubble dots, heart particles, depth layer and shine.\n *\n * Three kinds of edits were made:\n *   1. The site's own CSS variables (--line/--surface/--ink/...) are re-declared\n *      on `.dwm-root` with DSH theme tokens (--dsw-alias-*) as the first\n *      choice and the original site values as fallbacks, so the bubble and the\n *      two action buttons follow the Harness light/dark theme instead of\n *      assuming the store site's palette.\n *   2. `--dwm-size` is driven by `--dwm-pet-size`, so the plugin's `size` option\n *      can resize the pet.\n *   3. Every descendant rule is scoped under `.dwm-root`, which lifts it\n *      from (0,1,0) to (0,2,0). This is required, not cosmetic: the pet body and\n *      the two action buttons are `<button type=\"button\">`, and the Harness\n *      shell ships button rules of the form `button[attr]` at specificity\n *      (0,1,1) that beat a bare class selector. Without scoping, the host's\n *      border-radius and background won and the round action buttons rendered as\n *      squircles over a stray host-coloured panel behind the pet.\n * Everything else — including the artwork colours, the perspective, the depth\n * blur and the keyframes — is the original.\n */\n\n.dwm-root {\n\t--dwm-size: var(--dwm-pet-size, 110px);\n\n\t/* Theme bridge: DSH alias tokens first, original site values as fallback. */\n\t--line: var(--dsw-alias-border-l2, #e2e4ea);\n\t--line-strong: var(--dsw-alias-border-l3, #cfd3dd);\n\t--surface: var(--dsw-alias-bg-layer-2, #fff);\n\t--surface-hover: var(--dsw-alias-interactive-bg-hover, #f4f5f8);\n\t--ink: var(--dsw-alias-label-primary, #1c1f26);\n\t--brand-dark: var(--dsw-alias-brand-primary, #2f5fbf);\n\t--brand-border: var(--dsw-alias-brand-primary, #2f5fbf);\n\t--accent-coral: #ef7a6d; /* artwork colour: heart particles */\n\t--shadow-rgb: 18 20 30;\n\t--shadow-sm: 0 1px 2px rgb(var(--shadow-rgb) / 12%);\n\t--shadow-md: 0 6px 18px rgb(var(--shadow-rgb) / 16%);\n\t--shadow-focus: 0 0 0 3px rgb(47 95 191 / 32%);\n\t--lift: translateY(-1px);\n\t--ease: cubic-bezier(.22,.61,.36,1);\n\t--duration-fast: .14s;\n\n\tz-index: 60;\n\twidth: var(--dwm-size);\n\theight: var(--dwm-size);\n\tperspective: 600px;\n\t/* `shell.overlay` is rendered as `.overlayLayer > *` with a rule that forces\n\t   `pointer-events:auto` on every direct child (specificity 0,1,1). A plain\n\t   class rule would lose and the whole pet box would swallow clicks meant for\n\t   the app behind it, so this must be `!important` (the inline style in the\n\t   component says the same thing). Only the pet body re-enables events. */\n\tpointer-events: none !important;\n\tposition: fixed;\n}\n\n.dwm-root .dwm {cursor:grab;pointer-events:auto;touch-action:none;width:100%;height:100%;transform:rotateX(var(--dwm-tilt-x,0deg)) rotateY(var(--dwm-tilt-y,0deg));transform-style:preserve-3d;background:0 0;border:0;padding:0;margin:0;font:inherit;color:inherit;box-sizing:border-box;appearance:none;-webkit-appearance:none;transition:transform .14s ease-out;position:absolute;inset:0}\n\n.dwm-root .dwm:hover,.dwm-root .dwm:focus-visible {cursor:grab}\n\n.dwm-root .dwm:focus-visible {box-shadow:var(--shadow-focus);outline:none}\n\n.dwm-root .dwm.is-dragging {cursor:grabbing;touch-action:none;-webkit-user-select:none;user-select:none;transition:none}\n\n.dwm-root .dwm-flip {width:100%;height:100%;transform-style:preserve-3d;transition:transform .3s var(--ease);display:block}\n\n.dwm-root .dwm-3d {width:100%;height:100%;transform-style:preserve-3d;will-change:transform;animation:8s ease-in-out infinite alternate dwm-sway;display:block}\n\n.dwm-root .dwm-sprite.dwm-depth {filter:blur(6px)brightness(.5)saturate(.75);pointer-events:none;position:absolute;inset:0;transform:translateZ(-32px)}\n\n.dwm-root .dwm-sprite {image-rendering:pixelated;filter:drop-shadow(0 12px 10px rgb(var(--shadow-rgb) / 30%));background-repeat:no-repeat;position:absolute;inset:0}\n\n.dwm-root .dwm-sprite.is-tilt {animation:.9s ease-in-out infinite alternate dwm-tilt}\n\n.dwm-root .dwm-sprite.is-float {animation:2.6s ease-in-out infinite dwm-float}\n\n/* Site glare layer: same #ffffff42 radial gradient as the store. The store can paint it\n * over the whole box because its page is light; on a dark theme that reads as a pale\n * rounded rectangle behind the character, so the component masks this layer with the\n * current sprite frame and the highlight only lands on the character itself. The 18%\n * radius is dropped because the mask already defines the visible shape. */\n.dwm-root .dwm-shine {pointer-events:none;background:radial-gradient(120% 70% at 32% 16%,#ffffff42,#0000 55%);position:absolute;inset:0;transform:translateZ(10px)}\n\n.dwm-root .dwm-shadow {background:rgb(var(--shadow-rgb) / 14%);pointer-events:none;border-radius:50%;height:10px;position:absolute;bottom:-4px;left:10%;right:10%}\n\n.dwm-root .dwm-pop {pointer-events:none;flex-direction:column;align-items:flex-end;gap:6px;display:flex;position:absolute;bottom:calc(100% + 10px);right:0}\n\n.dwm-root .dwm-bubble {box-sizing:border-box;border:1px solid var(--line);background:var(--surface);max-width:min(250px,100vw - 32px);box-shadow:var(--shadow-md);color:var(--ink);pointer-events:auto;animation:dwm-pop-in var(--duration-fast) var(--ease);border-radius:12px 12px 2px;margin:0;padding:8px 12px;font-size:13px;line-height:1.5}\n\n.dwm-root .dwm-menu {pointer-events:auto;gap:6px;display:flex}\n\n.dwm-root .dwm-action {border:1px solid var(--line);background:var(--surface);width:36px;height:36px;box-shadow:var(--shadow-sm);color:var(--brand-dark);cursor:pointer;box-sizing:border-box;margin:0;padding:0;font:inherit;appearance:none;-webkit-appearance:none;transition:border-color var(--duration-fast) var(--ease), background-color var(--duration-fast) var(--ease), transform var(--duration-fast) var(--ease);border-radius:50%;justify-content:center;align-items:center;display:inline-flex}\n\n.dwm-root .dwm-action:hover {border-color:var(--line-strong);background:var(--surface-hover);transform:var(--lift)}\n\n.dwm-root .dwm-action:focus-visible {box-shadow:var(--shadow-focus);outline:none}\n\n.dwm-root .dwm-bubble-dot {background:var(--brand-border);opacity:0;pointer-events:none;border-radius:50%;width:5px;height:5px;animation:6s ease-in infinite dwm-bubbles;position:absolute;bottom:18px;right:22%}\n\n.dwm-root .dwm-bubble-dot:nth-child(4) {animation-delay:2s;bottom:26px;right:18%}\n\n.dwm-root .dwm-bubble-dot:nth-child(5) {animation-delay:4s;bottom:24px;right:26%}\n\n.dwm-root .dwm-heart {color:var(--accent-coral);pointer-events:none;font-size:16px;line-height:1;animation:1.2s ease-out forwards dwm-heart-pop;position:absolute;bottom:26px;left:50%}\n\n@media (width<=680px) {.dwm-root:not([data-dwm-pet-size]){--dwm-pet-size:72px}.dwm-root .dwm-action{width:44px;height:44px}}\n\n@media (prefers-reduced-motion:reduce) {.dwm-root .dwm-3d,.dwm-root .dwm-sprite,.dwm-root .dwm-bubble-dot{animation:none}.dwm-root .dwm-depth{display:none}.dwm-root .dwm,.dwm-root .dwm-flip{transition:none}.dwm-root .dwm-bubble-dot{display:none}}\n\n/* ---- settings panel (plugin addition, not part of the source site) ---- */\n\n.dwm-settings {color:var(--dsw-alias-label-primary,#1c1f26);display:flex;flex-direction:column;gap:14px;font-size:13px;line-height:1.5}\n\n.dwm-settings-hint {color:var(--dsw-alias-label-secondary,#5b6270);margin:0;font-size:12px}\n\n.dwm-settings-row {display:flex;flex-direction:column;gap:6px}\n\n.dwm-settings-row-head {display:flex;justify-content:space-between;align-items:baseline;gap:12px}\n\n.dwm-settings-label {font-weight:600}\n\n.dwm-settings-value {color:var(--dsw-alias-label-secondary,#5b6270);font-variant-numeric:tabular-nums;font-size:12px}\n\n.dwm-settings input[type=\"range\"] {accent-color:var(--dsw-alias-brand-primary,#2f5fbf);width:100%;margin:0}\n\n.dwm-settings select {border:1px solid var(--dsw-alias-border-l2,#e2e4ea);background:var(--dsw-alias-bg-layer-1,#fff);color:inherit;border-radius:8px;padding:5px 8px;font:inherit}\n\n.dwm-settings-checks {display:flex;flex-wrap:wrap;gap:8px 18px}\n\n.dwm-settings-check {align-items:center;gap:6px;display:inline-flex;cursor:pointer}\n\n.dwm-settings-check input {accent-color:var(--dsw-alias-brand-primary,#2f5fbf);margin:0}\n\n.dwm-settings-actions {border-top:1px solid var(--dsw-alias-border-l1,#eceef2);gap:8px;padding-top:12px;display:flex;flex-wrap:wrap}\n\n.dwm-settings button {border:1px solid var(--dsw-alias-border-l2,#e2e4ea);background:var(--dsw-alias-bg-layer-1,#fff);color:inherit;border-radius:8px;padding:5px 12px;font:inherit;cursor:pointer}\n\n.dwm-settings button:hover {background:var(--dsw-alias-interactive-bg-hover,#f4f5f8)}\n\n.dwm-settings button:focus-visible {box-shadow:0 0 0 3px rgb(47 95 191 / 32%);outline:none}\n\n@keyframes dwm-sway {0%{transform:rotateY(-5deg)rotateX(1.5deg)}to{transform:rotateY(5deg)rotateX(-1.5deg)}}\n\n@keyframes dwm-tilt {0%{rotate(-6deg)}to{rotate(6deg)}}\n\n@keyframes dwm-float {0%,to{translateY(0)}50%{translateY(-4px)}}\n\n@keyframes dwm-pop-in {0%{opacity:0;transform:translateY(4px)scale(.96)}to{opacity:1;transform:none}}\n\n@keyframes dwm-bubbles {0%,62%{opacity:0}68%{opacity:.9}to{opacity:0;transform:translateY(-26px)}}\n\n@keyframes dwm-heart-pop {0%{opacity:0;transform:translateY(0)scale(.6)}15%{opacity:1}to{opacity:0;transform:translateY(-46px)scale(1.15)}}\n\n/* ---- 1.1.0 companion layers: status chip + particle FX ---- */\n\n.dwm-root .dwm-fx-layer {pointer-events:none;position:absolute;inset:0;overflow:visible}\n\n.dwm-root .dwm-fx {position:absolute;bottom:26px;font-size:14px;line-height:1;opacity:0;animation:1.5s ease-out forwards dwm-fx-rise}\n\n.dwm-root .dwm-fx-heart {color:var(--accent-coral)}\n\n.dwm-root .dwm-fx-star {color:#e8b53a}\n\n.dwm-root .dwm-fx-sparkle {color:var(--brand-border)}\n\n.dwm-root .dwm-fx-note {color:var(--brand-dark)}\n\n@keyframes dwm-fx-rise {0%{opacity:0;transform:translate(-50%,0) scale(.6)}15%{opacity:1}to{opacity:0;transform:translate(calc(-50% + var(--dwm-fx-drift,0px)),-52px) scale(1.1)}}\n\n/* ---- 1.1.0 companion panel (settings.section, second section) ---- */\n\n.dwm-panel-hero {display:flex;align-items:center;gap:12px;border:1px solid var(--dsw-alias-border-l1,#eceef2);border-radius:12px;padding:10px 12px;background:var(--dsw-alias-bg-layer-2,#f7f8fa)}\n\n.dwm-panel-level {font-weight:700;font-size:18px;color:var(--dsw-alias-brand-primary,#2f5fbf);font-variant-numeric:tabular-nums}\n\n.dwm-panel-hero-text {display:flex;flex-direction:column;gap:2px;font-size:12px}\n\n.dwm-panel-hero-text strong {font-size:13px}\n\n.dwm-panel-hero-text span {color:var(--dsw-alias-label-secondary,#5b6270)}\n\n.dwm-panel-title {margin:6px 0 0;font-size:13px;font-weight:600}\n\n.dwm-panel-muted {color:var(--dsw-alias-label-secondary,#5b6270);margin:0;font-size:12px}\n\n.dwm-panel-stat {align-items:center;gap:2px 12px;grid-template-columns:1fr auto;display:grid;font-size:12px}\n\n.dwm-panel-stat-label {color:var(--dsw-alias-label-secondary,#5b6270)}\n\n.dwm-panel-stat-value {font-variant-numeric:tabular-nums}\n\n.dwm-panel-bar {background:var(--dsw-alias-border-l1,#eceef2);border-radius:999px;grid-column:1/-1;height:6px;overflow:hidden}\n\n.dwm-panel-bar-fill {border-radius:999px;height:100%;transition:width .3s var(--ease);display:block}\n\n.dwm-panel-bar-mood {background:linear-gradient(90deg,#f0a5a0,#ef7a6d)}\n\n.dwm-panel-bar-satiety {background:linear-gradient(90deg,#9fd6b4,#4fae7d)}\n\n.dwm-panel-bar-affinity {background:linear-gradient(90deg,#a9c3ef,#2f5fbf)}\n\n.dwm-panel-quests {flex-direction:column;gap:6px;margin:0;padding:0;list-style:none;display:flex}\n\n.dwm-panel-quest {align-items:center;justify-content:space-between;gap:10px;font-size:12px;display:flex}\n\n.dwm-panel-quest.is-claimed {opacity:.55}\n\n.dwm-panel-board {align-items:center;gap:6px;flex-wrap:wrap;display:flex}\n\n.dwm-panel-cell {width:26px;height:26px;border:1px solid var(--dsw-alias-border-l2,#e2e4ea);border-radius:8px;justify-content:center;align-items:center;font-size:12px;display:inline-flex;color:var(--dsw-alias-label-tertiary,#8b93a1)}\n\n.dwm-panel-cell.is-on {background:rgb(47 95 191 / 12%);border-color:rgb(47 95 191 / 35%);color:inherit}\n\n.dwm-panel-achievements {flex-wrap:wrap;gap:6px;display:flex}\n\n.dwm-ach {align-items:center;gap:5px;border:1px solid var(--dsw-alias-border-l2,#e2e4ea);border-radius:999px;padding:3px 9px;font-size:11px;display:inline-flex;color:var(--dsw-alias-label-tertiary,#8b93a1);filter:grayscale(1);opacity:.6}\n\n.dwm-ach.is-on {filter:none;opacity:1;color:inherit;background:rgb(47 95 191 / 8%);border-color:rgb(47 95 191 / 35%)}\n\n.dwm-ach-icon {font-size:12px;line-height:1}\n\n.dwm-panel-diary {flex-direction:column;gap:4px;margin:0;padding:0;font-size:12px;list-style:none;display:flex;color:var(--dsw-alias-label-secondary,#5b6270)}\n\n@media (prefers-reduced-motion:reduce) {.dwm-root .dwm-fx,.dwm-root .dwm-fx{display:none}}\n\n\n/* --- typewriter caret (1.2.1) ----------------------------------------- */\n.dwm-root .dwm-caret {\n\tdisplay: inline-block;\n\twidth: 2px;\n\theight: 1em;\n\tmargin-left: 1px;\n\tvertical-align: -0.15em;\n\tbackground: currentColor;\n\topacity: 0.75;\n\tanimation: dwm-caret 0.9s steps(2, start) infinite;\n}\n\n@keyframes dwm-caret {\n\t0%,\n\t49% {\n\t\topacity: 0.75;\n\t}\n\t50%,\n\t100% {\n\t\topacity: 0;\n\t}\n}\n\n@media (prefers-reduced-motion: reduce) {\n\t.dwm-root .dwm-caret {\n\t\tanimation: none;\n\t}\n}\r\n\n/* --- bubble sizing (1.2.1) -------------------------------------------- */\n/* The pop container is shrink-to-fit inside a 110px root, which used to\n   wrap every bubble into a narrow column. Let it size to the text instead. */\n.dwm-root .dwm-pop {\n\twidth: max-content;\n\tmax-width: min(250px, 100vw - 32px);\n}\n\n/* --- bubble tones (1.3.0) --------------------------------------------- */\n/* The status chip is gone; the tone now tints the single speech bubble. */\n.dwm-root .dwm-bubble-work {\n\tborder-color: var(--dsw-alias-brand-primary, #2f5fbf);\n}\n.dwm-root .dwm-bubble-ok {\n\tborder-color: var(--dsw-alias-state-success-primary, #3fb950);\n}\n.dwm-root .dwm-bubble-error {\n\tborder-color: var(--dsw-alias-state-error-primary, #e5534b);\n}\n\n/* ---- 1.3.0 weather companion ---- */\n\n.dwm-panel-weather {display:flex;flex-direction:column;gap:8px}\n.dwm-panel-weather-line {color:var(--dsw-alias-label-secondary,#5b6270);font-size:12px;font-variant-numeric:tabular-nums}\n.dwm-panel-weather-row {display:flex;align-items:center;gap:8px}\n.dwm-panel-weather-input {\n\tflex:1 1 auto;\n\tmin-width:0;\n\tpadding:6px 10px;\n\tborder:1px solid var(--dsw-alias-border-l2,#e2e4ea);\n\tborder-radius:8px;\n\tbackground:var(--dsw-alias-bg-layer-1,#fff);\n\tcolor:var(--dsw-alias-label-primary,#1c1f26);\n\tfont:inherit;\n\tfont-size:12px;\n\tappearance:none;\n\t-webkit-appearance:none;\n}\n.dwm-panel-weather-input:focus-visible {outline:2px solid var(--dsw-alias-brand-primary,#2f5fbf);outline-offset:1px}\n.dwm-panel-weather-button {\n\tflex:0 0 auto;\n\tpadding:6px 12px;\n\tborder:1px solid var(--dsw-alias-border-l2,#e2e4ea);\n\tborder-radius:8px;\n\tbackground:var(--dsw-alias-bg-layer-2,#f7f8fa);\n\tcolor:var(--dsw-alias-label-primary,#1c1f26);\n\tfont:inherit;\n\tfont-size:12px;\n\tcursor:pointer;\n\tappearance:none;\n\t-webkit-appearance:none;\n}\n.dwm-panel-weather-button:hover {background:var(--dsw-alias-interactive-bg-hover,#eef0f4)}\n\n/* weather particles reuse the existing FX layer */\n.dwm-root .dwm-fx-rain {color:#5b93e0}\n.dwm-root .dwm-fx-snow {color:#9fc7e8}\n";
+    var STYLESHEET = "/*\n * dsh-whale-maid — sprite pet stylesheet.\n *\n * Source: the `dwm*` rule block of deepseek1024.com\n * (https://deepseek1024.com/assets/index-D3coedsb.css), copied rule-for-rule so\n * the extracted pet keeps its original motion: 3D sway, drag tilt, float, pop-in\n * bubble, bubble dots, heart particles, depth layer and shine.\n *\n * Three kinds of edits were made:\n *   1. The site's own CSS variables (--line/--surface/--ink/...) are re-declared\n *      on `.dwm-root` with DSH theme tokens (--dsw-alias-*) as the first\n *      choice and the original site values as fallbacks, so the bubble and the\n *      two action buttons follow the Harness light/dark theme instead of\n *      assuming the store site's palette.\n *   2. `--dwm-size` is driven by `--dwm-pet-size`, so the plugin's `size` option\n *      can resize the pet.\n *   3. Every descendant rule is scoped under `.dwm-root`, which lifts it\n *      from (0,1,0) to (0,2,0). This is required, not cosmetic: the pet body and\n *      the two action buttons are `<button type=\"button\">`, and the Harness\n *      shell ships button rules of the form `button[attr]` at specificity\n *      (0,1,1) that beat a bare class selector. Without scoping, the host's\n *      border-radius and background won and the round action buttons rendered as\n *      squircles over a stray host-coloured panel behind the pet.\n * Everything else — including the artwork colours, the perspective, the depth\n * blur and the keyframes — is the original.\n */\n\n.dwm-root {\n\t--dwm-size: var(--dwm-pet-size, 110px);\n\n\t/* Theme bridge: DSH alias tokens first, original site values as fallback. */\n\t--line: var(--dsw-alias-border-l2, #e2e4ea);\n\t--line-strong: var(--dsw-alias-border-l3, #cfd3dd);\n\t--surface: var(--dsw-alias-bg-layer-2, #fff);\n\t--surface-hover: var(--dsw-alias-interactive-bg-hover, #f4f5f8);\n\t--ink: var(--dsw-alias-label-primary, #1c1f26);\n\t--brand-dark: var(--dsw-alias-brand-primary, #2f5fbf);\n\t--brand-border: var(--dsw-alias-brand-primary, #2f5fbf);\n\t--accent-coral: #ef7a6d; /* artwork colour: heart particles */\n\t--shadow-rgb: 18 20 30;\n\t--shadow-sm: 0 1px 2px rgb(var(--shadow-rgb) / 12%);\n\t--shadow-md: 0 6px 18px rgb(var(--shadow-rgb) / 16%);\n\t--shadow-focus: 0 0 0 3px rgb(47 95 191 / 32%);\n\t--lift: translateY(-1px);\n\t--ease: cubic-bezier(.22,.61,.36,1);\n\t--duration-fast: .14s;\n\n\tz-index: 60;\n\twidth: var(--dwm-size);\n\theight: var(--dwm-size);\n\tperspective: 600px;\n\t/* `shell.overlay` is rendered as `.overlayLayer > *` with a rule that forces\n\t   `pointer-events:auto` on every direct child (specificity 0,1,1). A plain\n\t   class rule would lose and the whole pet box would swallow clicks meant for\n\t   the app behind it, so this must be `!important` (the inline style in the\n\t   component says the same thing). Only the pet body re-enables events. */\n\tpointer-events: none !important;\n\tposition: fixed;\n}\n\n.dwm-root .dwm {cursor:grab;pointer-events:auto;touch-action:none;width:100%;height:100%;transform:rotateX(var(--dwm-tilt-x,0deg)) rotateY(var(--dwm-tilt-y,0deg));transform-style:preserve-3d;background:0 0;border:0;padding:0;margin:0;font:inherit;color:inherit;box-sizing:border-box;appearance:none;-webkit-appearance:none;transition:transform .14s ease-out;position:absolute;inset:0}\n\n.dwm-root .dwm:hover,.dwm-root .dwm:focus-visible {cursor:grab}\n\n.dwm-root .dwm:focus-visible {box-shadow:var(--shadow-focus);outline:none}\n\n.dwm-root .dwm.is-dragging {cursor:grabbing;touch-action:none;-webkit-user-select:none;user-select:none;transition:none}\n\n.dwm-root .dwm-flip {width:100%;height:100%;transform-style:preserve-3d;transition:transform .3s var(--ease);display:block}\n\n.dwm-root .dwm-3d {width:100%;height:100%;transform-style:preserve-3d;will-change:transform;animation:8s ease-in-out infinite alternate dwm-sway;display:block}\n\n.dwm-root .dwm-sprite.dwm-depth {filter:blur(6px)brightness(.5)saturate(.75);pointer-events:none;position:absolute;inset:0;transform:translateZ(-32px)}\n\n.dwm-root .dwm-sprite {image-rendering:pixelated;filter:drop-shadow(0 12px 10px rgb(var(--shadow-rgb) / 30%));background-repeat:no-repeat;position:absolute;inset:0}\n\n.dwm-root .dwm-sprite.is-tilt {animation:.9s ease-in-out infinite alternate dwm-tilt}\n\n.dwm-root .dwm-sprite.is-float {animation:2.6s ease-in-out infinite dwm-float}\n\n/* Site glare layer: same #ffffff42 radial gradient as the store. The store can paint it\n * over the whole box because its page is light; on a dark theme that reads as a pale\n * rounded rectangle behind the character, so the component masks this layer with the\n * current sprite frame and the highlight only lands on the character itself. The 18%\n * radius is dropped because the mask already defines the visible shape. */\n.dwm-root .dwm-shine {pointer-events:none;background:radial-gradient(120% 70% at 32% 16%,#ffffff42,#0000 55%);position:absolute;inset:0;transform:translateZ(10px)}\n\n.dwm-root .dwm-shadow {background:rgb(var(--shadow-rgb) / 14%);pointer-events:none;border-radius:50%;height:10px;position:absolute;bottom:-4px;left:10%;right:10%}\n\n.dwm-root .dwm-pop {pointer-events:none;flex-direction:column;align-items:flex-end;gap:6px;display:flex;position:absolute;bottom:calc(100% + 10px);right:0}\n\n.dwm-root .dwm-bubble {box-sizing:border-box;border:1px solid var(--line);background:var(--surface);max-width:min(250px,100vw - 32px);box-shadow:var(--shadow-md);color:var(--ink);pointer-events:auto;animation:dwm-pop-in var(--duration-fast) var(--ease);border-radius:12px 12px 2px;margin:0;padding:8px 12px;font-size:13px;line-height:1.5}\n\n.dwm-root .dwm-menu {pointer-events:auto;gap:6px;display:flex}\n\n.dwm-root .dwm-action {border:1px solid var(--line);background:var(--surface);width:36px;height:36px;box-shadow:var(--shadow-sm);color:var(--brand-dark);cursor:pointer;box-sizing:border-box;margin:0;padding:0;font:inherit;appearance:none;-webkit-appearance:none;transition:border-color var(--duration-fast) var(--ease), background-color var(--duration-fast) var(--ease), transform var(--duration-fast) var(--ease);border-radius:50%;justify-content:center;align-items:center;display:inline-flex}\n\n.dwm-root .dwm-action:hover {border-color:var(--line-strong);background:var(--surface-hover);transform:var(--lift)}\n\n.dwm-root .dwm-action:focus-visible {box-shadow:var(--shadow-focus);outline:none}\n\n.dwm-root .dwm-bubble-dot {background:var(--brand-border);opacity:0;pointer-events:none;border-radius:50%;width:5px;height:5px;animation:6s ease-in infinite dwm-bubbles;position:absolute;bottom:18px;right:22%}\n\n.dwm-root .dwm-bubble-dot:nth-child(4) {animation-delay:2s;bottom:26px;right:18%}\n\n.dwm-root .dwm-bubble-dot:nth-child(5) {animation-delay:4s;bottom:24px;right:26%}\n\n.dwm-root .dwm-heart {color:var(--accent-coral);pointer-events:none;font-size:16px;line-height:1;animation:1.2s ease-out forwards dwm-heart-pop;position:absolute;bottom:26px;left:50%}\n\n@media (width<=680px) {.dwm-root:not([data-dwm-pet-size]){--dwm-pet-size:72px}.dwm-root .dwm-action{width:44px;height:44px}}\n\n/* Quest text and achievement names are plain labels; the classes exist\n   so the structure snapshot test can assert them. */\n.dwm-root .dwm-panel-quest-text {\n\tcolor: var(--dsw-alias-label-secondary, #6b7280);\n\tfont-size: 12px;\n\tline-height: 1.4;\n}\n.dwm-root .dwm-ach-name {\n\tcolor: var(--dsw-alias-label-primary, #1c1f26);\n\tfont-size: 12px;\n\tline-height: 1.4;\n}\n\n@media (prefers-reduced-motion:reduce) {.dwm-root .dwm-3d,.dwm-root .dwm-sprite,.dwm-root .dwm-bubble-dot{animation:none}.dwm-root .dwm-depth{display:none}.dwm-root .dwm,.dwm-root .dwm-flip{transition:none}.dwm-root .dwm-bubble-dot{display:none}}\n\n/* ---- settings panel (plugin addition, not part of the source site) ---- */\n\n.dwm-settings {color:var(--dsw-alias-label-primary,#1c1f26);display:flex;flex-direction:column;gap:14px;font-size:13px;line-height:1.5}\n\n.dwm-settings-hint {color:var(--dsw-alias-label-secondary,#5b6270);margin:0;font-size:12px}\n\n.dwm-settings-row {display:flex;flex-direction:column;gap:6px}\n\n.dwm-settings-row-head {display:flex;justify-content:space-between;align-items:baseline;gap:12px}\n\n.dwm-settings-label {font-weight:600}\n\n.dwm-settings-value {color:var(--dsw-alias-label-secondary,#5b6270);font-variant-numeric:tabular-nums;font-size:12px}\n\n.dwm-settings input[type=\"range\"] {accent-color:var(--dsw-alias-brand-primary,#2f5fbf);width:100%;margin:0}\n\n.dwm-settings select {border:1px solid var(--dsw-alias-border-l2,#e2e4ea);background:var(--dsw-alias-bg-layer-1,#fff);color:inherit;border-radius:8px;padding:5px 8px;font:inherit}\n\n.dwm-settings-checks {display:flex;flex-wrap:wrap;gap:8px 18px}\n\n.dwm-settings-check {align-items:center;gap:6px;display:inline-flex;cursor:pointer}\n\n.dwm-settings-check input {accent-color:var(--dsw-alias-brand-primary,#2f5fbf);margin:0}\n\n.dwm-settings-actions {border-top:1px solid var(--dsw-alias-border-l1,#eceef2);gap:8px;padding-top:12px;display:flex;flex-wrap:wrap}\n\n.dwm-settings button {border:1px solid var(--dsw-alias-border-l2,#e2e4ea);background:var(--dsw-alias-bg-layer-1,#fff);color:inherit;border-radius:8px;padding:5px 12px;font:inherit;cursor:pointer}\n\n.dwm-settings button:hover {background:var(--dsw-alias-interactive-bg-hover,#f4f5f8)}\n\n.dwm-settings button:focus-visible {box-shadow:0 0 0 3px rgb(47 95 191 / 32%);outline:none}\n\n@keyframes dwm-sway {0%{transform:rotateY(-5deg)rotateX(1.5deg)}to{transform:rotateY(5deg)rotateX(-1.5deg)}}\n\n@keyframes dwm-tilt {0%{rotate(-6deg)}to{rotate(6deg)}}\n\n@keyframes dwm-float {0%,to{translateY(0)}50%{translateY(-4px)}}\n\n@keyframes dwm-pop-in {0%{opacity:0;transform:translateY(4px)scale(.96)}to{opacity:1;transform:none}}\n\n@keyframes dwm-bubbles {0%,62%{opacity:0}68%{opacity:.9}to{opacity:0;transform:translateY(-26px)}}\n\n@keyframes dwm-heart-pop {0%{opacity:0;transform:translateY(0)scale(.6)}15%{opacity:1}to{opacity:0;transform:translateY(-46px)scale(1.15)}}\n\n/* ---- 1.1.0 companion layers: status chip + particle FX ---- */\n\n.dwm-root .dwm-fx-layer {pointer-events:none;position:absolute;inset:0;overflow:visible}\n\n.dwm-root .dwm-fx {position:absolute;bottom:26px;font-size:14px;line-height:1;opacity:0;animation:1.5s ease-out forwards dwm-fx-rise}\n\n.dwm-root .dwm-fx-heart {color:var(--accent-coral)}\n\n.dwm-root .dwm-fx-star {color:#e8b53a}\n\n.dwm-root .dwm-fx-sparkle {color:var(--brand-border)}\n\n.dwm-root .dwm-fx-note {color:var(--brand-dark)}\n\n@keyframes dwm-fx-rise {0%{opacity:0;transform:translate(-50%,0) scale(.6)}15%{opacity:1}to{opacity:0;transform:translate(calc(-50% + var(--dwm-fx-drift,0px)),-52px) scale(1.1)}}\n\n/* ---- 1.1.0 companion panel (settings.section, second section) ---- */\n\n.dwm-panel-hero {display:flex;align-items:center;gap:12px;border:1px solid var(--dsw-alias-border-l1,#eceef2);border-radius:12px;padding:10px 12px;background:var(--dsw-alias-bg-layer-2,#f7f8fa)}\n\n.dwm-panel-level {font-weight:700;font-size:18px;color:var(--dsw-alias-brand-primary,#2f5fbf);font-variant-numeric:tabular-nums}\n\n.dwm-panel-hero-text {display:flex;flex-direction:column;gap:2px;font-size:12px}\n\n.dwm-panel-hero-text strong {font-size:13px}\n\n.dwm-panel-hero-text span {color:var(--dsw-alias-label-secondary,#5b6270)}\n\n.dwm-panel-title {margin:6px 0 0;font-size:13px;font-weight:600}\n\n.dwm-panel-muted {color:var(--dsw-alias-label-secondary,#5b6270);margin:0;font-size:12px}\n\n.dwm-panel-stat {align-items:center;gap:2px 12px;grid-template-columns:1fr auto;display:grid;font-size:12px}\n\n.dwm-panel-stat-label {color:var(--dsw-alias-label-secondary,#5b6270)}\n\n.dwm-panel-stat-value {font-variant-numeric:tabular-nums}\n\n.dwm-panel-bar {background:var(--dsw-alias-border-l1,#eceef2);border-radius:999px;grid-column:1/-1;height:6px;overflow:hidden}\n\n.dwm-panel-bar-fill {border-radius:999px;height:100%;transition:width .3s var(--ease);display:block}\n\n.dwm-panel-bar-mood {background:linear-gradient(90deg,#f0a5a0,#ef7a6d)}\n\n.dwm-panel-bar-satiety {background:linear-gradient(90deg,#9fd6b4,#4fae7d)}\n\n.dwm-panel-bar-affinity {background:linear-gradient(90deg,#a9c3ef,#2f5fbf)}\n\n.dwm-panel-quests {flex-direction:column;gap:6px;margin:0;padding:0;list-style:none;display:flex}\n\n.dwm-panel-quest {align-items:center;justify-content:space-between;gap:10px;font-size:12px;display:flex}\n\n.dwm-panel-quest.is-claimed {opacity:.55}\n\n.dwm-panel-board {align-items:center;gap:6px;flex-wrap:wrap;display:flex}\n\n.dwm-panel-cell {width:26px;height:26px;border:1px solid var(--dsw-alias-border-l2,#e2e4ea);border-radius:8px;justify-content:center;align-items:center;font-size:12px;display:inline-flex;color:var(--dsw-alias-label-tertiary,#8b93a1)}\n\n.dwm-panel-cell.is-on {background:rgb(47 95 191 / 12%);border-color:rgb(47 95 191 / 35%);color:inherit}\n\n.dwm-panel-achievements {flex-wrap:wrap;gap:6px;display:flex}\n\n.dwm-ach {align-items:center;gap:5px;border:1px solid var(--dsw-alias-border-l2,#e2e4ea);border-radius:999px;padding:3px 9px;font-size:11px;display:inline-flex;color:var(--dsw-alias-label-tertiary,#8b93a1);filter:grayscale(1);opacity:.6}\n\n.dwm-ach.is-on {filter:none;opacity:1;color:inherit;background:rgb(47 95 191 / 8%);border-color:rgb(47 95 191 / 35%)}\n\n.dwm-ach-icon {font-size:12px;line-height:1}\n\n.dwm-panel-diary {flex-direction:column;gap:4px;margin:0;padding:0;font-size:12px;list-style:none;display:flex;color:var(--dsw-alias-label-secondary,#5b6270)}\n\n@media (prefers-reduced-motion:reduce) {.dwm-root .dwm-fx,.dwm-root .dwm-fx{display:none}}\n\n\n/* --- typewriter caret (1.2.1) ----------------------------------------- */\n.dwm-root .dwm-caret {\n\tdisplay: inline-block;\n\twidth: 2px;\n\theight: 1em;\n\tmargin-left: 1px;\n\tvertical-align: -0.15em;\n\tbackground: currentColor;\n\topacity: 0.75;\n\tanimation: dwm-caret 0.9s steps(2, start) infinite;\n}\n\n@keyframes dwm-caret {\n\t0%,\n\t49% {\n\t\topacity: 0.75;\n\t}\n\t50%,\n\t100% {\n\t\topacity: 0;\n\t}\n}\n\n@media (prefers-reduced-motion: reduce) {\n\t.dwm-root .dwm-caret {\n\t\tanimation: none;\n\t}\n}\r\n\n/* --- bubble sizing (1.2.1) -------------------------------------------- */\n/* The pop container is shrink-to-fit inside a 110px root, which used to\n   wrap every bubble into a narrow column. Let it size to the text instead. */\n.dwm-root .dwm-pop {\n\twidth: max-content;\n\tmax-width: min(250px, 100vw - 32px);\n}\n\n/* --- bubble tones (1.3.0) --------------------------------------------- */\n/* The status chip is gone; the tone now tints the single speech bubble. */\n.dwm-root .dwm-bubble-work {\n\tborder-color: var(--dsw-alias-brand-primary, #2f5fbf);\n}\n.dwm-root .dwm-bubble-ok {\n\tborder-color: var(--dsw-alias-state-success-primary, #3fb950);\n}\n.dwm-root .dwm-bubble-error {\n\tborder-color: var(--dsw-alias-state-error-primary, #e5534b);\n}\n\n/* ---- 1.3.0 weather companion ---- */\n\n.dwm-panel-weather {display:flex;flex-direction:column;gap:8px}\n.dwm-panel-weather-line {color:var(--dsw-alias-label-secondary,#5b6270);font-size:12px;font-variant-numeric:tabular-nums}\n.dwm-panel-weather-row {display:flex;align-items:center;gap:8px}\n.dwm-panel-weather-input {\n\tflex:1 1 auto;\n\tmin-width:0;\n\tpadding:6px 10px;\n\tborder:1px solid var(--dsw-alias-border-l2,#e2e4ea);\n\tborder-radius:8px;\n\tbackground:var(--dsw-alias-bg-layer-1,#fff);\n\tcolor:var(--dsw-alias-label-primary,#1c1f26);\n\tfont:inherit;\n\tfont-size:12px;\n\tappearance:none;\n\t-webkit-appearance:none;\n}\n.dwm-panel-weather-input:focus-visible {outline:2px solid var(--dsw-alias-brand-primary,#2f5fbf);outline-offset:1px}\n.dwm-panel-weather-button {\n\tflex:0 0 auto;\n\tpadding:6px 12px;\n\tborder:1px solid var(--dsw-alias-border-l2,#e2e4ea);\n\tborder-radius:8px;\n\tbackground:var(--dsw-alias-bg-layer-2,#f7f8fa);\n\tcolor:var(--dsw-alias-label-primary,#1c1f26);\n\tfont:inherit;\n\tfont-size:12px;\n\tcursor:pointer;\n\tappearance:none;\n\t-webkit-appearance:none;\n}\n.dwm-panel-weather-button:hover {background:var(--dsw-alias-interactive-bg-hover,#eef0f4)}\n\n/* weather particles reuse the existing FX layer */\n.dwm-root .dwm-fx-rain {color:#5b93e0}\n.dwm-root .dwm-fx-snow {color:#9fc7e8}\n\n/* ---- 1.4.0: work glow, focus rings, recall button, save box ---- */\n\n/* A soft halo while a turn is running, so the state reads at a glance. */\n.dwm-root[data-dwm-work='1'] .dwm-3d::after {\n\tcontent: \"\";\n\tposition: absolute;\n\tinset: -12%;\n\tborder-radius: 50%;\n\tbackground: radial-gradient(closest-side, rgb(120 180 255 / 32%), rgb(120 180 255 / 0%) 72%);\n\tanimation: dwm-glow 2.6s ease-in-out infinite;\n\tpointer-events: none;\n\ttransform: translateZ(-8px);\n}\n\n@keyframes dwm-glow {\n\t0%,\n\t100% {\n\t\topacity: 0.35;\n\t}\n\t50% {\n\t\topacity: 0.9;\n\t}\n}\n\n/* Keyboard users need to see where they are. */\n.dwm-root .dwm:focus-visible,\n.dwm-root .dwm-action:focus-visible,\n.dwm-root .dwm-recall:focus-visible {\n\toutline: 2px solid var(--dsw-alias-brand-primary, #4b8bf5);\n\toutline-offset: 3px;\n\tborder-radius: 14px;\n}\n\n/* Hidden: everything disappears except the recall button. */\n.dwm-root.dwm-root-hidden .dwm-pop,\n.dwm-root.dwm-root-hidden .dwm,\n.dwm-root.dwm-root-hidden .dwm-shadow,\n.dwm-root.dwm-root-hidden .dwm-bubble-dot,\n.dwm-root.dwm-root-hidden .dwm-fx-layer {\n\tdisplay: none;\n}\n\n.dwm-root .dwm-recall {\n\tposition: absolute;\n\tright: 0;\n\tbottom: 0;\n\twidth: 36px;\n\theight: 36px;\n\tdisplay: grid;\n\tplace-items: center;\n\tfont-size: 18px;\n\tline-height: 1;\n\tborder-radius: 50%;\n\tborder: 1px solid var(--dsw-alias-border-l2, #e2e4ea);\n\tbackground: var(--dsw-alias-bg-layer-2, #fff);\n\tcolor: var(--dsw-alias-label-primary, #1c1f26);\n\tcursor: pointer;\n\tbox-shadow: 0 1px 3px rgb(0 0 0 / 12%);\n\topacity: 0.82;\n\tbox-sizing: border-box;\n\tpadding: 0;\n}\n\n.dwm-root .dwm-recall:hover {\n\topacity: 1;\n}\n\n.dwm-panel-save .dwm-panel-textarea {\n\twidth: 100%;\n\tbox-sizing: border-box;\n\tresize: vertical;\n\tfont: inherit;\n\tfont-size: 12px;\n\tline-height: 1.5;\n\tpadding: 8px;\n\tborder-radius: 8px;\n\tborder: 1px solid var(--dsw-alias-border-l2, #e2e4ea);\n\tbackground: var(--dsw-alias-bg-layer-1, #fff);\n\tcolor: var(--dsw-alias-label-primary, #1c1f26);\n}\n\n@media (prefers-reduced-motion: reduce) {\n\t.dwm-root[data-dwm-work='1'] .dwm-3d::after {\n\t\tanimation: none;\n\t\topacity: 0.5;\n\t}\n}\n";
 
     /* ---- src/sprites/*.png ---- */
     var SPRITES = {
@@ -86,9 +86,21 @@ var DWM_EVENT_FX = 'dsh-whale-maid:fx';
 var DWM_EVENT_STATE = 'dsh-whale-maid:state';
 var DWM_EVENT_GROWTH = 'dsh-whale-maid:growth';
 var DWM_EVENT_COMPANION = 'dsh-whale-maid:companion';
+var DWM_EVENT_WORK = 'dsh-whale-maid:work';
 
 /** Companion-feature preferences (separate key, the original options are untouched). */
 var KEY_COMPANION = 'dsh-whale-maid:companion';
+
+/**
+ * Tell the pet whether a work phase is running. Drives the soft glow behind
+ * her, so the state is visible even when the pose is subtle.
+ */
+function dwmSetWorkGlow(active) {
+	DWM_RUNTIME.workGlow = !!active;
+	if (typeof window !== 'undefined') {
+		window.dispatchEvent(new CustomEvent(DWM_EVENT_WORK, { detail: { active: !!active } }));
+	}
+}
 
 var DWM_COMPANION_DEFAULTS = {
 	workLink: true,
@@ -246,6 +258,151 @@ function dwmForceState(state, ms, hold) {
 function dwmEmitGrowth() {
 	if (typeof window === 'undefined') return;
 	window.dispatchEvent(new CustomEvent(DWM_EVENT_GROWTH));
+}
+
+    /* ---- src/portable.js ---- */
+/*
+ * dsh-whale-maid — save export / import (added in 1.4.0).
+ *
+ * A save is a plain JSON envelope holding every localStorage key this plugin
+ * owns. It is deliberately boring: schema tag + version + timestamp + data.
+ * Importing validates the tag, the version and every value before writing, and
+ * refuses anything it does not recognise instead of half-applying it.
+ */
+
+var DWM_SAVE_SCHEMA = 'dsh-whale-maid/save';
+var DWM_SAVE_VERSION = 1;
+var DWM_SAVE_MAX_CHARS = 200000;
+
+/** Every storage key the plugin owns, with the reader/writer used to validate it. */
+function dwmSaveKeys() {
+	return [
+		{ key: KEY_POS, kind: 'object' },
+		{ key: KEY_FEEDS, kind: 'number' },
+		{ key: KEY_GREETED, kind: 'string' },
+		{ key: KEY_OPTIONS, kind: 'object' },
+		{ key: KEY_GROWTH, kind: 'object' },
+		{ key: KEY_COMPANION, kind: 'object' },
+		{ key: KEY_WEATHER, kind: 'object' },
+	];
+}
+
+function dwmSaveReadRaw(key) {
+	try {
+		if (typeof window === 'undefined' || !window.localStorage) return null;
+		return window.localStorage.getItem(key);
+	} catch (error) {
+		return null;
+	}
+}
+
+/** Export the whole save as a formatted JSON string. */
+function dwmSaveExport() {
+	var data = {};
+	var keys = dwmSaveKeys();
+	for (var i = 0; i < keys.length; i += 1) {
+		var raw = dwmSaveReadRaw(keys[i].key);
+		if (raw === null) continue;
+		try {
+			data[keys[i].key] = JSON.parse(raw);
+		} catch (error) {
+			/* a corrupt entry is skipped rather than poisoning the export */
+		}
+	}
+	return JSON.stringify(
+		{
+			schema: DWM_SAVE_SCHEMA,
+			version: DWM_SAVE_VERSION,
+			exportedAt: new Date().toISOString(),
+			plugin: 'dsh-whale-maid',
+			data: data,
+		},
+		null,
+		2,
+	);
+}
+
+function dwmSaveTypeOf(value) {
+	if (value === null) return 'null';
+	if (Array.isArray(value)) return 'array';
+	return typeof value;
+}
+
+function dwmSaveMatchesKind(value, kind) {
+	var actual = dwmSaveTypeOf(value);
+	if (kind === 'object') return actual === 'object';
+	if (kind === 'array') return actual === 'array';
+	return actual === kind;
+}
+
+/**
+ * Import a save. Returns `{ ok, imported, skipped, reason }`.
+ * Nothing is written unless the envelope is valid, so a bad paste is a no-op.
+ */
+function dwmSaveImport(text) {
+	if (typeof text !== 'string' || text.trim() === '') {
+		return { ok: false, imported: 0, skipped: 0, reason: 'empty' };
+	}
+	if (text.length > DWM_SAVE_MAX_CHARS) {
+		return { ok: false, imported: 0, skipped: 0, reason: 'too-large' };
+	}
+	var parsed;
+	try {
+		parsed = JSON.parse(text);
+	} catch (error) {
+		return { ok: false, imported: 0, skipped: 0, reason: 'not-json' };
+	}
+	if (!parsed || typeof parsed !== 'object' || parsed.schema !== DWM_SAVE_SCHEMA) {
+		return { ok: false, imported: 0, skipped: 0, reason: 'wrong-schema' };
+	}
+	if (parsed.version !== DWM_SAVE_VERSION) {
+		return { ok: false, imported: 0, skipped: 0, reason: 'wrong-version' };
+	}
+	var data = parsed.data;
+	if (!data || typeof data !== 'object') {
+		return { ok: false, imported: 0, skipped: 0, reason: 'no-data' };
+	}
+
+	var keys = dwmSaveKeys();
+	var imported = 0;
+	var skipped = 0;
+	for (var i = 0; i < keys.length; i += 1) {
+		var entry = keys[i];
+		if (!Object.prototype.hasOwnProperty.call(data, entry.key)) continue;
+		if (!dwmSaveMatchesKind(data[entry.key], entry.kind)) {
+			skipped += 1;
+			continue;
+		}
+		try {
+			window.localStorage.setItem(entry.key, JSON.stringify(data[entry.key]));
+			imported += 1;
+		} catch (error) {
+			skipped += 1;
+		}
+	}
+
+	/* let every consumer re-read what just changed */
+	if (typeof window !== 'undefined') {
+		window.dispatchEvent(new CustomEvent(OPTIONS_EVENT));
+		window.dispatchEvent(new CustomEvent(DWM_EVENT_GROWTH));
+		window.dispatchEvent(new CustomEvent(DWM_EVENT_COMPANION));
+	}
+	return { ok: imported > 0, imported: imported, skipped: skipped, reason: imported > 0 ? null : 'nothing-usable' };
+}
+
+/** Wipe every key the plugin owns (the save-file version of `forget()`). */
+function dwmSaveClear() {
+	var keys = dwmSaveKeys();
+	var cleared = 0;
+	for (var i = 0; i < keys.length; i += 1) {
+		try {
+			window.localStorage.removeItem(keys[i].key);
+			cleared += 1;
+		} catch (error) {
+			/* ignore */
+		}
+	}
+	return cleared;
 }
 
     /* ---- src/lines.js ---- */
@@ -1812,6 +1969,116 @@ var DWM_LINES_WEATHER = {
 	}
 })(DWM_LINES_WEATHER);
 
+    /* ---- src/lines-mood.js ---- */
+/*
+ * dsh-whale-maid — five-tier mood lines (added in 1.4.0).
+ *
+ * The plugin used to have two mood banks (`moodLow` / `moodHigh`) picked at
+ * 30 / 80. Five tiers read much better, so this file adds the three missing
+ * banks; `moodLow` and `moodHigh` stay exactly as they were so nothing that
+ * already referenced them changes meaning.
+ *
+ *   tier 0  moodVeryLow   0 - 14
+ *   tier 1  moodLow      15 - 39   (existing)
+ *   tier 2  moodMid      40 - 59
+ *   tier 3  moodHigh     60 - 89   (existing)
+ *   tier 4  moodVeryHigh 90 - 100
+ */
+
+var DWM_LINES_MOOD = {
+	zh: {
+		moodVeryLow: [
+			'我今天有点提不起劲……',
+			'是不是我哪里做得不好？',
+			'让我安静一会儿好吗。',
+			'尾巴都垂下来了。',
+			'我好想被抱一下。',
+			'什么都不想做……',
+			'你会不会不要我了？',
+			'心里闷闷的。',
+			'我想躲到桌子底下。',
+			'今天先不勉强自己了。',
+		],
+		moodMid: [
+			'平平淡淡的一天也不错。',
+			'我在，你说什么我都听着。',
+			'今天想喝点甜的。',
+			'没什么事，就是看看你。',
+			'这样安静地待着挺好的。',
+			'我数了数窗外的云。',
+			'有点困，但还不想睡。',
+			'你忙你的，我不吵你。',
+			'心情像一杯温水。',
+			'慢慢来，不着急。',
+		],
+		moodVeryHigh: [
+			'今天开心得想转圈！',
+			'尾巴摇得停不下来！',
+			'我超级超级喜欢你！',
+			'感觉什么都能做到！',
+			'要不要一起蹦两下？',
+			'心里像放了小烟花。',
+			'我把最好的心情分你一半。',
+			'今天的我闪闪发光！',
+			'想给你一个大大的拥抱！',
+			'就这样一直开心下去吧！',
+		],
+	},
+	en: {
+		moodVeryLow: [
+			'I am feeling really low today...',
+			'Did I do something wrong?',
+			'Let me be quiet for a while, okay?',
+			'Even my tail is drooping.',
+			'I really want a hug.',
+			'I do not want to do anything...',
+			'You will not leave me, right?',
+			'My chest feels heavy.',
+			'I want to hide under the desk.',
+			'I will not push myself today.',
+		],
+		moodMid: [
+			'A plain, ordinary day is fine too.',
+			'I am here, I will listen to whatever you say.',
+			'I feel like something sweet today.',
+			'Nothing much, just looking at you.',
+			'Staying quiet like this is nice.',
+			'I counted the clouds outside.',
+			'A little sleepy, but not ready to sleep.',
+			'Do your work, I will not interrupt.',
+			'My mood is like a cup of warm water.',
+			'Take it slow, no rush.',
+		],
+		moodVeryHigh: [
+			'I am so happy I could spin around!',
+			'My tail will not stop wagging!',
+			'I like you so, so much!',
+			'I feel like I can do anything!',
+			'Want to hop around together?',
+			'Little fireworks are going off inside me.',
+			'I am sharing my best mood with you.',
+			'I am sparkling today!',
+			'I want to give you a big hug!',
+			'Let us stay this happy!',
+		],
+	},
+};
+
+(function mergeMoodLines(table) {
+	if (typeof DWM_LINES !== 'object' || DWM_LINES === null) return;
+	var languages = ['zh', 'en'];
+	for (var i = 0; i < languages.length; i += 1) {
+		var lang = languages[i];
+		if (typeof DWM_LINES[lang] !== 'object' || DWM_LINES[lang] === null) DWM_LINES[lang] = {};
+		var banks = table[lang];
+		for (var bank in banks) {
+			if (!Object.prototype.hasOwnProperty.call(banks, bank)) continue;
+			var existing = Array.isArray(DWM_LINES[lang][bank]) ? DWM_LINES[lang][bank] : [];
+			DWM_LINES[lang][bank] = existing.concat(banks[bank]);
+		}
+	}
+})(DWM_LINES_MOOD);
+
     /* ---- src/growth.js ---- */
 /*
  * dsh-whale-maid — growth, quests, sign-in and achievements (added in 1.1.0).
@@ -2281,6 +2548,26 @@ var DWM_BOND_TITLES = [
 	{ zh: '像家人一样', en: 'Like family' }
 ];
 
+/** Mood tier 0..4: 0 very low, 2 neutral, 4 very high. */
+function dwmMoodTier(mood) {
+	var value = typeof mood === "number" && Number.isFinite(mood) ? mood : 70;
+	if (value < 15) return 0;
+	if (value < 40) return 1;
+	if (value < 60) return 2;
+	if (value < 90) return 3;
+	return 4;
+}
+
+/** Which line bank belongs to a mood value. */
+function dwmMoodBank(mood) {
+	var tier = dwmMoodTier(mood);
+	if (tier === 0) return 'moodVeryLow';
+	if (tier === 1) return 'moodLow';
+	if (tier === 2) return 'moodMid';
+	if (tier === 3) return 'moodHigh';
+	return 'moodVeryHigh';
+}
+
 function dwmBondTitle(level, language) {
 	var index = dwmClamp(Math.floor(Number(level) || 1) - 1, 0, DWM_BOND_TITLES.length - 1);
 	var entry = DWM_BOND_TITLES[index];
@@ -2505,6 +2792,8 @@ var SAY_EVENT = 'dsh-whale-maid:say';
 var RESET_POS_EVENT = 'dsh-whale-maid:reset-position';
 
 /* Copy lines, verbatim from the site (zh), with an English rendering. */
+var DWM_RECALL_LABEL = { zh: '唤回桌宠', en: 'Bring her back' };
+
 var TEXTS = {
 	zh: {
 		petLabel: '鲸鱼女仆',
@@ -2594,6 +2883,7 @@ var DEFAULT_OPTIONS = {
 	bubbleDuration: BUBBLE_MS,
 	typewriter: true, // reveal bubble text one character at a time
 	city: '北京', // weather fallback city when geolocation is unavailable
+	hidden: false, // hide the pet, leave a small 🐋 button to bring her back
 	greetings: null, // override the greeting lines
 };
 
@@ -2610,6 +2900,7 @@ function normalizeOptions(input) {
 	options.sleep = options.sleep !== false;
 	options.walk = options.walk !== false;
 	options.typewriter = options.typewriter !== false;
+	options.hidden = options.hidden === true;
 	var city = typeof options.city === 'string' ? options.city.trim() : '';
 	options.city = city === '' ? '北京' : city;
 	if (!Array.isArray(options.greetings) || options.greetings.length === 0) options.greetings = null;
@@ -2822,6 +3113,9 @@ function WhaleGirl() {
 	var setBubble = bubbleState[1];
 
 	var menuState = useState(false);
+	var workGlowState = useState(false);
+	var workGlow = workGlowState[0];
+	var setWorkGlow = workGlowState[1];
 	var menuOpen = menuState[0];
 	var setMenuOpen = menuState[1];
 
@@ -2879,6 +3173,7 @@ function WhaleGirl() {
 		}
 		window.addEventListener(OPTIONS_EVENT, onOptions);
 		window.addEventListener(SAY_EVENT, onSay);
+		window.addEventListener(DWM_EVENT_WORK, onWorkGlow);
 		window.addEventListener(RESET_POS_EVENT, onResetPos);
 		return function () {
 			window.removeEventListener(OPTIONS_EVENT, onOptions);
@@ -2888,7 +3183,11 @@ function WhaleGirl() {
 	}, []);
 
 	/* --- speech bubble ------------------------------------------------- */
-	function say(message, tone) {
+	function onWorkGlow(event) {
+		setWorkGlow(!!(event && event.detail && event.detail.active));
+	}
+
+function say(message, tone) {
 		if (bubbleTimer.current !== undefined) clearTimeout(bubbleTimer.current);
 		setBubble({ id: Date.now(), text: message, tone: tone || '' });
 		bubbleTimer.current = setTimeout(function () {
@@ -3045,7 +3344,33 @@ function WhaleGirl() {
 	}
 
 	/* --- click: greet, toggle the action menu, wake up ------------------- */
-	function onClick() {
+	/* Alt + arrow keys move her; Shift makes it a bigger step. */
+function onBodyKeyDown(event) {
+		if (!event || !event.altKey) return;
+		var step = event.shiftKey ? 32 : 8;
+		var dx = event.key === 'ArrowLeft' ? -step : event.key === 'ArrowRight' ? step : 0;
+		var dy = event.key === 'ArrowUp' ? -step : event.key === 'ArrowDown' ? step : 0;
+		if (dx === 0 && dy === 0) return;
+		var element = bodyRef.current;
+		if (!element) return;
+		event.preventDefault();
+		var rect = element.getBoundingClientRect();
+		var next = {
+			x: clamp(rect.left + dx, RESIZE_GAP, window.innerWidth - rect.width - RESIZE_GAP),
+			y: clamp(rect.top + dy, RESIZE_GAP, window.innerHeight - rect.height - RESIZE_GAP),
+		};
+		setPos(next);
+		writeJSON(KEY_POS, next);
+	}
+
+function onRecall() {
+		var next = normalizeOptions(Object.assign({}, readOptions(), { hidden: false }));
+		writeJSON(KEY_OPTIONS, next);
+		if (typeof setOptions === "function") setOptions(next);
+		window.dispatchEvent(new CustomEvent(OPTIONS_EVENT));
+	}
+
+function onClick() {
 		if (suppressClick.current) {
 			suppressClick.current = false;
 			return;
@@ -3438,10 +3763,11 @@ function WhaleGirl() {
 		'div',
 		{
 			ref: rootRef,
-			className: 'dwm-root',
+			className: options.hidden ? 'dwm-root dwm-root-hidden' : 'dwm-root',
 			style: style,
 			'data-dwm-pet-size': options.size !== null ? String(options.size) : undefined,
 			'data-dwm-lang': language,
+			'data-dwm-work': workGlow ? '1' : undefined,
 		},
 		h(
 			'div',
@@ -3488,6 +3814,7 @@ function WhaleGirl() {
 			'button',
 			{
 				ref: bodyRef,
+				onKeyDown: onBodyKeyDown,
 				type: 'button',
 				className: 'dwm',
 				'aria-label': text.petLabel,
@@ -3528,6 +3855,20 @@ function WhaleGirl() {
 		}),
 		/* 1.1.0 — companion layers. Both render nothing until they are asked to,
 		 * so with every companion switch off the DOM is identical to 1.0.0. */
+		options.hidden
+			? h(
+					'button',
+					{
+						type: 'button',
+						className: 'dwm-recall',
+						style: { pointerEvents: 'auto' },
+						'aria-label': DWM_RECALL_LABEL[language],
+						title: DWM_RECALL_LABEL[language],
+						onClick: onRecall,
+					},
+					'🐋',
+				)
+			: null,
 		h(DwmFxLayer, null),
 	);
 }
@@ -3554,7 +3895,7 @@ function formatNumber(value, digits) {
 	return String(rounded);
 }
 
-function SettingsSection() {
+function SettingsSection(props) {
 	var React_ = React;
 	var useState = React_.useState;
 	var useEffect = React_.useEffect;
@@ -3586,6 +3927,13 @@ function SettingsSection() {
 	var text = TEXTS[language];
 	var isZh = language === 'zh';
 	function label(zh, en) {
+		/* gettext-style lookup: the Chinese string is the message id, so the
+		   Client locale service can translate it without a parallel key table.
+		   Falls back to the zh/en pair when the host has no entry. */
+		if (props && typeof props.t === "function") {
+			var translated = props.t(zh);
+			if (typeof translated === "string" && translated !== "" && translated !== zh) return translated;
+		}
 		return isZh ? zh : en;
 	}
 
@@ -3723,6 +4071,7 @@ function SettingsSection() {
 		h(
 			'div',
 			{ className: 'dwm-settings-checks' },
+			check('hidden', '隐藏桌宠（留 🐋 唤回）', 'Hide her (keep a 🐋 button)'),
 			check('greeting', '首次出现时打招呼', 'Greet on first appearance'),
 			check('walk', '自己散步', 'Wander on her own'),
 			check('typewriter', '打字机效果', 'Typewriter effect'),
@@ -3806,7 +4155,88 @@ function dwmFormatDuration(ms) {
 	return minutes + (dwmUiLanguage() === 'zh' ? ' 分钟' : ' min');
 }
 
-function CompanionPanel() {
+/* Export / import the whole save. Kept in its own component so the panel
+   stays readable and the textarea state cannot re-render the whole tree. */
+function SaveBlock() {
+	var language = dwmUiLanguage();
+	var isZh = language === "zh";
+	function t(zh, en) {
+		return isZh ? zh : en;
+	}
+	var textState = useState("");
+	var text = textState[0];
+	var setText = textState[1];
+	var statusState = useState("");
+	var status = statusState[0];
+	var setStatus = statusState[1];
+	return h(
+		'div',
+		{ className: 'dwm-panel-save' },
+		h('h4', { className: 'dwm-panel-title' }, t('存档', 'Save file')),
+		h(
+			'p',
+			{ className: 'dwm-panel-muted' },
+			t('导出全部数据（位置、投喂、配置、成长、天气），或粘贴一份存档导入。', 'Export everything (position, feeds, options, growth, weather), or paste a save to import.'),
+		),
+		h(
+			'textarea',
+			{
+				className: 'dwm-panel-textarea',
+				rows: 4,
+				value: text,
+				placeholder: t('点「导出」生成存档，或在此粘贴存档 JSON', 'Press export, or paste a save JSON here'),
+				onChange: function (event) {
+					setText(event.target.value);
+				},
+			},
+		),
+		h(
+			'div',
+			{ className: 'dwm-settings-actions' },
+			h(
+				'button',
+				{
+					type: 'button',
+					onClick: function () {
+						setText(dwmSaveExport());
+						setStatus(t('已导出到下面的文本框', 'Exported into the box below'));
+					},
+				},
+				t('导出', 'Export'),
+			),
+			h(
+				'button',
+				{
+					type: 'button',
+					onClick: function () {
+						var result = dwmSaveImport(text);
+						setStatus(
+							result.ok
+								? t('已导入 ' + result.imported + ' 项', 'Imported ' + result.imported + ' entries')
+								: t('导入失败：' + result.reason, 'Import failed: ' + result.reason),
+						);
+					},
+				},
+				t('导入', 'Import'),
+			),
+			h(
+				'button',
+				{
+					type: 'button',
+					onClick: function () {
+						var cleared = dwmSaveClear();
+						setText('');
+						setStatus(t('已清空 ' + cleared + ' 项', 'Cleared ' + cleared + ' entries'));
+					},
+				},
+				t('清空存档', 'Clear save'),
+			),
+		),
+		status ? h('p', { className: 'dwm-panel-muted' }, status) : null,
+	);
+}
+
+function CompanionPanel(props) {
 	var React_ = React;
 	var useState = React_.useState;
 	var useEffect = React_.useEffect;
@@ -3844,6 +4274,13 @@ function CompanionPanel() {
 	var language = dwmUiLanguage();
 	var isZh = language === 'zh';
 	function label(zh, en) {
+		/* gettext-style lookup: the Chinese string is the message id, so the
+		   Client locale service can translate it without a parallel key table.
+		   Falls back to the zh/en pair when the host has no entry. */
+		if (props && typeof props.t === "function") {
+			var translated = props.t(zh);
+			if (typeof translated === "string" && translated !== "" && translated !== zh) return translated;
+		}
 		return isZh ? zh : en;
 	}
 
@@ -4138,6 +4575,7 @@ function CompanionPanel() {
 		),
 
 		h('h4', { className: 'dwm-panel-title' }, label('试一试', 'Try it')),
+		h(SaveBlock, { key: 'dwm-save' }),
 		h(
 			'div',
 			{ className: 'dwm-settings-actions' },
@@ -4301,12 +4739,14 @@ function dwmWorkChipText(phase, language) {
 
 /** Push the current phase onto the pet unless the user is dragging her. */
 function dwmApplyWorkPose(phase) {
+	dwmSetWorkGlow(phase !== 'idle');
 	if (DWM_RUNTIME.state === 'drag') return;
 	if (phase === 'idle') return;
 	dwmForceState(dwmWorkPose(phase), 0, true);
 }
 
 function dwmResetWork(work) {
+	dwmSetWorkGlow(false);
 	work.active = false;
 	work.phase = 'idle';
 	work.held = false;
@@ -4528,9 +4968,9 @@ function dwmCareCanSpeak() {
 
 function dwmCareMoodLine(language) {
 	var growth = dwmGrowthRead();
-	if (growth.mood <= 30) return dwmPickLine('moodLow', language);
-	if (growth.mood >= 80) return dwmPickLine('moodHigh', language);
-	return '';
+	var tier = dwmMoodTier(growth.mood);
+	if (tier === 2) return '';
+	return dwmPickLine(dwmMoodBank(growth.mood), language);
 }
 
 /** Read the newest chat node's text, if the client exposes one. */
@@ -5293,6 +5733,19 @@ function createPublicApi() {
 			window.dispatchEvent(new CustomEvent(DWM_EVENT_COMPANION));
 		},
 
+		/* --- 1.4.0 save file + mood ---------------------------------------- */
+
+		/** The whole save as a formatted JSON string. */
+		exportSave: dwmSaveExport,
+		/** Import a save; returns { ok, imported, skipped, reason }. */
+		importSave: dwmSaveImport,
+		/** Wipe every key the plugin owns. */
+		clearSave: dwmSaveClear,
+		/** Mood tier 0..4 (0 = lowest). */
+		moodTier: function () {
+			return dwmMoodTier(dwmGrowthRead().mood);
+		},
+
 		/* --- 1.1.0 companion API (additive) --------------------------------- */
 
 		/** Companion switches (work link, care, chip, zones, chatter —. */
@@ -5413,6 +5866,7 @@ function apply(ctx) {
 		return ctx.slots.register(
 			{
 				name: 'settings.section',
+				locale: 'dsh-whale-maid',
 				id: 'dsh-whale-maid',
 				order: 60,
 				label: function () {
@@ -5428,6 +5882,7 @@ function apply(ctx) {
 		return ctx.slots.register(
 			{
 				name: 'settings.section',
+				locale: 'dsh-whale-maid',
 				id: 'dsh-whale-maid-companion',
 				order: 61,
 				label: function () {

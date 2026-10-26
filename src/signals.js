@@ -75,12 +75,14 @@ function dwmWorkChipText(phase, language) {
 
 /** Push the current phase onto the pet unless the user is dragging her. */
 function dwmApplyWorkPose(phase) {
+	dwmSetWorkGlow(phase !== 'idle');
 	if (DWM_RUNTIME.state === 'drag') return;
 	if (phase === 'idle') return;
 	dwmForceState(dwmWorkPose(phase), 0, true);
 }
 
 function dwmResetWork(work) {
+	dwmSetWorkGlow(false);
 	work.active = false;
 	work.phase = 'idle';
 	work.held = false;

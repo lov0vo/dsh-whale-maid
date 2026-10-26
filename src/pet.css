@@ -109,6 +109,19 @@
 
 @media (width<=680px) {.dwm-root:not([data-dwm-pet-size]){--dwm-pet-size:72px}.dwm-root .dwm-action{width:44px;height:44px}}
 
+/* Quest text and achievement names are plain labels; the classes exist
+   so the structure snapshot test can assert them. */
+.dwm-root .dwm-panel-quest-text {
+	color: var(--dsw-alias-label-secondary, #6b7280);
+	font-size: 12px;
+	line-height: 1.4;
+}
+.dwm-root .dwm-ach-name {
+	color: var(--dsw-alias-label-primary, #1c1f26);
+	font-size: 12px;
+	line-height: 1.4;
+}
+
 @media (prefers-reduced-motion:reduce) {.dwm-root .dwm-3d,.dwm-root .dwm-sprite,.dwm-root .dwm-bubble-dot{animation:none}.dwm-root .dwm-depth{display:none}.dwm-root .dwm,.dwm-root .dwm-flip{transition:none}.dwm-root .dwm-bubble-dot{display:none}}
 
 /* ---- settings panel (plugin addition, not part of the source site) ---- */
@@ -314,3 +327,91 @@
 /* weather particles reuse the existing FX layer */
 .dwm-root .dwm-fx-rain {color:#5b93e0}
 .dwm-root .dwm-fx-snow {color:#9fc7e8}
+
+/* ---- 1.4.0: work glow, focus rings, recall button, save box ---- */
+
+/* A soft halo while a turn is running, so the state reads at a glance. */
+.dwm-root[data-dwm-work='1'] .dwm-3d::after {
+	content: "";
+	position: absolute;
+	inset: -12%;
+	border-radius: 50%;
+	background: radial-gradient(closest-side, rgb(120 180 255 / 32%), rgb(120 180 255 / 0%) 72%);
+	animation: dwm-glow 2.6s ease-in-out infinite;
+	pointer-events: none;
+	transform: translateZ(-8px);
+}
+
+@keyframes dwm-glow {
+	0%,
+	100% {
+		opacity: 0.35;
+	}
+	50% {
+		opacity: 0.9;
+	}
+}
+
+/* Keyboard users need to see where they are. */
+.dwm-root .dwm:focus-visible,
+.dwm-root .dwm-action:focus-visible,
+.dwm-root .dwm-recall:focus-visible {
+	outline: 2px solid var(--dsw-alias-brand-primary, #4b8bf5);
+	outline-offset: 3px;
+	border-radius: 14px;
+}
+
+/* Hidden: everything disappears except the recall button. */
+.dwm-root.dwm-root-hidden .dwm-pop,
+.dwm-root.dwm-root-hidden .dwm,
+.dwm-root.dwm-root-hidden .dwm-shadow,
+.dwm-root.dwm-root-hidden .dwm-bubble-dot,
+.dwm-root.dwm-root-hidden .dwm-fx-layer {
+	display: none;
+}
+
+.dwm-root .dwm-recall {
+	position: absolute;
+	right: 0;
+	bottom: 0;
+	width: 36px;
+	height: 36px;
+	display: grid;
+	place-items: center;
+	font-size: 18px;
+	line-height: 1;
+	border-radius: 50%;
+	border: 1px solid var(--dsw-alias-border-l2, #e2e4ea);
+	background: var(--dsw-alias-bg-layer-2, #fff);
+	color: var(--dsw-alias-label-primary, #1c1f26);
+	cursor: pointer;
+	box-shadow: 0 1px 3px rgb(0 0 0 / 12%);
+	opacity: 0.82;
+	box-sizing: border-box;
+	padding: 0;
+}
+
+.dwm-root .dwm-recall:hover {
+	opacity: 1;
+}
+
+.dwm-panel-save .dwm-panel-textarea {
+	width: 100%;
+	box-sizing: border-box;
+	resize: vertical;
+	font: inherit;
+	font-size: 12px;
+	line-height: 1.5;
+	padding: 8px;
+	border-radius: 8px;
+	border: 1px solid var(--dsw-alias-border-l2, #e2e4ea);
+	background: var(--dsw-alias-bg-layer-1, #fff);
+	color: var(--dsw-alias-label-primary, #1c1f26);
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.dwm-root[data-dwm-work='1'] .dwm-3d::after {
+		animation: none;
+		opacity: 0.5;
+	}
+}

@@ -19,7 +19,7 @@ function formatNumber(value, digits) {
 	return String(rounded);
 }
 
-function SettingsSection() {
+function SettingsSection(props) {
 	var React_ = React;
 	var useState = React_.useState;
 	var useEffect = React_.useEffect;
@@ -51,6 +51,13 @@ function SettingsSection() {
 	var text = TEXTS[language];
 	var isZh = language === 'zh';
 	function label(zh, en) {
+		/* gettext-style lookup: the Chinese string is the message id, so the
+		   Client locale service can translate it without a parallel key table.
+		   Falls back to the zh/en pair when the host has no entry. */
+		if (props && typeof props.t === "function") {
+			var translated = props.t(zh);
+			if (typeof translated === "string" && translated !== "" && translated !== zh) return translated;
+		}
 		return isZh ? zh : en;
 	}
 
@@ -188,6 +195,7 @@ function SettingsSection() {
 		h(
 			'div',
 			{ className: 'dwm-settings-checks' },
+			check('hidden', '隐藏桌宠（留 🐋 唤回）', 'Hide her (keep a 🐋 button)'),
 			check('greeting', '首次出现时打招呼', 'Greet on first appearance'),
 			check('walk', '自己散步', 'Wander on her own'),
 			check('typewriter', '打字机效果', 'Typewriter effect'),

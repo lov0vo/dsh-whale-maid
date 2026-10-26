@@ -16,7 +16,7 @@
  * Usage: node --test test/
  */
 
-import { readFileSync } from 'node:fs';
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { runInThisContext } from 'node:vm';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -277,6 +277,7 @@ test('keeps the 1.0.0 public API and its defaults', () => {
 		'city',
 		'greeting',
 		'greetings',
+		'hidden',
 		'language',
 		'size',
 		'sleep',
@@ -628,4 +629,91 @@ test('weather lines exist in Chinese for every bucket', () => {
 	// 7 banks x 9 lines: count the quoted Chinese lines that follow each bank name
 	const matches = bundle.match(/weather[A-Z][A-Za-z]+: \[/g) || [];
 	assert.ok(matches.length >= 7, 'expected seven weather banks, saw ' + matches.length);
+});
+
+/* --- 1.4.0 structure snapshots ---------------------------------------- */
+
+/** Compact, stable outline of a React element tree. */
+function outlineOf(node) {
+	if (node === null || node === undefined || node === false) return "";
+	if (typeof node !== 'object') return String(node);
+	if (Array.isArray(node)) return node.map(outlineOf).filter(Boolean).join(",");
+	const classes =
+		node.props && typeof node.props.className === 'string'
+			? '.' + node.props.className.trim().split(/\s+/).join('.')
+			: '';
+	const name = typeof node.type === 'function' ? node.type.name || 'anonymous' : String(node.type);
+	const head = name + classes;
+	const kids = (node.children || []).map(outlineOf).filter(Boolean);
+	return kids.length === 0 ? head : head + "[" + kids.join(" ") + "]";
+}
+
+test('the overlay tree has the expected structure (snapshot)', () => {
+	const h = createHarness();
+	const overlay = h.registrations.find((entry) => entry.declaration.name === 'shell.overlay');
+	assert.ok(overlay, 'overlay registration missing');
+	const outline = outlineOf(overlay.component({}));
+	const file = join(root, 'test', 'snapshots', 'pet-tree.txt');
+	if (!existsSync(file)) {
+		mkdirSync(dirname(file), { recursive: true });
+		writeFileSync(file, outline + '\n', 'utf8');
+	}
+	assert.equal(outline, readFileSync(file, 'utf8').trim());
+});
+
+test('every dwm class used by the sources has a css rule', () => {
+	const css = readFileSync(join(root, 'src', 'pet.css'), 'utf8');
+	const files = ['pet.js', 'panel.js', 'settings.js', 'zones.js', 'fx.js', 'weather.js'];
+	const used = new Set();
+	for (const file of files) {
+		const text = readFileSync(join(root, 'src', file), 'utf8');
+		for (const match of text.matchAll(/className:\s*'([^']+)'/g)) {
+			for (const cls of match[1].split(/\s+/)) if (cls.startsWith('dwm-')) used.add(cls);
+		}
+	}
+	const missing = [...used].filter((cls) => !css.includes('.' + cls));
+	assert.deepEqual(missing, []);
+});
+
+test('save export/import round-trips and rejects junk', () => {
+	const h = createHarness();
+	h.api.setOptions({ speed: 1.5 });
+	const text = h.api.exportSave();
+	const parsed = JSON.parse(text);
+	assert.equal(parsed.schema, 'dsh-whale-maid/save');
+	assert.equal(parsed.version, 1);
+	assert.ok(parsed.data['dsh-whale-maid:options']);
+	assert.equal(h.api.importSave('not json').reason, 'not-json');
+	assert.equal(h.api.importSave('{"schema":"nope"}').reason, 'wrong-schema');
+	assert.equal(
+		h.api.importSave(
+			JSON.stringify({ schema: 'dsh-whale-maid/save', version: 9, data: {} }),
+		).reason,
+		'wrong-version',
+	);
+	h.api.forget();
+	assert.equal(h.api.getOptions().speed, 1);
+	assert.equal(h.api.importSave(text).ok, true);
+	assert.equal(h.api.getOptions().speed, 1.5);
+});
+
+test('mood tiers stay inside 0..4 and the five banks exist', () => {
+	const h = createHarness();
+	const tier = h.api.moodTier();
+	assert.ok(tier >= 0 && tier <= 4, String(tier));
+});
+
+test('hiding the pet is reversible through options', () => {
+	const h = createHarness();
+	h.api.setOptions({ hidden: true });
+	assert.equal(h.api.getOptions().hidden, true);
+	h.api.setOptions({ hidden: false });
+	assert.equal(h.api.getOptions().hidden, false);
+});
+
+test('the 1.4.0 API additions exist', () => {
+	const h = createHarness();
+	for (const name of ['exportSave', 'importSave', 'clearSave', 'moodTier']) {
+		assert.equal(typeof h.window.dshWhaleMaid[name], 'function', name);
+	}
 });

@@ -51,9 +51,21 @@ var DWM_EVENT_FX = 'dsh-whale-maid:fx';
 var DWM_EVENT_STATE = 'dsh-whale-maid:state';
 var DWM_EVENT_GROWTH = 'dsh-whale-maid:growth';
 var DWM_EVENT_COMPANION = 'dsh-whale-maid:companion';
+var DWM_EVENT_WORK = 'dsh-whale-maid:work';
 
 /** Companion-feature preferences (separate key, the original options are untouched). */
 var KEY_COMPANION = 'dsh-whale-maid:companion';
+
+/**
+ * Tell the pet whether a work phase is running. Drives the soft glow behind
+ * her, so the state is visible even when the pose is subtle.
+ */
+function dwmSetWorkGlow(active) {
+	DWM_RUNTIME.workGlow = !!active;
+	if (typeof window !== 'undefined') {
+		window.dispatchEvent(new CustomEvent(DWM_EVENT_WORK, { detail: { active: !!active } }));
+	}
+}
 
 var DWM_COMPANION_DEFAULTS = {
 	workLink: true,

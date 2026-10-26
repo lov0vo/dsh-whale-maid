@@ -53,9 +53,9 @@ function dwmCareCanSpeak() {
 
 function dwmCareMoodLine(language) {
 	var growth = dwmGrowthRead();
-	if (growth.mood <= 30) return dwmPickLine('moodLow', language);
-	if (growth.mood >= 80) return dwmPickLine('moodHigh', language);
-	return '';
+	var tier = dwmMoodTier(growth.mood);
+	if (tier === 2) return '';
+	return dwmPickLine(dwmMoodBank(growth.mood), language);
 }
 
 /** Read the newest chat node's text, if the client exposes one. */

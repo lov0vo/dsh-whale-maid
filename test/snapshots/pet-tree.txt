@@ -1,0 +1,1 @@
+div.dwm-root[div.dwm-pop button.dwm[span.dwm-flip[span.dwm-3d[Sprite Sprite Shine]]] div.dwm-shadow span.dwm-bubble-dot span.dwm-bubble-dot span.dwm-bubble-dot DwmFxLayer]

@@ -21,7 +21,88 @@ function dwmFormatDuration(ms) {
 	return minutes + (dwmUiLanguage() === 'zh' ? ' 分钟' : ' min');
 }
 
-function CompanionPanel() {
+/* Export / import the whole save. Kept in its own component so the panel
+   stays readable and the textarea state cannot re-render the whole tree. */
+function SaveBlock() {
+	var language = dwmUiLanguage();
+	var isZh = language === "zh";
+	function t(zh, en) {
+		return isZh ? zh : en;
+	}
+	var textState = useState("");
+	var text = textState[0];
+	var setText = textState[1];
+	var statusState = useState("");
+	var status = statusState[0];
+	var setStatus = statusState[1];
+	return h(
+		'div',
+		{ className: 'dwm-panel-save' },
+		h('h4', { className: 'dwm-panel-title' }, t('存档', 'Save file')),
+		h(
+			'p',
+			{ className: 'dwm-panel-muted' },
+			t('导出全部数据（位置、投喂、配置、成长、天气），或粘贴一份存档导入。', 'Export everything (position, feeds, options, growth, weather), or paste a save to import.'),
+		),
+		h(
+			'textarea',
+			{
+				className: 'dwm-panel-textarea',
+				rows: 4,
+				value: text,
+				placeholder: t('点「导出」生成存档，或在此粘贴存档 JSON', 'Press export, or paste a save JSON here'),
+				onChange: function (event) {
+					setText(event.target.value);
+				},
+			},
+		),
+		h(
+			'div',
+			{ className: 'dwm-settings-actions' },
+			h(
+				'button',
+				{
+					type: 'button',
+					onClick: function () {
+						setText(dwmSaveExport());
+						setStatus(t('已导出到下面的文本框', 'Exported into the box below'));
+					},
+				},
+				t('导出', 'Export'),
+			),
+			h(
+				'button',
+				{
+					type: 'button',
+					onClick: function () {
+						var result = dwmSaveImport(text);
+						setStatus(
+							result.ok
+								? t('已导入 ' + result.imported + ' 项', 'Imported ' + result.imported + ' entries')
+								: t('导入失败：' + result.reason, 'Import failed: ' + result.reason),
+						);
+					},
+				},
+				t('导入', 'Import'),
+			),
+			h(
+				'button',
+				{
+					type: 'button',
+					onClick: function () {
+						var cleared = dwmSaveClear();
+						setText('');
+						setStatus(t('已清空 ' + cleared + ' 项', 'Cleared ' + cleared + ' entries'));
+					},
+				},
+				t('清空存档', 'Clear save'),
+			),
+		),
+		status ? h('p', { className: 'dwm-panel-muted' }, status) : null,
+	);
+}
+
+function CompanionPanel(props) {
 	var React_ = React;
 	var useState = React_.useState;
 	var useEffect = React_.useEffect;
@@ -59,6 +140,13 @@ function CompanionPanel() {
 	var language = dwmUiLanguage();
 	var isZh = language === 'zh';
 	function label(zh, en) {
+		/* gettext-style lookup: the Chinese string is the message id, so the
+		   Client locale service can translate it without a parallel key table.
+		   Falls back to the zh/en pair when the host has no entry. */
+		if (props && typeof props.t === "function") {
+			var translated = props.t(zh);
+			if (typeof translated === "string" && translated !== "" && translated !== zh) return translated;
+		}
 		return isZh ? zh : en;
 	}
 
@@ -353,6 +441,7 @@ function CompanionPanel() {
 		),
 
 		h('h4', { className: 'dwm-panel-title' }, label('试一试', 'Try it')),
+		h(SaveBlock, { key: 'dwm-save' }),
 		h(
 			'div',
 			{ className: 'dwm-settings-actions' },
