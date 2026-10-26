@@ -1,59 +1,59 @@
 {
-	"name": "dsh-whale-maid",
-	"version": "1.2.0",
-	"private": true,
-	"description": "The 1024Store whale girl as a DSH desktop pet: the full twelve-state sprite animation (blink, joy, eat, play, welcome, drag-tilt, think, work, sad, sleep, wake, wander) ported from the plugin-market site, with drag-to-move, click-to-greet, feed and play actions, plus a settings section — and since 1.1.0 a companion layer: work-status poses, mood/affection/satiety, daily quests, check-in, 41 achievements, tap zones and proactive care.",
-	"license": "MIT",
-	"author": "lov0vo",
-	"homepage": "https://github.com/lov0vo/dsh-whale-maid#readme",
-	"repository": {
-		"type": "git",
-		"url": "git+https://github.com/lov0vo/dsh-whale-maid.git"
-	},
-	"bugs": {
-		"url": "https://github.com/lov0vo/dsh-whale-maid/issues"
-	},
-	"type": "module",
-	"exports": {
-		".": "./index.js",
-		"./client": "./client.js",
-		"./package.json": "./package.json",
-		"./locale/*.json": "./locale/*.json",
-		"./icon": "./icon.svg"
-	},
-	"files": [
-		"index.js",
-		"client.js",
-		"cordis.patch.yml",
-		"locale",
-		"icon.svg",
-		"README.md"
-	],
-	"keywords": [
-		"dsh",
-		"dsh-plugin",
-		"deepseek",
-		"deepseek-harness",
-		"desktop-pet",
-		"whale",
-		"sprite",
-		"companion",
-		"tamagotchi",
-		"achievements"
-	],
-	"scripts": {
-		"build": "node build.mjs",
-		"test": "node --test test/companion.test.mjs"
-	},
-	"dsh": {
-		"manifestVersion": 1,
-		"bundle": {
-			"patch": "./cordis.patch.yml"
-		},
-		"client": {
-			"platform": "web",
-			"immediately": true,
-			"inject": []
-		}
-	}
+  "name": "dsh-whale-maid",
+  "version": "1.2.1",
+  "private": true,
+  "description": "The 1024Store whale girl as a DSH desktop pet: the full twelve-state sprite animation (blink, joy, eat, play, welcome, drag-tilt, think, work, sad, sleep, wake, wander) ported from the plugin-market site, with drag-to-move, click-to-greet, feed and play actions, plus a settings section — and since 1.1.0 a companion layer: work-status poses, mood/affection/satiety, daily quests, check-in, 41 achievements, tap zones and proactive care.",
+  "license": "MIT",
+  "author": "lov0vo",
+  "homepage": "https://github.com/lov0vo/dsh-whale-maid#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/lov0vo/dsh-whale-maid.git"
+  },
+  "bugs": {
+    "url": "https://github.com/lov0vo/dsh-whale-maid/issues"
+  },
+  "type": "module",
+  "exports": {
+    ".": "./index.js",
+    "./client": "./client.js",
+    "./package.json": "./package.json",
+    "./locale/*.json": "./locale/*.json",
+    "./icon": "./icon.svg"
+  },
+  "files": [
+    "index.js",
+    "client.js",
+    "cordis.patch.yml",
+    "locale",
+    "icon.svg",
+    "README.md"
+  ],
+  "keywords": [
+    "dsh",
+    "dsh-plugin",
+    "deepseek",
+    "deepseek-harness",
+    "desktop-pet",
+    "whale",
+    "sprite",
+    "companion",
+    "tamagotchi",
+    "achievements"
+  ],
+  "scripts": {
+    "build": "node build.mjs",
+    "test": "node --test test/companion.test.mjs"
+  },
+  "dsh": {
+    "manifestVersion": 1,
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    },
+    "client": {
+      "platform": "web",
+      "immediately": true,
+      "inject": []
+    }
+  }
 }

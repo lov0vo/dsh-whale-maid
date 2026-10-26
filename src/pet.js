@@ -146,6 +146,7 @@ var DEFAULT_OPTIONS = {
 	sleep: true, // doze off after a while when idle
 	walk: true, // wander across the viewport on its own
 	bubbleDuration: BUBBLE_MS,
+	typewriter: true, // reveal bubble text one character at a time
 	greetings: null, // override the greeting lines
 };
 
@@ -161,6 +162,7 @@ function normalizeOptions(input) {
 	options.greeting = options.greeting !== false;
 	options.sleep = options.sleep !== false;
 	options.walk = options.walk !== false;
+	options.typewriter = options.typewriter !== false;
 	if (!Array.isArray(options.greetings) || options.greetings.length === 0) options.greetings = null;
 	return options;
 }
@@ -282,6 +284,46 @@ function GamepadIcon() {
 }
 
 /* ------------------------------------------------------------- component */
+
+/* --- speech bubble with an optional typewriter reveal ------------------ */
+function Bubble(props) {
+	var text = props.text || '';
+	var instant = props.instant === true;
+	var speed = props.speed > 0 ? props.speed : 1;
+	var pair = useState(instant ? text.length : 0);
+	var shown = pair[0];
+	var setShown = pair[1];
+	useEffect(
+		function () {
+			if (instant || text.length === 0) {
+				setShown(text.length);
+				return undefined;
+			}
+			var step = 0;
+			var interval = Math.max(12, Math.round(34 / speed));
+			var timer = setInterval(function () {
+				step += 1;
+				if (step >= text.length) {
+					clearInterval(timer);
+					setShown(text.length);
+					return;
+				}
+				setShown(step);
+			}, interval);
+			return function () {
+				clearInterval(timer);
+			};
+		},
+		[text, instant, speed],
+	);
+	var typing = shown < text.length;
+	return h(
+		'p',
+		{ className: 'dwm-bubble', role: 'status', 'aria-label': text },
+		h('span', { 'aria-hidden': 'true' }, text.slice(0, shown)),
+		typing ? h('span', { className: 'dwm-caret', 'aria-hidden': 'true' }) : null,
+	);
+}
 
 function WhaleGirl() {
 	var React_ = React;
@@ -427,7 +469,14 @@ function WhaleGirl() {
 	function stopWalk() {
 		if (rafRef.current !== undefined) cancelAnimationFrame(rafRef.current);
 		rafRef.current = undefined;
+		var wasWalking = walkRef.current !== null;
 		walkRef.current = null;
+		/* Aborting a wander must not leave her frozen in the walk frames. */
+		if (wasWalking) {
+			setAnimState(function (current) {
+				return current === 'walk' ? 'idle' : current;
+			});
+		}
 	}
 
 	function persistPos(x, y) {
@@ -475,6 +524,8 @@ function WhaleGirl() {
 			if (room < WALK_MIN_SPACE) return;
 		}
 		var distance = Math.max(0, Math.min(WALK_MIN_DISTANCE + Math.random() * WALK_MAX_EXTRA, room));
+		/* A degenerate distance would only flash the walk frames for one tick. */
+		if (distance < 8) return;
 		var target = dir === 1 ? left - distance : left + distance;
 		setPos({ x: left, y: top });
 		setFlip(dir === 1 ? 1 : -1);
@@ -537,7 +588,8 @@ function WhaleGirl() {
 		setMenuOpen(function (open) {
 			return !open;
 		});
-		say(pick(options.greetings || text.greeting));
+		/* A zone reaction already spoke for this click — do not talk over it. */
+		if (dwmNow() - (DWM_RUNTIME.lastZoneAt || 0) > 400) say(pick(options.greetings || text.greeting));
 		resetSleep();
 		if (stateRef.current === 'sleep') {
 			runSequence([
@@ -929,7 +981,12 @@ function WhaleGirl() {
 			'div',
 			{ className: 'dwm-pop' },
 			bubble !== null
-				? h('p', { key: bubble.id, className: 'dwm-bubble', role: 'status' }, bubble.text)
+				? h(Bubble, {
+						key: bubble.id,
+						text: bubble.text,
+						instant: !options.typewriter || reducedMotion.current,
+						speed: options.speed,
+					})
 				: null,
 			menuOpen
 				? h(

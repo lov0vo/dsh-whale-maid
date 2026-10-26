@@ -268,12 +268,21 @@ test('keeps the 1.0.0 public API and its defaults', () => {
 		'size',
 		'sleep',
 		'speed',
+		'typewriter',
 		'walk'
 	]);
 	assert.equal(options.size, null);
 	assert.equal(options.speed, 1);
 	assert.equal(options.bubbleDuration, 4500);
 	assert.equal(options.language, 'auto');
+	assert.equal(options.typewriter, true);
+});
+
+test('the typewriter reveal can be switched off', () => {
+	api.setOptions({ typewriter: false });
+	assert.equal(api.getOptions().typewriter, false);
+	api.setOptions({ typewriter: true });
+	assert.equal(api.getOptions().typewriter, true);
 });
 
 /* --- companion switches -------------------------------------------------- */

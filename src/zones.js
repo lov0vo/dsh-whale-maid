@@ -49,6 +49,8 @@ function dwmZoneReact(zone) {
 	var language = dwmUiLanguage();
 	var bank = DWM_ZONE_BANK[zone] || 'patHead';
 	var now = dwmNow();
+	/* Remember the tap so the pet's own click handler does not talk over it. */
+	DWM_RUNTIME.lastZoneAt = now;
 
 	/* triple tap: three taps within 1.2 s */
 	var taps = DWM_ZONE_STATE.tapTimes;
@@ -59,14 +61,14 @@ function dwmZoneReact(zone) {
 		dwmGrowthApply('triple');
 		dwmFx('star', 5);
 		dwmFx('heart', 3);
-		if (companion.chip) dwmChip(dwmPickLine('triple', language), 'mood', 2600);
+		dwmSpeak(dwmPickLine('triple', language));
 		return;
 	}
 
 	var type = zone === 'belly' ? 'pat-belly' : zone === 'tail' ? 'pat-tail' : 'pat-head';
 	dwmGrowthApply(type);
 	dwmFx(DWM_ZONE_FX[zone] || 'heart', 2);
-	if (companion.chip) dwmChip(dwmPickLine(bank, language), 'mood', 2400);
+	dwmSpeak(dwmPickLine(bank, language));
 }
 
 function dwmAttachZones(element) {

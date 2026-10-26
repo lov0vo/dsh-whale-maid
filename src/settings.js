@@ -190,6 +190,7 @@ function SettingsSection() {
 			{ className: 'dwm-settings-checks' },
 			check('greeting', '首次出现时打招呼', 'Greet on first appearance'),
 			check('walk', '自己散步', 'Wander on her own'),
+			check('typewriter', '打字机效果', 'Typewriter effect'),
 			check('sleep', '闲置后打瞌睡', 'Doze off when idle'),
 		),
 		h(
