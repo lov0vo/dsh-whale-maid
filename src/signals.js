@@ -58,8 +58,8 @@ function dwmQueryAny(selectorList) {
 
 function dwmWorkPose(phase) {
 	if (phase === 'thinking') return 'think';
-	if (phase === 'tool') return 'play';
-	if (phase === 'failure') return 'drag';
+	if (phase === 'tool') return 'work';
+	if (phase === 'failure') return 'sad';
 	if (phase === 'success') return 'joy';
 	return 'idle';
 }
@@ -170,17 +170,32 @@ function dwmScanSignals() {
 	dwmResetWork(work);
 	if (failed) {
 		dwmGrowthApply('failure');
-		if (DWM_RUNTIME.api && DWM_RUNTIME.api.runSequence) DWM_RUNTIME.api.runSequence([['drag', 2000]]);
+		dwmPlaySequence([['sad', 2000]]);
 		if (companion.chip) dwmChip(dwmWorkChipText('failure', dwmUiLanguage()), 'error', 2600);
 		dwmFx('sparkle', 2);
 		if (companion.workSpeech !== 'off') dwmSpeak(dwmPickLine('workFailure', dwmUiLanguage()));
 	} else {
 		dwmGrowthApply('success');
-		if (DWM_RUNTIME.api && DWM_RUNTIME.api.runSequence) DWM_RUNTIME.api.runSequence([['joy', 1500]]);
+		dwmPlaySequence([['joy', 1500]]);
 		if (companion.chip) dwmChip(dwmWorkChipText('success', dwmUiLanguage()), 'ok', 2200);
 		dwmFx('star', 3);
 		if (companion.workSpeech !== 'off') dwmSpeak(dwmPickLine('workSuccess', dwmUiLanguage()));
 	}
+}
+
+/**
+ * Play a short pose sequence. Before the pet mounts there is no sequence
+ * runner yet, so fall back to announcing the first state on the same event
+ * channel the pet listens to.
+ */
+function dwmPlaySequence(steps) {
+	if (!steps || !steps.length) return;
+	var api = DWM_RUNTIME.api;
+	if (api && typeof api.runSequence === 'function') {
+		api.runSequence(steps);
+		return;
+	}
+	dwmForceState(steps[0][0], steps[0][1]);
 }
 
 /** Which language the visible text should use (mirrors resolveLanguage). */

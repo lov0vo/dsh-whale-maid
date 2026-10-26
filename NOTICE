@@ -20,12 +20,22 @@ Files:
   src/sprites/sleep.png
   src/sprites/wake.png
   src/sprites/walk.png
+  src/sprites/work.png   (added in 1.2.0, see note below)
+  src/sprites/sad.png    (added in 1.2.0, see note below)
   assets/preview.png   (composed from the files above)
 
 Character : DSH 1024Store whale girl
 Source    : https://deepseek1024.com/plugins/imsai-sh/awesome-deepseek-harness-plugins
             (the desktop pet in the lower-right corner of that page)
 Asset path: /pet/whale-girl/<state>.png, 256x256 per frame, laid out horizontally
+
+Note on work.png / sad.png (1.2.0)
+----------------------------------
+These two files were not taken from the site. They were generated locally with an
+image model from idle.png as the identity reference, then chroma-keyed, despilled
+and normalised to the same 256x256 / 225px-height / bottom-aligned frame grid.
+They are derivative works of the character above, so exactly the same restrictions
+apply: no licence is granted, personal study and non-commercial use only.
 
 Copyright in the character design and the sprite artwork belongs to the original
 site and its original author(s). The author of this repository claims no rights

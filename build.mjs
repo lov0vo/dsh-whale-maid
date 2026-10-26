@@ -59,6 +59,8 @@ const SHEETS = {
 	welcome: 2,
 	drag: 1,
 	think: 1,
+	work: 1,
+	sad: 1,
 	sleep: 2,
 	wake: 2,
 	walk: 3,

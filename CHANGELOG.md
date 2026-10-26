@@ -2,6 +2,30 @@
 
 本项目遵循 [语义化版本](https://semver.org/lang/zh-CN/)。
 
+## 1.2.0 — 2026-10-26
+
+新增两张专属姿态，替掉 1.1.0 里的「借图」。**纯增量**：原有十张精灵表、十状态语义、四种播放模式、包名、cordis row id、`dsh-whale-maid:*` 存储键与事件名、`window.dshWhaleMaid` 既有方法、`.dwm-*` 前缀与 `--dwm-*` 变量全部未改。
+
+### 新增
+
+- **`work` 姿态**（`src/sprites/work.png`，1 帧，`loop + float`）：双手敲半透明浅蓝全息面板，头微低、眉心微蹙。工具 `preparing` / `running` 相位显示，不再借 `play`。
+- **`sad` 姿态**（`src/sprites/sad.png`，1 帧，`loop`）：垂肩、双手身前交叠、上眼睑下垂、眉心内侧上挑、嘴角下撇、太阳穴一滴汗。工具报错 / 任务失败 / 心情触底显示，不再借 `drag`。
+- **`dwmPlaySequence(steps)`**（`src/signals.js`）：姿态序列播放的统一入口，优先 `DWM_RUNTIME.api.runSequence`，宠物未挂载时回退 `dwmForceState` 并仍广播 `dsh-whale-maid:state`。
+
+### 变更
+
+- `src/signals.js`：`dwmWorkPose` 映射改为 `tool → work`、`failure → sad`；会话结束分支由 `[['drag', 2000]]` 改为 `[['sad', 2000]]`，成功分支改走 `dwmPlaySequence([['joy', 1500]])`。
+- `src/pet.js`：`ANIM` 增 `work` / `sad` 两项（十状态 → 十二状态，索引与语义不变）。
+- `build.mjs`：`SHEETS` 增 `work: 1`、`sad: 1`，构建时照旧校验每张表 `width === frames × 256`、`height === 256`。
+
+### 体积
+
+- `client.js` 由 2,189,669 B 增至 **2,361,079 B**（两张新图共 128,050 B，base64 内联后 +171,410 B）。
+
+### 测试
+
+- `test/companion.test.mjs` 增 2 个用例：运行中的工具切 `work`、新错误切 `sad`，并断言不再出现 `play` / `drag`。合计 **20 个用例全部通过**。
+
 ## 1.1.0 — 2026-10-25
 
 新增陪伴层。**纯增量**：包名、cordis row id、`dsh-whale-maid:*` 存储键与事件名、`window.dshWhaleMaid` 既有方法、`.dwm-*` 类前缀、`dwm-*` 关键帧、`--dwm-*` 变量、十状态 `ANIM` 表与四种播放模式语义全部未改；关掉全部新开关后行为与 1.0.0 一致。

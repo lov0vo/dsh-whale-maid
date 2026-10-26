@@ -32,7 +32,9 @@ var MAX_TILT = 10; // ca   degrees of 3D tilt at the edge of the body
 var HEART_MS = 1300; //      heart particle lifetime
 var HEART_SPREAD = 14; //      heart horizontal jitter, px
 
-/* The ten animation states: sheet, frame count, fps and playback mode. */
+/* The twelve animation states: sheet, frame count, fps and playback mode.
+   The original ten (idle..walk) are unchanged; `work` and `sad` are additive
+   single-frame poses so the work-status link no longer borrows `play` / `drag`. */
 var ANIM = {
 	idle: { sheet: 'idle', frames: 3, fps: 2, playback: 'blink' },
 	joy: { sheet: 'joy', frames: 2, fps: 5, playback: 'loop' },
@@ -41,6 +43,8 @@ var ANIM = {
 	welcome: { sheet: 'welcome', frames: 2, fps: 3, playback: 'loop' },
 	drag: { sheet: 'drag', frames: 1, fps: 5, playback: 'loop', motion: 'tilt' },
 	think: { sheet: 'think', frames: 1, fps: 2, playback: 'loop', motion: 'float' },
+	work: { sheet: 'work', frames: 1, fps: 2, playback: 'loop', motion: 'float' },
+	sad: { sheet: 'sad', frames: 1, fps: 2, playback: 'loop' },
 	sleep: { sheet: 'sleep', frames: 2, fps: 1, playback: 'loop' },
 	wake: { sheet: 'wake', frames: 2, fps: 3, playback: 'once' },
 	walk: { sheet: 'walk', frames: 3, fps: 6, playback: 'pingpong' },

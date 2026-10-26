@@ -204,6 +204,7 @@ function createHarness() {
 	return {
 		plugin,
 		api: windowStub.dshWhaleMaid,
+		window: windowStub,
 		dom,
 		store,
 		styleTags,
@@ -422,6 +423,43 @@ test('a new error card during the turn counts as a failure', () => {
 	api.scanNow();
 
 	assert.equal(api.growth().counts.failure, failures + 1);
+});
+
+/* The work link must reach for the dedicated poses added in 1.2.0 instead of
+   borrowing the play / drag sheets. */
+test('a running tool shows the dedicated work pose', () => {
+	const seen = [];
+	const onState = (event) => seen.push(event.detail.state);
+	harness.window.addEventListener('dsh-whale-maid:state', onState);
+
+	api.setCompanion({ workLink: true, workHold: 0 });
+	harness.dom.matches = { [CHAT_RUNNING]: 1 };
+	api.scanNow();
+	harness.dom.matches = { [CHAT_RUNNING]: 1, [TOOL_RUNNING]: 1 };
+	api.scanNow();
+	harness.dom.matches = {};
+	api.scanNow();
+
+	harness.window.removeEventListener('dsh-whale-maid:state', onState);
+	assert.ok(seen.indexOf('work') >= 0, 'expected the work pose, saw: ' + seen.join(', '));
+	assert.equal(seen.indexOf('play'), -1, 'the work pose must not borrow play, saw: ' + seen.join(', '));
+});
+
+test('a new failure shows the dedicated sad pose', () => {
+	const seen = [];
+	const onState = (event) => seen.push(event.detail.state);
+	harness.window.addEventListener('dsh-whale-maid:state', onState);
+
+	harness.dom.matches = { [CHAT_RUNNING]: 1, [TOOL_ERROR]: 1 };
+	api.scanNow();
+	harness.dom.matches = { [CHAT_RUNNING]: 1, [TOOL_ERROR]: 2 };
+	api.scanNow();
+	harness.dom.matches = {};
+	api.scanNow();
+
+	harness.window.removeEventListener('dsh-whale-maid:state', onState);
+	assert.ok(seen.indexOf('sad') >= 0, 'expected the sad pose, saw: ' + seen.join(', '));
+	assert.equal(seen.indexOf('drag'), -1, 'the failure pose must not borrow drag, saw: ' + seen.join(', '));
 });
 
 test('the detector stands down when the work link is switched off', () => {
