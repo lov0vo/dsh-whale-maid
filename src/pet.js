@@ -15,7 +15,7 @@
 /* ---------------------------------------------------------------- tunables */
 /* Names in comments are the original minified identifiers. */
 
-var DRAG_THRESHOLD = 6;
+var DRAG_THRESHOLD = 6; // ea   px of pointer travel before a press becomes a drag
 /* Release physics (added in 1.5.0). Values mirror the reference plugin:
  * one discrete nudge of velocity * 2.4 capped at 70px, a 420ms spring-back
  * rotation capped at 20deg, and a squash-only reaction below 6px/event. */
@@ -24,8 +24,8 @@ var DRAG_RELEASE_CAP = 70;
 var DRAG_LIGHT_SPEED = 6;
 var DRAG_TILT_GAIN = 1.25;
 var DRAG_TILT_CAP = 20;
-var SQUASH_MS = 320;
- // ea   px of pointer travel before a press becomes a drag
+var SQUASH_MS = 320; //      how long `.is-squash` stays on after a light release
+var CLICK_GUARD_MS = 400; // how long a release swallows the synthesised click
 var BUBBLE_MS = 4500; // ta   how long a speech bubble stays up
 var SLEEP_MS = 60000; // na   idle time before the pet falls asleep
 var THINK_MIN_MS = 15000; // t    think-event interval base
@@ -157,8 +157,8 @@ var DEFAULT_OPTIONS = {
 	speed: 1, // multiplier for frame rate and wander speed
 	language: 'auto', // 'auto' | 'zh' | 'en'
 	greeting: true, // greet once on first ever mount
-	sleep: true,	dragPhysics: true,
- // doze off after a while when idle
+	sleep: true, // doze off after a while when idle
+	dragPhysics: true, // release inertia + squash (1.5.0)
 	walk: true, // wander across the viewport on its own
 	bubbleDuration: BUBBLE_MS,
 	typewriter: true, // reveal bubble text one character at a time
@@ -420,12 +420,16 @@ function WhaleGirl() {
 	var rootRef = useRef(null);
 	var bodyRef = useRef(null);
 	var bubbleTimer = useRef(undefined);
+	/* `squash` is the single source of truth for `.is-squash`: the class is
+	 * rendered from this boolean and nothing else writes it. */
 	var squashState = useState(false);
 	var squash = squashState[0];
 	var setSquash = squashState[1];
 	var releaseTimers = useRef([]);
-	var dragRef = useRef(null);	var dragRef = useRef(null);
-	var suppressClick = useRef(false);	var suppressClick = useRef(false);
+	var squashTimer = useRef(undefined);
+	var clickGuard = useRef(undefined);
+	var dragRef = useRef(null);
+	var suppressClick = useRef(false);
 	var stateRef = useRef('idle');
 	stateRef.current = animState;
 	var sequenceTimers = useRef([]);
@@ -464,6 +468,7 @@ function WhaleGirl() {
 		return function () {
 			window.removeEventListener(OPTIONS_EVENT, onOptions);
 			window.removeEventListener(SAY_EVENT, onSay);
+			window.removeEventListener(DWM_EVENT_WORK, onWorkGlow);
 			window.removeEventListener(RESET_POS_EVENT, onResetPos);
 		};
 	}, []);
@@ -473,7 +478,7 @@ function WhaleGirl() {
 		setWorkGlow(!!(event && event.detail && event.detail.active));
 	}
 
-function say(message, tone) {
+	function say(message, tone) {
 		if (bubbleTimer.current !== undefined) clearTimeout(bubbleTimer.current);
 		setBubble({ id: Date.now(), text: message, tone: tone || '' });
 		bubbleTimer.current = setTimeout(function () {
@@ -656,11 +661,16 @@ function onRecall() {
 		window.dispatchEvent(new CustomEvent(OPTIONS_EVENT));
 	}
 
-function onClick() {
+	/* --- click ------------------------------------------------------------ */
+	/* The browser fires this right after `pointerup`, so a drag has already set
+	 * `suppressClick`; consume it here (and drop its guard timer) instead of
+	 * letting a drag end up toggling the menu. */
+	function onClick() {
 		if (suppressClick.current) {
-			suppressClick.current = false;
+			clearClickGuard();
 			return;
 		}
+		restoreSprite();
 		stopWalk();
 		setMenuOpen(function (open) {
 			return !open;
@@ -712,8 +722,10 @@ function onClick() {
 	 * (no animation loop, no friction): a slow release only squashes. */
 	function releasePhysics(drag, base) {
 		var speed = Math.hypot(drag.vx || 0, drag.vy || 0);
-		if (options.dragPhysics === false || speed < DRAG_LIGHT_SPEED) {
-			if (speed < DRAG_LIGHT_SPEED) squashOnce();
+		/* `dragPhysics: false` means the pet simply stays where it was dropped. */
+		if (options.dragPhysics === false) return base;
+		if (speed < DRAG_LIGHT_SPEED) {
+			squashOnce();
 			return base;
 		}
 		var width = (rootRef.current && rootRef.current.offsetWidth) || 0;
@@ -731,39 +743,46 @@ function onClick() {
 		return { x: nextX, y: nextY };
 	}
 
+	/* Every pending release timer, so a second fling replaces the first instead
+	 * of stacking on top of it — and so unmount can drop them all. */
+	function clearReleaseTimers() {
+		var timers = releaseTimers.current;
+		for (var i = 0; i < timers.length; i += 1) clearTimeout(timers[i]);
+		releaseTimers.current = [];
+	}
+
 	function spinRelease(angle) {
 		var body = bodyRef.current;
 		if (!body || reducedMotion.current) return;
+		clearReleaseTimers();
 		body.style.setProperty('--dwm-drag-angle', angle.toFixed(1) + 'deg');
 		body.style.transition = 'transform 420ms cubic-bezier(.2,.9,.3,1)';
 		var settle = setTimeout(function () {
-			body.style.setProperty('--dwm-drag-angle', '0deg');
+			var target = bodyRef.current || body;
+			target.style.setProperty('--dwm-drag-angle', '0deg');
 			var clear = setTimeout(function () {
-				body.style.transition = '';
+				var node = bodyRef.current || body;
+				node.style.transition = '';
 			}, 480);
 			releaseTimers.current.push(clear);
 		}, 30);
 		releaseTimers.current.push(settle);
 	}
 
+	/* A light release only squashes. `squash` (squashState[0]) is the single
+	 * writer of `.is-squash`; the class is rendered from it and cleared by the
+	 * timer below after SQUASH_MS. */
 	function squashOnce() {
-	if (Array.isArray(releaseTimers.current)) {
-		releaseTimers.current.forEach(function (id) { clearTimeout(id); });
-	}
-	releaseTimers.current = [];
-	var squashTarget = null;
-	if (typeof document !== 'undefined' && document.querySelector) {
-		squashTarget = document.querySelector('.dwm-root .dwm-3d');
-	}
-	if (squashTarget && squashTarget.classList) squashTarget.classList.add('is-squash');		if (reducedMotion.current) return;
+		if (reducedMotion.current) return;
+		if (squashTimer.current !== undefined) clearTimeout(squashTimer.current);
 		setSquash(true);
-		var id = setTimeout(function () {
+		squashTimer.current = setTimeout(function () {
+			squashTimer.current = undefined;
 			setSquash(false);
 		}, SQUASH_MS);
-		releaseTimers.current.push(id);
 	}
 
-	/* --- drag geometry --------------------------------------------------- */	/* --- drag geometry --------------------------------------------------- */
+	/* --- drag geometry --------------------------------------------------- */
 	function dragPosition(drag, clientX, clientY) {
 		var width = (rootRef.current && rootRef.current.offsetWidth) || 0;
 		return {
@@ -772,10 +791,29 @@ function onClick() {
 		};
 	}
 
+	/* A pose command, a tap or a grab must take the sprite back from a static
+	 * portrait: `dwmPortraitShow` hides the `.dwm-3d` layers, so without this the
+	 * next ANIM state would play on an invisible body. */
+	function restoreSprite() {
+		if (typeof dwmHidePose === 'function') dwmHidePose();
+	}
+
+	/* Drop a pending "swallow the click" guard (new gesture, or unmount). */
+	function clearClickGuard() {
+		if (clickGuard.current !== undefined) clearTimeout(clickGuard.current);
+		clickGuard.current = undefined;
+		suppressClick.current = false;
+	}
+
 	function onPointerDown(event) {
 		var body = bodyRef.current;
 		var root = rootRef.current;
 		if (!body || !root) return;
+		/* One drag at a time: a second pointer (second finger, a synthetic
+		 * pointerdown) must never replace the active drag or steal its capture. */
+		if (dragRef.current !== null) return;
+		clearClickGuard();
+		restoreSprite();
 		var rect = root.getBoundingClientRect();
 		dragRef.current = {
 			pointerId: event.pointerId,
@@ -812,7 +850,6 @@ function onClick() {
 			drag.lastX = event.clientX;
 			drag.lastY = event.clientY;
 			setAnimState('drag');
-			setPos(dragPosition(drag, event.clientX, event.clientY));			setAnimState('drag');
 			setPos(dragPosition(drag, event.clientX, event.clientY));
 			return;
 		}
@@ -823,6 +860,8 @@ function onClick() {
 		var drag = dragRef.current;
 		if (!drag || event.pointerId !== drag.pointerId) return;
 		dragRef.current = null;
+		/* Every exit path (pointerup, pointercancel, unmount) frees the capture
+		 * and the cursor class before anything else can throw. */
 		var body = bodyRef.current;
 		if (body) {
 			body.classList.remove('is-dragging');
@@ -832,21 +871,21 @@ function onClick() {
 				/* already released */
 			}
 		}
-		suppressClick.current = drag.moved;
-		if (drag.moved) {
-			setTimeout(function () {
-				suppressClick.current = false;
-			}, 0);
-			var released = releasePhysics(drag, dragPosition(drag, event.clientX, event.clientY));
-			setPos(released);
-			setAnimState('idle');
-			resetTilt();
-			writeJSON(KEY_POS, released);			var next = dragPosition(drag, event.clientX, event.clientY);
-			setPos(next);
-			setAnimState('idle');
-			resetTilt();
-			writeJSON(KEY_POS, next);
-		}
+		/* A tap keeps the click; a drag swallows exactly the click the browser is
+		 * about to synthesise for this gesture. The guard is a tracked timer, so
+		 * a missing click cannot leave the flag stuck on forever. */
+		clearClickGuard();
+		if (!drag.moved) return;
+		suppressClick.current = true;
+		clickGuard.current = setTimeout(function () {
+			clickGuard.current = undefined;
+			suppressClick.current = false;
+		}, CLICK_GUARD_MS);
+		var released = releasePhysics(drag, dragPosition(drag, event.clientX, event.clientY));
+		setPos(released);
+		setAnimState('idle');
+		resetTilt();
+		writeJSON(KEY_POS, released);
 	}
 
 	/* --- frame playback -------------------------------------------------- */
@@ -984,6 +1023,9 @@ function onClick() {
 			var detail = event && event.detail ? event.detail : {};
 			var next = typeof detail.state === 'string' ? detail.state : 'idle';
 			if (!ANIM[next]) return;
+			/* A state command always wins over a static portrait: otherwise the new
+			 * frames would play behind the hidden `.dwm-3d` layers. */
+			restoreSprite();
 			if (detail.hold === true) {
 				var timers = sequenceTimers.current;
 				for (var i = 0; i < timers.length; i++) clearTimeout(timers[i]);
@@ -1054,6 +1096,31 @@ function onClick() {
 			if (thinkTimer.current !== undefined) clearTimeout(thinkTimer.current);
 			if (walkTimer.current !== undefined) clearTimeout(walkTimer.current);
 			if (rafRef.current !== undefined) cancelAnimationFrame(rafRef.current);
+			/* release physics: drop the spring-back chain and the squash timer so
+			 * neither can setState on an unmounted component. */
+			clearReleaseTimers();
+			if (squashTimer.current !== undefined) {
+				clearTimeout(squashTimer.current);
+				squashTimer.current = undefined;
+			}
+			clearClickGuard();
+			/* an unmount in the middle of a drag must not leave the pointer capture
+			 * (or the grabbing cursor) behind on a node React is about to drop. */
+			var body = bodyRef.current;
+			var drag = dragRef.current;
+			dragRef.current = null;
+			if (body) {
+				body.classList.remove('is-dragging');
+				body.style.setProperty('--dwm-drag-angle', '0deg');
+				body.style.transition = '';
+				if (drag) {
+					try {
+						body.releasePointerCapture(drag.pointerId);
+					} catch (error) {
+						/* already released */
+					}
+				}
+			}
 		};
 	}, []);
 
@@ -1186,7 +1253,7 @@ function onClick() {
 				{ className: 'dwm-flip', style: { transform: 'scaleX(' + flip + ')' } },
 				h(
 					'span',
-					{ className: 'dwm-3d' },
+					{ className: squash ? 'dwm-3d is-squash' : 'dwm-3d' },
 					h(Sprite, { state: animState, frame: frame, layer: 'depth' }),
 					h(Sprite, { state: animState, frame: frame }),
 					h(Shine, { state: animState, frame: frame }),
@@ -1227,7 +1294,4 @@ function onClick() {
 			: null,
 		h(DwmFxLayer, null),
 	);
-	releaseTimers.current.push(setTimeout(function () {
-		if (squashTarget && squashTarget.classList) squashTarget.classList.remove('is-squash');
-	}, SQUASH_MS));
 }

@@ -296,6 +296,29 @@ function CompanionPanel(props) {
 	}
 
 	function commitCity(raw) {
+	// 2.1.0: validate before trusting a hand-typed city, and say why when it fails.
+	var typed = typeof raw === 'string' ? raw.trim() : '';
+	if (typed !== '' && typeof dwmWeatherValidateCity === 'function') {
+		dwmWeatherValidateCity(typed).then(function (result) {
+			if (!result || !result.ok) {
+				var reason = result && result.reason;
+				dwmSpeak(
+					reason === 'network'
+						? '网络不通，先保留原来的城市'
+						: '找不到「' + typed + '」，试试加省份或区（例如「杭州市西湖区」）',
+					'important',
+				);
+				return;
+			}
+			var next = normalizeOptions(Object.assign({}, readOptions(), { city: result.label }));
+			writeJSON(KEY_OPTIONS, next);
+			if (typeof window !== "undefined" && window.dispatchEvent) window.dispatchEvent(new CustomEvent(OPTIONS_EVENT));
+			if (typeof dwmWeatherRefresh === "function") dwmWeatherRefresh();
+			dwmSpeak('已识别：' + result.label, 'important');
+		});
+		return;
+	}
+
 		var next = String(raw === undefined || raw === null ? '' : raw).trim();
 		if (next === '') next = DWM_WEATHER_DEFAULT_CITY;
 		if (next === readOptions().city) return;
@@ -306,6 +329,35 @@ function CompanionPanel(props) {
 	}
 
 	function weatherBlock() {
+		var candState = useState([]);
+		var candidates = candState[0];
+		var setCandidates = candState[1];
+
+		function searchCity(text) {
+			var query = typeof text === 'string' ? text.trim() : '';
+			if (query === '' || typeof dwmWeatherCandidates !== 'function') { setCandidates([]); return; }
+			dwmWeatherCandidates(query).then(function (rows) { setCandidates(rows); });
+		}
+
+		function pickCity(candidate) {
+			var next = normalizeOptions(Object.assign({}, readOptions(), { city: candidate.label }));
+			writeJSON(KEY_OPTIONS, next);
+			if (typeof window !== 'undefined' && window.dispatchEvent) window.dispatchEvent(new CustomEvent(OPTIONS_EVENT));
+			if (typeof dwmWeatherRefresh === 'function') dwmWeatherRefresh('manual');
+			setCandidates([]);
+			dwmSpeak('已切换到 ' + candidate.label, 'important');
+		}
+
+		var rows = candidates.map(function (candidate) {
+			return h('button', {
+				key: 'cand-' + candidate.label + candidate.lat,
+				type: 'button',
+				className: 'dwm-panel-weather-candidate',
+				onClick: function () { pickCity(candidate); },
+				style: { display: 'block', width: '100%', textAlign: 'left', margin: '4px 0 0', padding: '6px 10px', cursor: 'pointer', font: 'inherit', borderRadius: '8px', border: '1px solid var(--dsw-alias-border-l2, #e2e4ea)', background: 'var(--dsw-alias-bg-layer-2, #fff)', color: 'var(--dsw-alias-label-primary, #1c1f26)' },
+			}, candidate.label);
+		});
+
 		return h(
 			'div',
 			{ className: 'dwm-panel-weather' },
@@ -321,7 +373,7 @@ function CompanionPanel(props) {
 					'aria-label': dwmT('panel.weather.city', '城市', 'City'),
 					onKeyDown: function (event) {
 						if (event.key !== 'Enter') return;
-						commitCity(event.currentTarget.value);
+						searchCity(event.currentTarget.value);
 					},
 					onBlur: function (event) {
 						commitCity(event.currentTarget.value);
@@ -334,13 +386,15 @@ function CompanionPanel(props) {
 						className: 'dwm-panel-weather-button',
 						onClick: function () {
 							dwmWeatherRefresh('manual');
-						}
+						},
 					},
 					dwmT('panel.weather.refresh', '刷新天气', 'Refresh'),
-				)
-			)
+				),
+			),
+			rows,
 		);
 	}
+
 
 	function check(key, zh, en) {
 		return h(

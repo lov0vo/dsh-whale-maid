@@ -219,7 +219,7 @@ function dwmWeatherGeocode(city) {
 }
 
 /* Resolve a place: system geolocation first, the configured city as fallback. */
-function dwmWeatherLocate() {
+function dwmWeatherLocateRaw() {
 	var geo = typeof navigator !== 'undefined' ? navigator.geolocation : null;
 	if (!geo || typeof geo.getCurrentPosition !== 'function') return Promise.reject(new Error('no geolocation'));
 	return new Promise(function (resolve, reject) {
@@ -420,4 +420,97 @@ function dwmWeatherForget() {
 	} catch (error) {
 		/* ignore */
 	}
+}
+
+/*
+ * Reverse geocoding: turn the coordinates the browser gives us into a place
+ * name. Nominatim is the only free endpoint that answers reliably for China
+ * (Open-Meteo geocoding cannot resolve districts).
+ */
+function dwmWeatherReverse(lat, lon) {
+	var url = DWM_WEATHER_NOMINATIM + '/reverse?format=jsonv2&zoom=14&addressdetails=1&accept-language=zh-CN&lat=' + lat + '&lon=' + lon;
+	return dwmWeatherWithTimeout(url, DWM_WEATHER_GEOCODE_MS).then(function (data) {
+		var address = (data && data.address) || {};
+		var city = address.city || address.town || address.county || address.state || '';
+		var district = address.city_district || address.district || address.suburb || address.county || '';
+		var label = city && district && city !== district ? city + district : city || district;
+		if (!label) return null;
+		return {
+			city: label,
+			lat: Number(lat),
+			lon: Number(lon),
+			precision: district && district !== city ? 'district' : 'city',
+		};
+	}).catch(function () {
+		return null;
+	});
+}
+
+/* Validate a hand-typed city before we trust it. */
+function dwmWeatherValidateCity(text) {
+	var query = typeof text === 'string' ? text.trim() : '';
+	if (query === '') return Promise.resolve({ ok: false, reason: 'empty' });
+	return dwmWeatherGeocode(query).then(function (place) {
+		if (!place) return { ok: false, reason: 'not-found', query: query };
+		return { ok: true, query: query, label: place.city, lat: place.lat, lon: place.lon, precision: place.precision };
+	}).catch(function () {
+		return { ok: false, reason: 'network', query: query };
+	});
+}
+
+/* Auto-locate, then turn the coordinates into a readable place name. */
+function dwmWeatherLocateQuiet() {
+	return dwmWeatherLocateRaw().then(function (position) {
+		if (!position || typeof position.lat !== 'number' || typeof position.lon !== 'number') return position;
+		return dwmWeatherReverse(position.lat, position.lon).then(function (place) {
+			if (!place) { position.precision = 'coordinates'; return position; }
+			return { city: place.city, lat: position.lat, lon: position.lon, precision: place.precision };
+		});
+	});
+}
+
+/* Up to five matches for a partial name, so the user can pick one. */
+function dwmWeatherCandidates(text) {
+	var query = typeof text === 'string' ? text.trim() : '';
+	if (query === '') return Promise.resolve([]);
+	var url = DWM_WEATHER_NOMINATIM + '/search?format=jsonv2&limit=5&addressdetails=1&accept-language=zh-CN&q=' + encodeURIComponent(query);
+	return dwmWeatherWithTimeout(url, DWM_WEATHER_GEOCODE_MS).then(function (list) {
+		if (!Array.isArray(list)) return [];
+		return list.map(function (item) {
+			var address = (item && item.address) || {};
+			var city = address.city || address.town || address.county || address.state || '';
+			var district = address.city_district || address.district || address.suburb || address.county || '';
+			var label = city && district && city !== district ? city + district : city || district;
+			return {
+				label: label || (item && item.display_name) || query,
+				lat: Number(item.lat),
+				lon: Number(item.lon),
+				precision: district && district !== city ? 'district' : 'city',
+			};
+		}).filter(function (item) {
+			return item.label && isFinite(item.lat) && isFinite(item.lon);
+		});
+	}).catch(function () {
+		return [];
+	});
+}
+
+/*
+ * Locate, but tell the user when the browser refuses or the lookup fails,
+ * instead of silently falling back to the stored city.
+ */
+var dwmWeatherLocateReported = false;
+
+function dwmWeatherLocate() {
+	return dwmWeatherLocateQuiet().then(function (position) {
+		dwmWeatherLocateReported = false;
+		return position;
+	}, function (error) {
+		if (!dwmWeatherLocateReported) {
+			dwmWeatherLocateReported = true;
+			var denied = error && /denied|permission/i.test(String(error.message || error));
+			dwmSpeak(denied ? '浏览器未授予定位权限，已改用你填写的城市' : '定位失败，已改用你填写的城市', 'important');
+		}
+		throw error;
+	});
 }

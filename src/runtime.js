@@ -327,6 +327,7 @@ function dwmPortraitHost() {
 
 /** Take the portrait down (idempotent). */
 function dwmHidePose() {
+	dwmPortraitHideSprite(false);
 	if (DWM_PORTRAIT.timer !== undefined) clearTimeout(DWM_PORTRAIT.timer);
 	DWM_PORTRAIT.timer = undefined;
 	DWM_PORTRAIT.held = false;
@@ -342,6 +343,15 @@ function dwmHidePose() {
 }
 
 /** Paint `result.image` over the pet's box. Returns false when that is impossible. */
+function dwmPortraitHideSprite(hidden) {
+	if (typeof document === 'undefined' || !document.querySelectorAll) return;
+	var layers = document.querySelectorAll('.dwm-root .dwm-3d, .dwm-root .dwm-3d *');
+	for (var i = 0; i < layers.length; i += 1) {
+		if (layers[i] && layers[i].style) layers[i].style.visibility = hidden ? 'hidden' : '';
+	}
+}
+
+
 function dwmPortraitShow(result, ms, hold) {
 	var root = dwmPortraitHost();
 	if (!root) return false;
@@ -353,6 +363,11 @@ function dwmPortraitShow(result, ms, hold) {
 	}
 	if (!rect || !(Number(rect.width) > 0)) return false;
 	dwmHidePose();
+	var strays = document.querySelectorAll ? document.querySelectorAll('img[data-dwm-portrait]') : [];
+	for (var s = 0; s < strays.length; s += 1) {
+		if (strays[s] && strays[s].parentNode) strays[s].parentNode.removeChild(strays[s]);
+	}
+
 	var node = null;
 	try {
 		node = document.createElement('img');
@@ -362,6 +377,8 @@ function dwmPortraitShow(result, ms, hold) {
 		node.src = result.image;
 		var style = node.style;
 		style.position = 'fixed';
+		style.animation = 'dwm-portrait-float 2.8s ease-in-out infinite';
+		dwmPortraitHideSprite(true);
 		style.left = rect.left + 'px';
 		style.top = rect.top + 'px';
 		style.width = rect.width + 'px';
@@ -390,45 +407,20 @@ function dwmPortraitShow(result, ms, hold) {
  * where the posture lasts for the whole turn).
  */
 function dwmShowPose(result, ms, hold) {
-	if (!result || typeof result !== 'object') return false;
-	var duration = Number(ms) > 0 ? Number(ms) : 2000;
-	var shown = false;
-	if (result.image) {
-		shown = dwmPortraitShow(result, duration, hold === true);
-		if (typeof window !== 'undefined') {
-			window.dispatchEvent(
-				new CustomEvent(DWM_EVENT_POSE, {
-					detail: {
-						context: result.context,
-						pose: result.pose,
-						image: result.image,
-						ms: duration,
-						hold: hold === true
-					}
-				}),
-			);
-		}
-		if (shown) return true;
-		/*
-		 * The portrait exists but could not be painted — no mounted pet, a DOM
-		 * without `appendChild`, a zero-size root. Keep the moment visible by
-		 * playing the pose's fallback animation, which is exactly the state the
-		 * pre-1.8.0 code used for this moment.
-		 */
-		var fallback = typeof dwmPoseFallbackState === 'function' ? dwmPoseFallbackState(result.pose) : '';
-		if (fallback) {
-			dwmHidePose();
-			dwmForceState(fallback, duration, hold === true);
-			return true;
-		}
-	}
-	if (result.state) {
+	if (!result) return;
+	// Action-first (2.2.0): an animation state always wins over a static
+	// portrait, so the pet keeps moving instead of flickering between the
+	// two. Portraits are only used when the pose has no state equivalent.
+	var state = result.state;
+	if (!state && typeof dwmPoseFallbackState === "function") state = dwmPoseFallbackState(result.pose);
+	if (state) {
 		dwmHidePose();
-		dwmForceState(result.state, duration, hold === true);
-		return true;
+		dwmForceState(state, ms, hold);
+		return;
 	}
-	return shown;
+	if (result.image) dwmPortraitShow(result, ms, hold);
 }
+
 
 /** Notify listeners that growth data changed. */
 function dwmEmitGrowth() {

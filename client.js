@@ -17,7 +17,7 @@ window.__ModuleLoader__.load({
     var h = React.createElement;
 
     /* ---- src/pet.css ---- */
-    var STYLESHEET = "/*\n * dsh-whale-maid — sprite pet stylesheet.\n *\n * Source: the `dwm*` rule block of deepseek1024.com\n * (https://deepseek1024.com/assets/index-D3coedsb.css), copied rule-for-rule so\n * the extracted pet keeps its original motion: 3D sway, drag tilt, float, pop-in\n * bubble, bubble dots, heart particles, depth layer and shine.\n *\n * Three kinds of edits were made:\n *   1. The site's own CSS variables (--line/--surface/--ink/...) are re-declared\n *      on `.dwm-root` with DSH theme tokens (--dsw-alias-*) as the first\n *      choice and the original site values as fallbacks, so the bubble and the\n *      two action buttons follow the Harness light/dark theme instead of\n *      assuming the store site's palette.\n *   2. `--dwm-size` is driven by `--dwm-pet-size`, so the plugin's `size` option\n *      can resize the pet.\n *   3. Every descendant rule is scoped under `.dwm-root`, which lifts it\n *      from (0,1,0) to (0,2,0). This is required, not cosmetic: the pet body and\n *      the two action buttons are `<button type=\"button\">`, and the Harness\n *      shell ships button rules of the form `button[attr]` at specificity\n *      (0,1,1) that beat a bare class selector. Without scoping, the host's\n *      border-radius and background won and the round action buttons rendered as\n *      squircles over a stray host-coloured panel behind the pet.\n * Everything else — including the artwork colours, the perspective, the depth\n * blur and the keyframes — is the original.\n */\n\n.dwm-root {\n\t--dwm-size: var(--dwm-pet-size, 110px);\n\n\t/* Theme bridge: DSH alias tokens first, original site values as fallback. */\n\t--line: var(--dsw-alias-border-l2, #e2e4ea);\n\t--line-strong: var(--dsw-alias-border-l3, #cfd3dd);\n\t--surface: var(--dsw-alias-bg-layer-2, #fff);\n\t--surface-hover: var(--dsw-alias-interactive-bg-hover, #f4f5f8);\n\t--ink: var(--dsw-alias-label-primary, #1c1f26);\n\t--brand-dark: var(--dsw-alias-brand-primary, #2f5fbf);\n\t--brand-border: var(--dsw-alias-brand-primary, #2f5fbf);\n\t--accent-coral: #ef7a6d; /* artwork colour: heart particles */\n\t--shadow-rgb: 18 20 30;\n\t--shadow-sm: 0 1px 2px rgb(var(--shadow-rgb) / 12%);\n\t--shadow-md: 0 6px 18px rgb(var(--shadow-rgb) / 16%);\n\t--shadow-focus: 0 0 0 3px rgb(47 95 191 / 32%);\n\t--lift: translateY(-1px);\n\t--ease: cubic-bezier(.22,.61,.36,1);\n\t--duration-fast: .14s;\n\n\tz-index: 60;\n\twidth: var(--dwm-size);\n\theight: var(--dwm-size);\n\tperspective: 600px;\n\t/* `shell.overlay` is rendered as `.overlayLayer > *` with a rule that forces\n\t   `pointer-events:auto` on every direct child (specificity 0,1,1). A plain\n\t   class rule would lose and the whole pet box would swallow clicks meant for\n\t   the app behind it, so this must be `!important` (the inline style in the\n\t   component says the same thing). Only the pet body re-enables events. */\n\tpointer-events: none !important;\n\tposition: fixed;\n}\n\n.dwm-root .dwm {cursor:grab;pointer-events:auto;touch-action:none;width:100%;height:100%;transform:rotateX(var(--dwm-tilt-x,0deg)) rotateY(var(--dwm-tilt-y,0deg)) rotate(var(--dwm-drag-angle,0deg));transform-style:preserve-3d;background:0 0;border:0;padding:0;margin:0;font:inherit;color:inherit;box-sizing:border-box;appearance:none;-webkit-appearance:none;transition:transform .14s ease-out;position:absolute;inset:0}\n\n.dwm-root .dwm:hover,.dwm-root .dwm:focus-visible {cursor:grab}\n\n.dwm-root .dwm:focus-visible {box-shadow:var(--shadow-focus);outline:none}\n\n.dwm-root .dwm.is-dragging {cursor:grabbing;touch-action:none;-webkit-user-select:none;user-select:none;transition:none}\n\n.dwm-root .dwm-flip {width:100%;height:100%;transform-style:preserve-3d;transition:transform .3s var(--ease);display:block}\n\n.dwm-root .dwm-3d.is-squash {\n\tanimation: dwm-squash 320ms cubic-bezier(.34, 1.3, .64, 1);\n}\n\n@keyframes dwm-squash {\n\t0% { transform: scale(1, 1); }\n\t45% { transform: scale(1.05, .96); }\n\t100% { transform: scale(1, 1); }\n}\n\n.dwm-root .dwm-3d {width:100%;height:100%;transform-style:preserve-3d;will-change:transform;animation:8s ease-in-out infinite alternate dwm-sway;display:block}\n\n.dwm-root .dwm-sprite.dwm-depth {filter:blur(6px)brightness(.5)saturate(.75);pointer-events:none;position:absolute;inset:0;transform:translateZ(-32px)}\n\n.dwm-root .dwm-sprite {image-rendering:pixelated;filter:drop-shadow(0 12px 10px rgb(var(--shadow-rgb) / 30%));background-repeat:no-repeat;position:absolute;inset:0}\n\n.dwm-root .dwm-sprite.is-tilt {animation:.9s ease-in-out infinite alternate dwm-tilt}\n\n.dwm-root .dwm-sprite.is-float {animation:2.6s ease-in-out infinite dwm-float}\n\n/* Site glare layer: same #ffffff42 radial gradient as the store. The store can paint it\n * over the whole box because its page is light; on a dark theme that reads as a pale\n * rounded rectangle behind the character, so the component masks this layer with the\n * current sprite frame and the highlight only lands on the character itself. The 18%\n * radius is dropped because the mask already defines the visible shape. */\n.dwm-root .dwm-shine {pointer-events:none;background:radial-gradient(120% 70% at 32% 16%,#ffffff42,#0000 55%);position:absolute;inset:0;transform:translateZ(10px)}\n\n.dwm-root .dwm-shadow {background:rgb(var(--shadow-rgb) / 14%);pointer-events:none;border-radius:50%;height:10px;position:absolute;bottom:-4px;left:10%;right:10%}\n\n.dwm-root .dwm-pop {pointer-events:none;flex-direction:column;align-items:flex-end;gap:6px;display:flex;position:absolute;bottom:calc(100% + 10px);right:0}\n\n.dwm-root .dwm-bubble {box-sizing:border-box;border:1px solid var(--line);background:var(--surface);max-width:min(250px,100vw - 32px);box-shadow:var(--shadow-md);color:var(--ink);pointer-events:auto;animation:dwm-pop-in var(--duration-fast) var(--ease);border-radius:12px 12px 2px;margin:0;padding:8px 12px;font-size:13px;line-height:1.5}\n\n.dwm-root .dwm-menu {pointer-events:auto;gap:6px;display:flex}\n\n.dwm-root .dwm-action {border:1px solid var(--line);background:var(--surface);width:36px;height:36px;box-shadow:var(--shadow-sm);color:var(--brand-dark);cursor:pointer;box-sizing:border-box;margin:0;padding:0;font:inherit;appearance:none;-webkit-appearance:none;transition:border-color var(--duration-fast) var(--ease), background-color var(--duration-fast) var(--ease), transform var(--duration-fast) var(--ease);border-radius:50%;justify-content:center;align-items:center;display:inline-flex}\n\n.dwm-root .dwm-action:hover {border-color:var(--line-strong);background:var(--surface-hover);transform:var(--lift)}\n\n.dwm-root .dwm-action:focus-visible {box-shadow:var(--shadow-focus);outline:none}\n\n.dwm-root .dwm-bubble-dot {background:var(--brand-border);opacity:0;pointer-events:none;border-radius:50%;width:5px;height:5px;animation:6s ease-in infinite dwm-bubbles;position:absolute;bottom:18px;right:22%}\n\n.dwm-root .dwm-bubble-dot:nth-child(4) {animation-delay:2s;bottom:26px;right:18%}\n\n.dwm-root .dwm-bubble-dot:nth-child(5) {animation-delay:4s;bottom:24px;right:26%}\n\n.dwm-root .dwm-heart {color:var(--accent-coral);pointer-events:none;font-size:16px;line-height:1;animation:1.2s ease-out forwards dwm-heart-pop;position:absolute;bottom:26px;left:50%}\n\n@media (width<=680px) {.dwm-root:not([data-dwm-pet-size]){--dwm-pet-size:72px}.dwm-root .dwm-action{width:44px;height:44px}}\n\n/* Quest text and achievement names are plain labels; the classes exist\n   so the structure snapshot test can assert them. */\n.dwm-root .dwm-panel-quest-text {\n\tcolor: var(--dsw-alias-label-secondary, #6b7280);\n\tfont-size: 12px;\n\tline-height: 1.4;\n}\n.dwm-root .dwm-ach-name {\n\tcolor: var(--dsw-alias-label-primary, #1c1f26);\n\tfont-size: 12px;\n\tline-height: 1.4;\n}\n\n@media (prefers-reduced-motion:reduce) {.dwm-root .dwm-3d,.dwm-root .dwm-sprite,.dwm-root .dwm-bubble-dot{animation:none}.dwm-root .dwm-depth{display:none}.dwm-root .dwm,.dwm-root .dwm-flip{transition:none}.dwm-root .dwm-bubble-dot{display:none}}\n\n/* ---- settings panel (plugin addition, not part of the source site) ---- */\n\n.dwm-settings {color:var(--dsw-alias-label-primary,#1c1f26);display:flex;flex-direction:column;gap:14px;font-size:13px;line-height:1.5}\n\n.dwm-settings-hint {color:var(--dsw-alias-label-secondary,#5b6270);margin:0;font-size:12px}\n\n.dwm-settings-row {display:flex;flex-direction:column;gap:6px}\n\n.dwm-settings-row-head {display:flex;justify-content:space-between;align-items:baseline;gap:12px}\n\n.dwm-settings-label {font-weight:600}\n\n.dwm-settings-value {color:var(--dsw-alias-label-secondary,#5b6270);font-variant-numeric:tabular-nums;font-size:12px}\n\n.dwm-settings input[type=\"range\"] {accent-color:var(--dsw-alias-brand-primary,#2f5fbf);width:100%;margin:0}\n\n.dwm-settings select {border:1px solid var(--dsw-alias-border-l2,#e2e4ea);background:var(--dsw-alias-bg-layer-1,#fff);color:inherit;border-radius:8px;padding:5px 8px;font:inherit}\n\n.dwm-settings-checks {display:flex;flex-wrap:wrap;gap:8px 18px}\n\n.dwm-settings-check {align-items:center;gap:6px;display:inline-flex;cursor:pointer}\n\n.dwm-settings-check input {accent-color:var(--dsw-alias-brand-primary,#2f5fbf);margin:0}\n\n.dwm-settings-actions {border-top:1px solid var(--dsw-alias-border-l1,#eceef2);gap:8px;padding-top:12px;display:flex;flex-wrap:wrap}\n\n.dwm-settings button {border:1px solid var(--dsw-alias-border-l2,#e2e4ea);background:var(--dsw-alias-bg-layer-1,#fff);color:inherit;border-radius:8px;padding:5px 12px;font:inherit;cursor:pointer}\n\n.dwm-settings button:hover {background:var(--dsw-alias-interactive-bg-hover,#f4f5f8)}\n\n.dwm-settings button:focus-visible {box-shadow:0 0 0 3px rgb(47 95 191 / 32%);outline:none}\n\n@keyframes dwm-sway {0%{transform:rotateY(-5deg)rotateX(1.5deg)}to{transform:rotateY(5deg)rotateX(-1.5deg)}}\n\n@keyframes dwm-tilt {0%{rotate(-6deg)}to{rotate(6deg)}}\n\n@keyframes dwm-float {0%,to{translateY(0)}50%{translateY(-4px)}}\n\n@keyframes dwm-pop-in {0%{opacity:0;transform:translateY(4px)scale(.96)}to{opacity:1;transform:none}}\n\n@keyframes dwm-bubbles {0%,62%{opacity:0}68%{opacity:.9}to{opacity:0;transform:translateY(-26px)}}\n\n@keyframes dwm-heart-pop {0%{opacity:0;transform:translateY(0)scale(.6)}15%{opacity:1}to{opacity:0;transform:translateY(-46px)scale(1.15)}}\n\n/* ---- 1.1.0 companion layers: status chip + particle FX ---- */\n\n.dwm-root .dwm-fx-layer {pointer-events:none;position:absolute;inset:0;overflow:visible}\n\n.dwm-root .dwm-fx {position:absolute;bottom:26px;font-size:14px;line-height:1;opacity:0;animation:1.5s ease-out forwards dwm-fx-rise}\n\n.dwm-root .dwm-fx-heart {color:var(--accent-coral)}\n\n.dwm-root .dwm-fx-star {color:#e8b53a}\n\n.dwm-root .dwm-fx-sparkle {color:var(--brand-border)}\n\n.dwm-root .dwm-fx-note {color:var(--brand-dark)}\n\n@keyframes dwm-fx-rise {0%{opacity:0;transform:translate(-50%,0) scale(.6)}15%{opacity:1}to{opacity:0;transform:translate(calc(-50% + var(--dwm-fx-drift,0px)),-52px) scale(1.1)}}\n\n/* ---- 1.1.0 companion panel (settings.section, second section) ---- */\n\n.dwm-panel-hero {display:flex;align-items:center;gap:12px;border:1px solid var(--dsw-alias-border-l1,#eceef2);border-radius:12px;padding:10px 12px;background:var(--dsw-alias-bg-layer-2,#f7f8fa)}\n\n.dwm-panel-level {font-weight:700;font-size:18px;color:var(--dsw-alias-brand-primary,#2f5fbf);font-variant-numeric:tabular-nums}\n\n.dwm-panel-hero-text {display:flex;flex-direction:column;gap:2px;font-size:12px}\n\n.dwm-panel-hero-text strong {font-size:13px}\n\n.dwm-panel-hero-text span {color:var(--dsw-alias-label-secondary,#5b6270)}\n\n.dwm-panel-title {margin:6px 0 0;font-size:13px;font-weight:600}\n\n.dwm-panel-muted {color:var(--dsw-alias-label-secondary,#5b6270);margin:0;font-size:12px}\n\n.dwm-panel-stat {align-items:center;gap:2px 12px;grid-template-columns:1fr auto;display:grid;font-size:12px}\n\n.dwm-panel-stat-label {color:var(--dsw-alias-label-secondary,#5b6270)}\n\n.dwm-panel-stat-value {font-variant-numeric:tabular-nums}\n\n.dwm-panel-bar {background:var(--dsw-alias-border-l1,#eceef2);border-radius:999px;grid-column:1/-1;height:6px;overflow:hidden}\n\n.dwm-panel-bar-fill {border-radius:999px;height:100%;transition:width .3s var(--ease);display:block}\n\n.dwm-panel-bar-mood {background:linear-gradient(90deg,#f0a5a0,#ef7a6d)}\n\n.dwm-panel-bar-satiety {background:linear-gradient(90deg,#9fd6b4,#4fae7d)}\n\n.dwm-panel-bar-affinity {background:linear-gradient(90deg,#a9c3ef,#2f5fbf)}\n\n.dwm-panel-quests {flex-direction:column;gap:6px;margin:0;padding:0;list-style:none;display:flex}\n\n.dwm-panel-quest {align-items:center;justify-content:space-between;gap:10px;font-size:12px;display:flex}\n\n.dwm-panel-quest.is-claimed {opacity:.55}\n\n.dwm-panel-board {align-items:center;gap:6px;flex-wrap:wrap;display:flex}\n\n.dwm-panel-cell {width:26px;height:26px;border:1px solid var(--dsw-alias-border-l2,#e2e4ea);border-radius:8px;justify-content:center;align-items:center;font-size:12px;display:inline-flex;color:var(--dsw-alias-label-tertiary,#8b93a1)}\n\n.dwm-panel-cell.is-on {background:rgb(47 95 191 / 12%);border-color:rgb(47 95 191 / 35%);color:inherit}\n\n.dwm-panel-achievements {flex-wrap:wrap;gap:6px;display:flex}\n\n.dwm-ach {align-items:center;gap:5px;border:1px solid var(--dsw-alias-border-l2,#e2e4ea);border-radius:999px;padding:3px 9px;font-size:11px;display:inline-flex;color:var(--dsw-alias-label-tertiary,#8b93a1);filter:grayscale(1);opacity:.6}\n\n.dwm-ach.is-on {filter:none;opacity:1;color:inherit;background:rgb(47 95 191 / 8%);border-color:rgb(47 95 191 / 35%)}\n\n.dwm-ach-icon {font-size:12px;line-height:1}\n\n.dwm-panel-diary {flex-direction:column;gap:4px;margin:0;padding:0;font-size:12px;list-style:none;display:flex;color:var(--dsw-alias-label-secondary,#5b6270)}\n\n@media (prefers-reduced-motion:reduce) {.dwm-root .dwm-fx,.dwm-root .dwm-fx{display:none}}\n\n\n/* --- typewriter caret (1.2.1) ----------------------------------------- */\n.dwm-root .dwm-caret {\n\tdisplay: inline-block;\n\twidth: 2px;\n\theight: 1em;\n\tmargin-left: 1px;\n\tvertical-align: -0.15em;\n\tbackground: currentColor;\n\topacity: 0.75;\n\tanimation: dwm-caret 0.9s steps(2, start) infinite;\n}\n\n@keyframes dwm-caret {\n\t0%,\n\t49% {\n\t\topacity: 0.75;\n\t}\n\t50%,\n\t100% {\n\t\topacity: 0;\n\t}\n}\n\n@media (prefers-reduced-motion: reduce) {\n\t.dwm-root .dwm-caret {\n\t\tanimation: none;\n\t}\n}\r\n\n/* --- bubble sizing (1.2.1) -------------------------------------------- */\n/* The pop container is shrink-to-fit inside a 110px root, which used to\n   wrap every bubble into a narrow column. Let it size to the text instead. */\n.dwm-root .dwm-pop {\n\twidth: max-content;\n\tmax-width: min(250px, 100vw - 32px);\n}\n\n/* --- bubble tones (1.3.0) --------------------------------------------- */\n/* The status chip is gone; the tone now tints the single speech bubble. */\n.dwm-root .dwm-bubble-work {\n\tborder-color: var(--dsw-alias-brand-primary, #2f5fbf);\n}\n.dwm-root .dwm-bubble-ok {\n\tborder-color: var(--dsw-alias-state-success-primary, #3fb950);\n}\n.dwm-root .dwm-bubble-error {\n\tborder-color: var(--dsw-alias-state-error-primary, #e5534b);\n}\n\n/* ---- 1.3.0 weather companion ---- */\n\n.dwm-panel-weather {display:flex;flex-direction:column;gap:8px}\n.dwm-panel-weather-line {color:var(--dsw-alias-label-secondary,#5b6270);font-size:12px;font-variant-numeric:tabular-nums}\n.dwm-panel-weather-row {display:flex;align-items:center;gap:8px}\n.dwm-panel-weather-input {\n\tflex:1 1 auto;\n\tmin-width:0;\n\tpadding:6px 10px;\n\tborder:1px solid var(--dsw-alias-border-l2,#e2e4ea);\n\tborder-radius:8px;\n\tbackground:var(--dsw-alias-bg-layer-1,#fff);\n\tcolor:var(--dsw-alias-label-primary,#1c1f26);\n\tfont:inherit;\n\tfont-size:12px;\n\tappearance:none;\n\t-webkit-appearance:none;\n}\n.dwm-panel-weather-input:focus-visible {outline:2px solid var(--dsw-alias-brand-primary,#2f5fbf);outline-offset:1px}\n.dwm-panel-weather-button {\n\tflex:0 0 auto;\n\tpadding:6px 12px;\n\tborder:1px solid var(--dsw-alias-border-l2,#e2e4ea);\n\tborder-radius:8px;\n\tbackground:var(--dsw-alias-bg-layer-2,#f7f8fa);\n\tcolor:var(--dsw-alias-label-primary,#1c1f26);\n\tfont:inherit;\n\tfont-size:12px;\n\tcursor:pointer;\n\tappearance:none;\n\t-webkit-appearance:none;\n}\n.dwm-panel-weather-button:hover {background:var(--dsw-alias-interactive-bg-hover,#eef0f4)}\n\n/* weather particles reuse the existing FX layer */\n.dwm-root .dwm-fx-rain {color:#5b93e0}\n.dwm-root .dwm-fx-snow {color:#9fc7e8}\n\n/* ---- 1.4.0: work glow, focus rings, recall button, save box ---- */\n\n/* A soft halo while a turn is running, so the state reads at a glance. */\n.dwm-root[data-dwm-work='1'] .dwm-3d::after {\n\tcontent: \"\";\n\tposition: absolute;\n\tinset: -12%;\n\tborder-radius: 50%;\n\tbackground: radial-gradient(closest-side, rgb(120 180 255 / 32%), rgb(120 180 255 / 0%) 72%);\n\tanimation: dwm-glow 2.6s ease-in-out infinite;\n\tpointer-events: none;\n\ttransform: translateZ(-8px);\n}\n\n@keyframes dwm-glow {\n\t0%,\n\t100% {\n\t\topacity: 0.35;\n\t}\n\t50% {\n\t\topacity: 0.9;\n\t}\n}\n\n/* Keyboard users need to see where they are. */\n.dwm-root .dwm:focus-visible,\n.dwm-root .dwm-action:focus-visible,\n.dwm-root .dwm-recall:focus-visible {\n\toutline: 2px solid var(--dsw-alias-brand-primary, #4b8bf5);\n\toutline-offset: 3px;\n\tborder-radius: 14px;\n}\n\n/* Hidden: everything disappears except the recall button. */\n.dwm-root.dwm-root-hidden .dwm-pop,\n.dwm-root.dwm-root-hidden .dwm,\n.dwm-root.dwm-root-hidden .dwm-shadow,\n.dwm-root.dwm-root-hidden .dwm-bubble-dot,\n.dwm-root.dwm-root-hidden .dwm-fx-layer {\n\tdisplay: none;\n}\n\n.dwm-root .dwm-recall {\n\tposition: absolute;\n\tright: 0;\n\tbottom: 0;\n\twidth: 36px;\n\theight: 36px;\n\tdisplay: grid;\n\tplace-items: center;\n\tfont-size: 18px;\n\tline-height: 1;\n\tborder-radius: 50%;\n\tborder: 1px solid var(--dsw-alias-border-l2, #e2e4ea);\n\tbackground: var(--dsw-alias-bg-layer-2, #fff);\n\tcolor: var(--dsw-alias-label-primary, #1c1f26);\n\tcursor: pointer;\n\tbox-shadow: 0 1px 3px rgb(0 0 0 / 12%);\n\topacity: 0.82;\n\tbox-sizing: border-box;\n\tpadding: 0;\n}\n\n.dwm-root .dwm-recall:hover {\n\topacity: 1;\n}\n\n.dwm-panel-save .dwm-panel-textarea {\n\twidth: 100%;\n\tbox-sizing: border-box;\n\tresize: vertical;\n\tfont: inherit;\n\tfont-size: 12px;\n\tline-height: 1.5;\n\tpadding: 8px;\n\tborder-radius: 8px;\n\tborder: 1px solid var(--dsw-alias-border-l2, #e2e4ea);\n\tbackground: var(--dsw-alias-bg-layer-1, #fff);\n\tcolor: var(--dsw-alias-label-primary, #1c1f26);\n}\n\n@media (prefers-reduced-motion: reduce) {\n\t.dwm-root[data-dwm-work='1'] .dwm-3d::after {\n\t\tanimation: none;\n\t\topacity: 0.5;\n\t}\n}\n\n/* 1.5.2: the single settings entry stacks options above the companion panel. */\n.dwm-settings-stack {display:flex;flex-direction:column;gap:18px}\n";
+    var STYLESHEET = "/*\n * dsh-whale-maid — sprite pet stylesheet.\n *\n * Source: the `dwm*` rule block of deepseek1024.com\n * (https://deepseek1024.com/assets/index-D3coedsb.css), copied rule-for-rule so\n * the extracted pet keeps its original motion: 3D sway, drag tilt, float, pop-in\n * bubble, bubble dots, heart particles, depth layer and shine.\n *\n * Three kinds of edits were made:\n *   1. The site's own CSS variables (--line/--surface/--ink/...) are re-declared\n *      on `.dwm-root` with DSH theme tokens (--dsw-alias-*) as the first\n *      choice and the original site values as fallbacks, so the bubble and the\n *      two action buttons follow the Harness light/dark theme instead of\n *      assuming the store site's palette.\n *   2. `--dwm-size` is driven by `--dwm-pet-size`, so the plugin's `size` option\n *      can resize the pet.\n *   3. Every descendant rule is scoped under `.dwm-root`, which lifts it\n *      from (0,1,0) to (0,2,0). This is required, not cosmetic: the pet body and\n *      the two action buttons are `<button type=\"button\">`, and the Harness\n *      shell ships button rules of the form `button[attr]` at specificity\n *      (0,1,1) that beat a bare class selector. Without scoping, the host's\n *      border-radius and background won and the round action buttons rendered as\n *      squircles over a stray host-coloured panel behind the pet.\n * Everything else — including the artwork colours, the perspective, the depth\n * blur and the keyframes — is the original.\n */\n\n.dwm-root {\n\t--dwm-size: var(--dwm-pet-size, 110px);\n\n\t/* Theme bridge: DSH alias tokens first, original site values as fallback. */\n\t--line: var(--dsw-alias-border-l2, #e2e4ea);\n\t--line-strong: var(--dsw-alias-border-l3, #cfd3dd);\n\t--surface: var(--dsw-alias-bg-layer-2, #fff);\n\t--surface-hover: var(--dsw-alias-interactive-bg-hover, #f4f5f8);\n\t--ink: var(--dsw-alias-label-primary, #1c1f26);\n\t--brand-dark: var(--dsw-alias-brand-primary, #2f5fbf);\n\t--brand-border: var(--dsw-alias-brand-primary, #2f5fbf);\n\t--accent-coral: #ef7a6d; /* artwork colour: heart particles */\n\t--shadow-rgb: 18 20 30;\n\t--shadow-sm: 0 1px 2px rgb(var(--shadow-rgb) / 12%);\n\t--shadow-md: 0 6px 18px rgb(var(--shadow-rgb) / 16%);\n\t--shadow-focus: 0 0 0 3px rgb(47 95 191 / 32%);\n\t--lift: translateY(-1px);\n\t--ease: cubic-bezier(.22,.61,.36,1);\n\t--duration-fast: .14s;\n\n\tz-index: 60;\n\twidth: var(--dwm-size);\n\theight: var(--dwm-size);\n\tperspective: 600px;\n\t/* `shell.overlay` is rendered as `.overlayLayer > *` with a rule that forces\n\t   `pointer-events:auto` on every direct child (specificity 0,1,1). A plain\n\t   class rule would lose and the whole pet box would swallow clicks meant for\n\t   the app behind it, so this must be `!important` (the inline style in the\n\t   component says the same thing). Only the pet body re-enables events. */\n\tpointer-events: none !important;\n\tposition: fixed;\n}\n\n.dwm-root .dwm {cursor:grab;pointer-events:auto;touch-action:none;width:100%;height:100%;transform:rotateX(var(--dwm-tilt-x,0deg)) rotateY(var(--dwm-tilt-y,0deg)) rotate(var(--dwm-drag-angle,0deg));transform-style:preserve-3d;background:0 0;border:0;padding:0;margin:0;font:inherit;color:inherit;box-sizing:border-box;appearance:none;-webkit-appearance:none;transition:transform .14s ease-out;position:absolute;inset:0}\n\n.dwm-root .dwm:hover,.dwm-root .dwm:focus-visible {cursor:grab}\n\n.dwm-root .dwm:focus-visible {box-shadow:var(--shadow-focus);outline:none}\n\n.dwm-root .dwm.is-dragging {cursor:grabbing;touch-action:none;-webkit-user-select:none;user-select:none;transition:none}\n\n.dwm-root .dwm-flip {width:100%;height:100%;transform-style:preserve-3d;transition:transform .3s var(--ease);display:block}\n\n/* Release squash (the \"she lands\" beat when a drag is let go).\n *\n * `animation` is a shorthand, so the original `animation: dwm-squash ...` here\n * *replaced* the `dwm-sway` animation declared on `.dwm-3d` below: both keyframe\n * sets animate `transform`, so the 3D sway disappeared for the whole 320ms (the\n * pet snapped from her swayed 3D pose into a flat 2D plane and back) and, once\n * the class came off, `dwm-sway` restarted at 0% instead of continuing its 8s\n * cycle — a visible jump on every release.\n *\n * The fix is to stop making the two animations compete for one property: keep\n * `dwm-sway` in the list (it owns `transform`, and keeping the same name at the\n * same index means the running animation is not restarted) and drive the squash\n * through the independent `scale` property, which composes with `transform`\n * instead of overriding it. `.dwm` (the parent) keeps its inline\n * `--dwm-tilt-x/y` / `--dwm-drag-angle` transform; it is a different element, so\n * the drag tilt and the release squash now show at the same time. */\n.dwm-root .dwm-3d.is-squash {\n\tanimation:\n\t\t8s ease-in-out infinite alternate dwm-sway,\n\t\t320ms cubic-bezier(.34, 1.3, .64, 1) dwm-squash;\n}\n\n@keyframes dwm-squash {\n\t0% { scale: 1 1; }\n\t45% { scale: 1.05 .96; }\n\t100% { scale: 1 1; }\n}\n\n.dwm-root .dwm-3d {width:100%;height:100%;transform-style:preserve-3d;will-change:transform;animation:8s ease-in-out infinite alternate dwm-sway;display:block}\n\n.dwm-root .dwm-sprite.dwm-depth {filter:blur(6px)brightness(.5)saturate(.75);pointer-events:none;position:absolute;inset:0;transform:translateZ(-32px)}\n\n/* The artwork itself. It is decorative: it sits over the whole box, so leaving\n * it hit-testable only made it the pointer target for a button that already\n * handles the gesture. `pointer-events: none` here, while `.dwm` and the two\n * wrappers (`.dwm-flip`, `.dwm-3d`) keep `auto` via `inherit` at the bottom of\n * this file, is the split that keeps drag/click working. */\n.dwm-root .dwm-sprite {image-rendering:pixelated;filter:drop-shadow(0 12px 10px rgb(var(--shadow-rgb) / 30%));background-repeat:no-repeat;position:absolute;inset:0;pointer-events:none}\n\n.dwm-root .dwm-sprite.is-tilt {animation:.9s ease-in-out infinite alternate dwm-tilt}\n\n.dwm-root .dwm-sprite.is-float {animation:2.6s ease-in-out infinite dwm-float}\n\n/* Site glare layer: same #ffffff42 radial gradient as the store. The store can paint it\n * over the whole box because its page is light; on a dark theme that reads as a pale\n * rounded rectangle behind the character, so the component masks this layer with the\n * current sprite frame and the highlight only lands on the character itself. The 18%\n * radius is dropped because the mask already defines the visible shape. */\n.dwm-root .dwm-shine {pointer-events:none;background:radial-gradient(120% 70% at 32% 16%,#ffffff42,#0000 55%);position:absolute;inset:0;transform:translateZ(10px)}\n\n.dwm-root .dwm-shadow {background:rgb(var(--shadow-rgb) / 14%);pointer-events:none;border-radius:50%;height:10px;position:absolute;bottom:-4px;left:10%;right:10%}\n\n/* `z-index: 2` because the bubble/menu container is the *first* child of\n * `.dwm-root`, and `.dwm` (with its `transform`, hence its own stacking context)\n * comes after it: at equal `z-index: auto` the sprite painted over the pop, and\n * the `data-dwm-work` halo on `.dwm-3d::after` (inset -12%, so it reaches ~13px\n * above the box) washed over the bottom of the speech bubble during a running\n * turn. Lifting the pop above the sprite fixes both. */\n.dwm-root .dwm-pop {pointer-events:none;flex-direction:column;align-items:flex-end;gap:6px;display:flex;position:absolute;bottom:calc(100% + 10px);right:0;z-index:2}\n\n.dwm-root .dwm-bubble {box-sizing:border-box;border:1px solid var(--line);background:var(--surface);max-width:min(250px,100vw - 32px);box-shadow:var(--shadow-md);color:var(--ink);pointer-events:auto;animation:dwm-pop-in var(--duration-fast) var(--ease);border-radius:12px 12px 2px;margin:0;padding:8px 12px;font-size:13px;line-height:1.5}\n\n.dwm-root .dwm-menu {pointer-events:auto;gap:6px;display:flex}\n\n.dwm-root .dwm-action {border:1px solid var(--line);background:var(--surface);width:36px;height:36px;box-shadow:var(--shadow-sm);color:var(--brand-dark);cursor:pointer;box-sizing:border-box;margin:0;padding:0;font:inherit;appearance:none;-webkit-appearance:none;transition:border-color var(--duration-fast) var(--ease), background-color var(--duration-fast) var(--ease), transform var(--duration-fast) var(--ease);border-radius:50%;justify-content:center;align-items:center;display:inline-flex}\n\n.dwm-root .dwm-action:hover {border-color:var(--line-strong);background:var(--surface-hover);transform:var(--lift)}\n\n.dwm-root .dwm-action:focus-visible {box-shadow:var(--shadow-focus);outline:none}\n\n.dwm-root .dwm-bubble-dot {background:var(--brand-border);opacity:0;pointer-events:none;border-radius:50%;width:5px;height:5px;animation:6s ease-in infinite dwm-bubbles;position:absolute;bottom:18px;right:22%}\n\n.dwm-root .dwm-bubble-dot:nth-child(4) {animation-delay:2s;bottom:26px;right:18%}\n\n.dwm-root .dwm-bubble-dot:nth-child(5) {animation-delay:4s;bottom:24px;right:26%}\n\n.dwm-root .dwm-heart {color:var(--accent-coral);pointer-events:none;font-size:16px;line-height:1;animation:1.2s ease-out forwards dwm-heart-pop;position:absolute;bottom:26px;left:50%}\n\n@media (width<=680px) {.dwm-root:not([data-dwm-pet-size]){--dwm-pet-size:72px}.dwm-root .dwm-action{width:44px;height:44px}}\n\n/* Quest text and achievement names are plain labels; the classes exist\n   so the structure snapshot test can assert them. */\n.dwm-root .dwm-panel-quest-text {\n\tcolor: var(--dsw-alias-label-secondary, #6b7280);\n\tfont-size: 12px;\n\tline-height: 1.4;\n}\n.dwm-root .dwm-ach-name {\n\tcolor: var(--dsw-alias-label-primary, #1c1f26);\n\tfont-size: 12px;\n\tline-height: 1.4;\n}\n\n/* `.is-squash` is listed explicitly: it is (0,3,0) and would otherwise outrank\n   the (0,2,0) `.dwm-root .dwm-3d` below, so a caller that adds the class itself\n   could still animate a squash for a user who asked for no motion. */\n@media (prefers-reduced-motion:reduce) {.dwm-root .dwm-3d,.dwm-root .dwm-3d.is-squash,.dwm-root .dwm-sprite,.dwm-root .dwm-bubble-dot{animation:none}.dwm-root .dwm-depth{display:none}.dwm-root .dwm,.dwm-root .dwm-flip{transition:none}.dwm-root .dwm-bubble-dot{display:none}}\n\n/* ---- settings panel (plugin addition, not part of the source site) ---- */\n\n.dwm-settings {color:var(--dsw-alias-label-primary,#1c1f26);display:flex;flex-direction:column;gap:14px;font-size:13px;line-height:1.5}\n\n.dwm-settings-hint {color:var(--dsw-alias-label-secondary,#5b6270);margin:0;font-size:12px}\n\n.dwm-settings-row {display:flex;flex-direction:column;gap:6px}\n\n.dwm-settings-row-head {display:flex;justify-content:space-between;align-items:baseline;gap:12px}\n\n.dwm-settings-label {font-weight:600}\n\n.dwm-settings-value {color:var(--dsw-alias-label-secondary,#5b6270);font-variant-numeric:tabular-nums;font-size:12px}\n\n.dwm-settings input[type=\"range\"] {accent-color:var(--dsw-alias-brand-primary,#2f5fbf);width:100%;margin:0}\n\n.dwm-settings select {border:1px solid var(--dsw-alias-border-l2,#e2e4ea);background:var(--dsw-alias-bg-layer-1,#fff);color:inherit;border-radius:8px;padding:5px 8px;font:inherit}\n\n.dwm-settings-checks {display:flex;flex-wrap:wrap;gap:8px 18px}\n\n.dwm-settings-check {align-items:center;gap:6px;display:inline-flex;cursor:pointer}\n\n.dwm-settings-check input {accent-color:var(--dsw-alias-brand-primary,#2f5fbf);margin:0}\n\n.dwm-settings-actions {border-top:1px solid var(--dsw-alias-border-l1,#eceef2);gap:8px;padding-top:12px;display:flex;flex-wrap:wrap}\n\n.dwm-settings button {border:1px solid var(--dsw-alias-border-l2,#e2e4ea);background:var(--dsw-alias-bg-layer-1,#fff);color:inherit;border-radius:8px;padding:5px 12px;font:inherit;cursor:pointer}\n\n.dwm-settings button:hover {background:var(--dsw-alias-interactive-bg-hover,#f4f5f8)}\n\n.dwm-settings button:focus-visible {box-shadow:0 0 0 3px rgb(47 95 191 / 32%);outline:none}\n\n@keyframes dwm-sway {0%{transform:rotateY(-5deg)rotateX(1.5deg)}to{transform:rotateY(5deg)rotateX(-1.5deg)}}\n\n@keyframes dwm-tilt {0%{rotate(-6deg)}to{rotate(6deg)}}\n\n@keyframes dwm-float {0%,to{translateY(0)}50%{translateY(-4px)}}\n\n@keyframes dwm-pop-in {0%{opacity:0;transform:translateY(4px)scale(.96)}to{opacity:1;transform:none}}\n\n@keyframes dwm-bubbles {0%,62%{opacity:0}68%{opacity:.9}to{opacity:0;transform:translateY(-26px)}}\n\n@keyframes dwm-heart-pop {0%{opacity:0;transform:translateY(0)scale(.6)}15%{opacity:1}to{opacity:0;transform:translateY(-46px)scale(1.15)}}\n\n/* ---- 1.1.0 companion layers: status chip + particle FX ---- */\n\n.dwm-root .dwm-fx-layer {pointer-events:none;position:absolute;inset:0;overflow:visible}\n\n.dwm-root .dwm-fx {position:absolute;bottom:26px;font-size:14px;line-height:1;opacity:0;animation:1.5s ease-out forwards dwm-fx-rise}\n\n.dwm-root .dwm-fx-heart {color:var(--accent-coral)}\n\n.dwm-root .dwm-fx-star {color:#e8b53a}\n\n.dwm-root .dwm-fx-sparkle {color:var(--brand-border)}\n\n.dwm-root .dwm-fx-note {color:var(--brand-dark)}\n\n@keyframes dwm-fx-rise {0%{opacity:0;transform:translate(-50%,0) scale(.6)}15%{opacity:1}to{opacity:0;transform:translate(calc(-50% + var(--dwm-fx-drift,0px)),-52px) scale(1.1)}}\n\n/* ---- 1.1.0 companion panel (settings.section, second section) ---- */\n\n.dwm-panel-hero {display:flex;align-items:center;gap:12px;border:1px solid var(--dsw-alias-border-l1,#eceef2);border-radius:12px;padding:10px 12px;background:var(--dsw-alias-bg-layer-2,#f7f8fa)}\n\n.dwm-panel-level {font-weight:700;font-size:18px;color:var(--dsw-alias-brand-primary,#2f5fbf);font-variant-numeric:tabular-nums}\n\n.dwm-panel-hero-text {display:flex;flex-direction:column;gap:2px;font-size:12px}\n\n.dwm-panel-hero-text strong {font-size:13px}\n\n.dwm-panel-hero-text span {color:var(--dsw-alias-label-secondary,#5b6270)}\n\n.dwm-panel-title {margin:6px 0 0;font-size:13px;font-weight:600}\n\n.dwm-panel-muted {color:var(--dsw-alias-label-secondary,#5b6270);margin:0;font-size:12px}\n\n.dwm-panel-stat {align-items:center;gap:2px 12px;grid-template-columns:1fr auto;display:grid;font-size:12px}\n\n.dwm-panel-stat-label {color:var(--dsw-alias-label-secondary,#5b6270)}\n\n.dwm-panel-stat-value {font-variant-numeric:tabular-nums}\n\n.dwm-panel-bar {background:var(--dsw-alias-border-l1,#eceef2);border-radius:999px;grid-column:1/-1;height:6px;overflow:hidden}\n\n.dwm-panel-bar-fill {border-radius:999px;height:100%;transition:width .3s var(--ease);display:block}\n\n.dwm-panel-bar-mood {background:linear-gradient(90deg,#f0a5a0,#ef7a6d)}\n\n.dwm-panel-bar-satiety {background:linear-gradient(90deg,#9fd6b4,#4fae7d)}\n\n.dwm-panel-bar-affinity {background:linear-gradient(90deg,#a9c3ef,#2f5fbf)}\n\n.dwm-panel-quests {flex-direction:column;gap:6px;margin:0;padding:0;list-style:none;display:flex}\n\n.dwm-panel-quest {align-items:center;justify-content:space-between;gap:10px;font-size:12px;display:flex}\n\n.dwm-panel-quest.is-claimed {opacity:.55}\n\n.dwm-panel-board {align-items:center;gap:6px;flex-wrap:wrap;display:flex}\n\n.dwm-panel-cell {width:26px;height:26px;border:1px solid var(--dsw-alias-border-l2,#e2e4ea);border-radius:8px;justify-content:center;align-items:center;font-size:12px;display:inline-flex;color:var(--dsw-alias-label-tertiary,#8b93a1)}\n\n.dwm-panel-cell.is-on {background:rgb(47 95 191 / 12%);border-color:rgb(47 95 191 / 35%);color:inherit}\n\n.dwm-panel-achievements {flex-wrap:wrap;gap:6px;display:flex}\n\n.dwm-ach {align-items:center;gap:5px;border:1px solid var(--dsw-alias-border-l2,#e2e4ea);border-radius:999px;padding:3px 9px;font-size:11px;display:inline-flex;color:var(--dsw-alias-label-tertiary,#8b93a1);filter:grayscale(1);opacity:.6}\n\n.dwm-ach.is-on {filter:none;opacity:1;color:inherit;background:rgb(47 95 191 / 8%);border-color:rgb(47 95 191 / 35%)}\n\n.dwm-ach-icon {font-size:12px;line-height:1}\n\n.dwm-panel-diary {flex-direction:column;gap:4px;margin:0;padding:0;font-size:12px;list-style:none;display:flex;color:var(--dsw-alias-label-secondary,#5b6270)}\n\n@media (prefers-reduced-motion:reduce) {.dwm-root .dwm-fx,.dwm-root .dwm-fx{display:none}}\n\n\n/* --- typewriter caret (1.2.1) ----------------------------------------- */\n.dwm-root .dwm-caret {\n\tdisplay: inline-block;\n\twidth: 2px;\n\theight: 1em;\n\tmargin-left: 1px;\n\tvertical-align: -0.15em;\n\tbackground: currentColor;\n\topacity: 0.75;\n\tanimation: dwm-caret 0.9s steps(2, start) infinite;\n}\n\n@keyframes dwm-caret {\n\t0%,\n\t49% {\n\t\topacity: 0.75;\n\t}\n\t50%,\n\t100% {\n\t\topacity: 0;\n\t}\n}\n\n@media (prefers-reduced-motion: reduce) {\n\t.dwm-root .dwm-caret {\n\t\tanimation: none;\n\t}\n}\n\n/* --- bubble sizing (1.2.1) -------------------------------------------- */\n/* The pop container is shrink-to-fit inside a 110px root, which used to\n   wrap every bubble into a narrow column. Let it size to the text instead. */\n.dwm-root .dwm-pop {\n\twidth: max-content;\n\tmax-width: min(250px, 100vw - 32px);\n}\n\n/* --- bubble tones (1.3.0) --------------------------------------------- */\n/* The status chip is gone; the tone now tints the single speech bubble. */\n.dwm-root .dwm-bubble-work {\n\tborder-color: var(--dsw-alias-brand-primary, #2f5fbf);\n}\n.dwm-root .dwm-bubble-ok {\n\tborder-color: var(--dsw-alias-state-success-primary, #3fb950);\n}\n.dwm-root .dwm-bubble-error {\n\tborder-color: var(--dsw-alias-state-error-primary, #e5534b);\n}\n\n/* ---- 1.3.0 weather companion ---- */\n\n.dwm-panel-weather {display:flex;flex-direction:column;gap:8px}\n.dwm-panel-weather-line {color:var(--dsw-alias-label-secondary,#5b6270);font-size:12px;font-variant-numeric:tabular-nums}\n.dwm-panel-weather-row {display:flex;align-items:center;gap:8px}\n.dwm-panel-weather-input {\n\tflex:1 1 auto;\n\tmin-width:0;\n\tpadding:6px 10px;\n\tborder:1px solid var(--dsw-alias-border-l2,#e2e4ea);\n\tborder-radius:8px;\n\tbackground:var(--dsw-alias-bg-layer-1,#fff);\n\tcolor:var(--dsw-alias-label-primary,#1c1f26);\n\tfont:inherit;\n\tfont-size:12px;\n\tappearance:none;\n\t-webkit-appearance:none;\n}\n.dwm-panel-weather-input:focus-visible {outline:2px solid var(--dsw-alias-brand-primary,#2f5fbf);outline-offset:1px}\n.dwm-panel-weather-button {\n\tflex:0 0 auto;\n\tpadding:6px 12px;\n\tborder:1px solid var(--dsw-alias-border-l2,#e2e4ea);\n\tborder-radius:8px;\n\tbackground:var(--dsw-alias-bg-layer-2,#f7f8fa);\n\tcolor:var(--dsw-alias-label-primary,#1c1f26);\n\tfont:inherit;\n\tfont-size:12px;\n\tcursor:pointer;\n\tappearance:none;\n\t-webkit-appearance:none;\n}\n.dwm-panel-weather-button:hover {background:var(--dsw-alias-interactive-bg-hover,#eef0f4)}\n\n/* weather particles reuse the existing FX layer */\n.dwm-root .dwm-fx-rain {color:#5b93e0}\n.dwm-root .dwm-fx-snow {color:#9fc7e8}\n\n/* ---- 1.4.0: work glow, focus rings, recall button, save box ---- */\n\n/* A soft halo while a turn is running, so the state reads at a glance. */\n.dwm-root[data-dwm-work='1'] .dwm-3d::after {\n\tcontent: \"\";\n\tposition: absolute;\n\tinset: -12%;\n\tborder-radius: 50%;\n\tbackground: radial-gradient(closest-side, rgb(120 180 255 / 32%), rgb(120 180 255 / 0%) 72%);\n\tanimation: dwm-glow 2.6s ease-in-out infinite;\n\tpointer-events: none;\n\ttransform: translateZ(-8px);\n}\n\n@keyframes dwm-glow {\n\t0%,\n\t100% {\n\t\topacity: 0.35;\n\t}\n\t50% {\n\t\topacity: 0.9;\n\t}\n}\n\n/* Keyboard users need to see where they are. */\n.dwm-root .dwm:focus-visible,\n.dwm-root .dwm-action:focus-visible,\n.dwm-root .dwm-recall:focus-visible {\n\toutline: 2px solid var(--dsw-alias-brand-primary, #4b8bf5);\n\toutline-offset: 3px;\n\tborder-radius: 14px;\n}\n\n/* Hidden: everything disappears except the recall button. */\n.dwm-root.dwm-root-hidden .dwm-pop,\n.dwm-root.dwm-root-hidden .dwm,\n.dwm-root.dwm-root-hidden .dwm-shadow,\n.dwm-root.dwm-root-hidden .dwm-bubble-dot,\n.dwm-root.dwm-root-hidden .dwm-fx-layer {\n\tdisplay: none;\n}\n\n.dwm-root .dwm-recall {\n\tposition: absolute;\n\tright: 0;\n\tbottom: 0;\n\twidth: 36px;\n\theight: 36px;\n\tdisplay: grid;\n\tplace-items: center;\n\tfont-size: 18px;\n\tline-height: 1;\n\tborder-radius: 50%;\n\tborder: 1px solid var(--dsw-alias-border-l2, #e2e4ea);\n\tbackground: var(--dsw-alias-bg-layer-2, #fff);\n\tcolor: var(--dsw-alias-label-primary, #1c1f26);\n\tcursor: pointer;\n\tbox-shadow: 0 1px 3px rgb(0 0 0 / 12%);\n\topacity: 0.82;\n\tbox-sizing: border-box;\n\tpadding: 0;\n}\n\n.dwm-root .dwm-recall:hover {\n\topacity: 1;\n}\n\n.dwm-panel-save .dwm-panel-textarea {\n\twidth: 100%;\n\tbox-sizing: border-box;\n\tresize: vertical;\n\tfont: inherit;\n\tfont-size: 12px;\n\tline-height: 1.5;\n\tpadding: 8px;\n\tborder-radius: 8px;\n\tborder: 1px solid var(--dsw-alias-border-l2, #e2e4ea);\n\tbackground: var(--dsw-alias-bg-layer-1, #fff);\n\tcolor: var(--dsw-alias-label-primary, #1c1f26);\n}\n\n@media (prefers-reduced-motion: reduce) {\n\t.dwm-root[data-dwm-work='1'] .dwm-3d::after {\n\t\tanimation: none;\n\t\topacity: 0.5;\n\t}\n}\n\n/* 1.5.2: the single settings entry stacks options above the companion panel. */\n.dwm-settings-stack {display:flex;flex-direction:column;gap:18px}\n\n\n/* 2.1.0: pose portraits breathe instead of sitting dead still. */\n@keyframes dwm-portrait-float {\n\t0%, 100% { transform: translateY(0); }\n\t50% { transform: translateY(-4px); }\n}\n\n/* The portrait is an <img data-dwm-portrait> that `dwmPortraitShow()` in\n * src/runtime.js appends to <body> — it is NOT a sibling of `.dwm-root`, so the\n * old `.dwm-root ~ img[data-dwm-portrait]` sibling selector never matched and\n * the reduced-motion opt-out silently did nothing. Target the attribute\n * directly instead.\n *\n * The layer is `position: fixed` over the pet's own box at `z-index: 60`, i.e.\n * it can sit above the sprite, so it must stay click-through; runtime.js sets\n * that inline and this rule is the stylesheet-level guarantee that a portrait\n * can never eat a drag or a click meant for the pet. */\nimg[data-dwm-portrait] {\n\tpointer-events: none;\n}\n\n@media (prefers-reduced-motion: reduce) {\n\timg[data-dwm-portrait] { animation: none !important; }\n}\n\n\n/* City candidates rendered inside the weather block. */\n.dwm-root .dwm-panel-weather-candidate {\n\tdisplay: block;\n\twidth: 100%;\n\ttext-align: left;\n\tfont: inherit;\n\tcursor: pointer;\n}\n.dwm-root .dwm-panel-weather-candidate:hover {\n\tborder-color: var(--dsw-alias-brand-primary, #2f5fbf);\n}\n\n/* The two wrappers between the button and the artwork. They must keep taking\n   input (`inherit` resolves to the button's `auto`), so the drag gesture still\n   starts on the sprite even though every decorative layer inside them — the\n   sprites, the depth blur and the shine — is `pointer-events: none`. */\n.dwm-root .dwm-3d {\n\tpointer-events: inherit;\n}\n\n.dwm-root .dwm-flip {\n\tpointer-events: inherit;\n}\n\n/* 2.0.0 preview gallery (src/preview.js). These two class names are the only\n   `dwm-*` classes the sources build that had no rule here: the cell and its\n   group are styled inline in preview.js, which is why nothing looked broken, but\n   the \"every dwm-* class in JS has a CSS rule\" invariant (test/companion.test.mjs)\n   is meant to hold for the whole sheet. Keep these rules additive — the inline\n   styles still win, so they only supply what inline markup cannot: a hover\n   response and the column layout for the group. */\n.dwm-settings-group {\n\tdisplay: flex;\n\tflex-direction: column;\n\tgap: 8px;\n}\n\n.dwm-preview-cell {\n\tcursor: pointer;\n}\n\n.dwm-preview-cell:hover {\n\tfilter: brightness(.96);\n}\n";
 
     /* ---- assets: served by index.js, see ASSET_BASE below ---- */
     var ASSET_BASE = "/api/dsh-whale-maid/assets/";
@@ -392,6 +392,7 @@ function dwmPortraitHost() {
 
 /** Take the portrait down (idempotent). */
 function dwmHidePose() {
+	dwmPortraitHideSprite(false);
 	if (DWM_PORTRAIT.timer !== undefined) clearTimeout(DWM_PORTRAIT.timer);
 	DWM_PORTRAIT.timer = undefined;
 	DWM_PORTRAIT.held = false;
@@ -407,6 +408,15 @@ function dwmHidePose() {
 }
 
 /** Paint `result.image` over the pet's box. Returns false when that is impossible. */
+function dwmPortraitHideSprite(hidden) {
+	if (typeof document === 'undefined' || !document.querySelectorAll) return;
+	var layers = document.querySelectorAll('.dwm-root .dwm-3d, .dwm-root .dwm-3d *');
+	for (var i = 0; i < layers.length; i += 1) {
+		if (layers[i] && layers[i].style) layers[i].style.visibility = hidden ? 'hidden' : '';
+	}
+}
+
+
 function dwmPortraitShow(result, ms, hold) {
 	var root = dwmPortraitHost();
 	if (!root) return false;
@@ -418,6 +428,11 @@ function dwmPortraitShow(result, ms, hold) {
 	}
 	if (!rect || !(Number(rect.width) > 0)) return false;
 	dwmHidePose();
+	var strays = document.querySelectorAll ? document.querySelectorAll('img[data-dwm-portrait]') : [];
+	for (var s = 0; s < strays.length; s += 1) {
+		if (strays[s] && strays[s].parentNode) strays[s].parentNode.removeChild(strays[s]);
+	}
+
 	var node = null;
 	try {
 		node = document.createElement('img');
@@ -427,6 +442,8 @@ function dwmPortraitShow(result, ms, hold) {
 		node.src = result.image;
 		var style = node.style;
 		style.position = 'fixed';
+		style.animation = 'dwm-portrait-float 2.8s ease-in-out infinite';
+		dwmPortraitHideSprite(true);
 		style.left = rect.left + 'px';
 		style.top = rect.top + 'px';
 		style.width = rect.width + 'px';
@@ -455,45 +472,20 @@ function dwmPortraitShow(result, ms, hold) {
  * where the posture lasts for the whole turn).
  */
 function dwmShowPose(result, ms, hold) {
-	if (!result || typeof result !== 'object') return false;
-	var duration = Number(ms) > 0 ? Number(ms) : 2000;
-	var shown = false;
-	if (result.image) {
-		shown = dwmPortraitShow(result, duration, hold === true);
-		if (typeof window !== 'undefined') {
-			window.dispatchEvent(
-				new CustomEvent(DWM_EVENT_POSE, {
-					detail: {
-						context: result.context,
-						pose: result.pose,
-						image: result.image,
-						ms: duration,
-						hold: hold === true
-					}
-				}),
-			);
-		}
-		if (shown) return true;
-		/*
-		 * The portrait exists but could not be painted — no mounted pet, a DOM
-		 * without `appendChild`, a zero-size root. Keep the moment visible by
-		 * playing the pose's fallback animation, which is exactly the state the
-		 * pre-1.8.0 code used for this moment.
-		 */
-		var fallback = typeof dwmPoseFallbackState === 'function' ? dwmPoseFallbackState(result.pose) : '';
-		if (fallback) {
-			dwmHidePose();
-			dwmForceState(fallback, duration, hold === true);
-			return true;
-		}
-	}
-	if (result.state) {
+	if (!result) return;
+	// Action-first (2.2.0): an animation state always wins over a static
+	// portrait, so the pet keeps moving instead of flickering between the
+	// two. Portraits are only used when the pose has no state equivalent.
+	var state = result.state;
+	if (!state && typeof dwmPoseFallbackState === "function") state = dwmPoseFallbackState(result.pose);
+	if (state) {
 		dwmHidePose();
-		dwmForceState(result.state, duration, hold === true);
-		return true;
+		dwmForceState(state, ms, hold);
+		return;
 	}
-	return shown;
+	if (result.image) dwmPortraitShow(result, ms, hold);
 }
+
 
 /** Notify listeners that growth data changed. */
 function dwmEmitGrowth() {
@@ -2257,6 +2249,156 @@ var DWM_LINES_BOND = {
 	}
 })(DWM_LINES_WEATHER);
 
+    /* ---- src/lines-parts.js ---- */
+/*
+ * dsh-whale-maid — body-part lines (2.5.0).
+ *
+ * Same shape as every other extra bank: merged into DWM_LINES at load time, so
+ * dwmPickLine() finds them with no extra wiring. Tone follows the reference
+ * plugin: self-referential "鲸鱼娘", calls the user "主人", teasing but never
+ * explicit, one emoji at most.
+ */
+
+var DWM_LINES_PARTS = {
+	zh: {
+		patHorn: [
+			'呆毛不能揪啦，那是鲸鱼娘的雷达天线📡',
+			'摸这里……主人是想看我脸红吗',
+			'角角痒痒的，主人轻一点嘛',
+			'再摸下去，呆毛要打结了😳',
+			'头顶只有主人能碰，记住了吗',
+			'你手心的温度传过来了……有点犯规',
+			'呆毛被压弯了，明天要重新定型',
+			'这样顺着摸，鲸鱼娘会想赖着不动的',
+		],
+		patEar: [
+			'耳鳍很薄的，主人别太用力🐋',
+			'耳朵会自己动的，尤其听到主人的声音',
+			'别对着耳朵说话，会酥的',
+			'这样摸耳朵，鲸鱼娘会走神的',
+			'耳鳍是敏感的地方，主人不知道吗😏',
+			'痒……主人是故意的吧',
+			'耳鳍一抖一抖的，压不住啦',
+			'再吹一口气试试，我可要咬人了',
+		],
+		patFace: [
+			'脸、脸红了，别盯着看',
+			'眼睛里有主人哦，看清了吗',
+			'睫毛要乱了，主人负责吗',
+			'这样捏脸，会变成奇怪的形状的😳',
+			'靠太近了……呼吸都听见了',
+			'想亲就直说，别一直摸脸颊',
+			'脸颊烫烫的，是主人的手太暖了',
+			'再看下去，鲸鱼娘要先移开视线了',
+		],
+		patHand: [
+			'手在这里，要牵一下吗',
+			'十指扣住的话，就不放开了哦',
+			'手有点凉，借主人的手暖一下',
+			'别捏指尖啦，那里最敏感',
+			'这只手刚擦过桌子……还是牵着吧',
+			'主人握手好用力，是舍不得吗',
+			'手心出汗了，别笑我',
+			'牵久一点也没关系，反正我不松',
+		],
+		patWaist: [
+			'腰很细的，主人抱轻一点',
+			'这样搂腰……鲸鱼娘会站不稳的',
+			'腰上痒，别用手指画圈',
+			'围裙带子松了，帮我系一下？',
+			'背后被抱住的话，就逃不掉了🐋',
+			'主人的手放这里，有点危险哦😏',
+			'腰被量过尺寸，是主人量的那次',
+			'再往上一点就不行了……真的',
+		],
+		patFeet: [
+			'脚不可以挠，真的不可以',
+			'袜子会脏的，主人别乱碰',
+			'站久了腿软，扶我一下嘛',
+			'膝枕可以，但只许躺一会儿',
+			'脚底板怕痒，别试',
+			'主人看这么久，是喜欢吗',
+			'鞋子会掉的，别拽',
+			'被你握着脚踝，有点说不出话',
+		],
+	},
+	en: {
+		patHorn: [
+			'Not the ahoge — that is my radar antenna 📡',
+			'You are touching it... are you trying to make me blush?',
+			'It tickles up there, be gentle.',
+			'Keep going and it will knot up 😳',
+			'Only you are allowed to touch the top of my head.',
+			'Your hand is warm... that is a bit unfair.',
+			'You bent my ahoge. I will have to restyle it.',
+			'Stroking it like that makes me want to stay put.',
+		],
+		patEar: [
+			'My ear fins are thin, easy now 🐋',
+			'They move on their own, especially at your voice.',
+			'Do not whisper into them, I will melt.',
+			'Touching my ears makes me lose focus.',
+			'Did you know the ear fins are sensitive? 😏',
+			'That tickles... you are doing it on purpose, right?',
+			'They keep twitching, I cannot stop them.',
+			'Blow on them again and I might bite.',
+		],
+		patFace: [
+			'My face is red — stop staring.',
+			'You are in my eyes. Can you see yourself?',
+			'My lashes will get messy. Your fault?',
+			'Squish it and I will end up a weird shape 😳',
+			'Too close... I can hear you breathing.',
+			'If you want to kiss me, just say so.',
+			'My cheek is hot. Your hand is too warm.',
+			'Keep looking and I will have to look away first.',
+		],
+		patHand: [
+			'My hand is here. Hold it?',
+			'Interlock our fingers and I will not let go.',
+			'My hands are cold — lend me yours.',
+			'Not the fingertips, they are the most sensitive.',
+			'I just wiped the table with that hand... hold it anyway.',
+			'You are gripping so hard. Do not want to let go?',
+			'My palm is sweating. Do not laugh.',
+			'Hold it as long as you like. I am not letting go.',
+		],
+		patWaist: [
+			'My waist is small, hold me gently.',
+			'Holding me there makes my knees weak.',
+			'It tickles — stop drawing circles.',
+			'My apron strap came loose. Tie it for me?',
+			'If you hug me from behind, I cannot escape 🐋',
+			'Your hand there is a little dangerous 😏',
+			'You are the one who measured my waist, remember?',
+			'Any higher and I really cannot allow it.',
+		],
+		patFeet: [
+			'Not the feet. Really, not the feet.',
+			'My socks will get dirty, do not touch.',
+			'My legs give out after standing. Help me?',
+			'You may use my lap as a pillow — but only briefly.',
+			'The soles are ticklish. Do not try it.',
+			'You have been looking a while. Do you like them?',
+			'My shoes will come off, stop pulling.',
+			'Held by the ankle like that, I cannot speak.',
+		],
+	},
+};
+
+(function mergePartLines(table) {
+	if (typeof DWM_LINES !== 'object' || DWM_LINES === null) return;
+	for (var lang in table) {
+		if (!Object.prototype.hasOwnProperty.call(table, lang)) continue;
+		if (typeof DWM_LINES[lang] !== 'object' || DWM_LINES[lang] === null) DWM_LINES[lang] = {};
+		for (var bank in table[lang]) {
+			if (!Object.prototype.hasOwnProperty.call(table[lang], bank)) continue;
+			var existing = Array.isArray(DWM_LINES[lang][bank]) ? DWM_LINES[lang][bank] : [];
+			DWM_LINES[lang][bank] = existing.concat(table[lang][bank]);
+		}
+	}
+})(DWM_LINES_PARTS);
+
     /* ---- src/pose-map.js ---- */
 /*
  * dsh-whale-maid — scene -> pose map (F, added in 1.7.0).
@@ -3196,7 +3338,7 @@ function DwmFxLayer() {
 /* ---------------------------------------------------------------- tunables */
 /* Names in comments are the original minified identifiers. */
 
-var DRAG_THRESHOLD = 6;
+var DRAG_THRESHOLD = 6; // ea   px of pointer travel before a press becomes a drag
 /* Release physics (added in 1.5.0). Values mirror the reference plugin:
  * one discrete nudge of velocity * 2.4 capped at 70px, a 420ms spring-back
  * rotation capped at 20deg, and a squash-only reaction below 6px/event. */
@@ -3205,8 +3347,8 @@ var DRAG_RELEASE_CAP = 70;
 var DRAG_LIGHT_SPEED = 6;
 var DRAG_TILT_GAIN = 1.25;
 var DRAG_TILT_CAP = 20;
-var SQUASH_MS = 320;
- // ea   px of pointer travel before a press becomes a drag
+var SQUASH_MS = 320; //      how long `.is-squash` stays on after a light release
+var CLICK_GUARD_MS = 400; // how long a release swallows the synthesised click
 var BUBBLE_MS = 4500; // ta   how long a speech bubble stays up
 var SLEEP_MS = 60000; // na   idle time before the pet falls asleep
 var THINK_MIN_MS = 15000; // t    think-event interval base
@@ -3338,8 +3480,8 @@ var DEFAULT_OPTIONS = {
 	speed: 1, // multiplier for frame rate and wander speed
 	language: 'auto', // 'auto' | 'zh' | 'en'
 	greeting: true, // greet once on first ever mount
-	sleep: true,	dragPhysics: true,
- // doze off after a while when idle
+	sleep: true, // doze off after a while when idle
+	dragPhysics: true, // release inertia + squash (1.5.0)
 	walk: true, // wander across the viewport on its own
 	bubbleDuration: BUBBLE_MS,
 	typewriter: true, // reveal bubble text one character at a time
@@ -3601,12 +3743,16 @@ function WhaleGirl() {
 	var rootRef = useRef(null);
 	var bodyRef = useRef(null);
 	var bubbleTimer = useRef(undefined);
+	/* `squash` is the single source of truth for `.is-squash`: the class is
+	 * rendered from this boolean and nothing else writes it. */
 	var squashState = useState(false);
 	var squash = squashState[0];
 	var setSquash = squashState[1];
 	var releaseTimers = useRef([]);
-	var dragRef = useRef(null);	var dragRef = useRef(null);
-	var suppressClick = useRef(false);	var suppressClick = useRef(false);
+	var squashTimer = useRef(undefined);
+	var clickGuard = useRef(undefined);
+	var dragRef = useRef(null);
+	var suppressClick = useRef(false);
 	var stateRef = useRef('idle');
 	stateRef.current = animState;
 	var sequenceTimers = useRef([]);
@@ -3645,6 +3791,7 @@ function WhaleGirl() {
 		return function () {
 			window.removeEventListener(OPTIONS_EVENT, onOptions);
 			window.removeEventListener(SAY_EVENT, onSay);
+			window.removeEventListener(DWM_EVENT_WORK, onWorkGlow);
 			window.removeEventListener(RESET_POS_EVENT, onResetPos);
 		};
 	}, []);
@@ -3654,7 +3801,7 @@ function WhaleGirl() {
 		setWorkGlow(!!(event && event.detail && event.detail.active));
 	}
 
-function say(message, tone) {
+	function say(message, tone) {
 		if (bubbleTimer.current !== undefined) clearTimeout(bubbleTimer.current);
 		setBubble({ id: Date.now(), text: message, tone: tone || '' });
 		bubbleTimer.current = setTimeout(function () {
@@ -3837,11 +3984,16 @@ function onRecall() {
 		window.dispatchEvent(new CustomEvent(OPTIONS_EVENT));
 	}
 
-function onClick() {
+	/* --- click ------------------------------------------------------------ */
+	/* The browser fires this right after `pointerup`, so a drag has already set
+	 * `suppressClick`; consume it here (and drop its guard timer) instead of
+	 * letting a drag end up toggling the menu. */
+	function onClick() {
 		if (suppressClick.current) {
-			suppressClick.current = false;
+			clearClickGuard();
 			return;
 		}
+		restoreSprite();
 		stopWalk();
 		setMenuOpen(function (open) {
 			return !open;
@@ -3893,8 +4045,10 @@ function onClick() {
 	 * (no animation loop, no friction): a slow release only squashes. */
 	function releasePhysics(drag, base) {
 		var speed = Math.hypot(drag.vx || 0, drag.vy || 0);
-		if (options.dragPhysics === false || speed < DRAG_LIGHT_SPEED) {
-			if (speed < DRAG_LIGHT_SPEED) squashOnce();
+		/* `dragPhysics: false` means the pet simply stays where it was dropped. */
+		if (options.dragPhysics === false) return base;
+		if (speed < DRAG_LIGHT_SPEED) {
+			squashOnce();
 			return base;
 		}
 		var width = (rootRef.current && rootRef.current.offsetWidth) || 0;
@@ -3912,39 +4066,46 @@ function onClick() {
 		return { x: nextX, y: nextY };
 	}
 
+	/* Every pending release timer, so a second fling replaces the first instead
+	 * of stacking on top of it — and so unmount can drop them all. */
+	function clearReleaseTimers() {
+		var timers = releaseTimers.current;
+		for (var i = 0; i < timers.length; i += 1) clearTimeout(timers[i]);
+		releaseTimers.current = [];
+	}
+
 	function spinRelease(angle) {
 		var body = bodyRef.current;
 		if (!body || reducedMotion.current) return;
+		clearReleaseTimers();
 		body.style.setProperty('--dwm-drag-angle', angle.toFixed(1) + 'deg');
 		body.style.transition = 'transform 420ms cubic-bezier(.2,.9,.3,1)';
 		var settle = setTimeout(function () {
-			body.style.setProperty('--dwm-drag-angle', '0deg');
+			var target = bodyRef.current || body;
+			target.style.setProperty('--dwm-drag-angle', '0deg');
 			var clear = setTimeout(function () {
-				body.style.transition = '';
+				var node = bodyRef.current || body;
+				node.style.transition = '';
 			}, 480);
 			releaseTimers.current.push(clear);
 		}, 30);
 		releaseTimers.current.push(settle);
 	}
 
+	/* A light release only squashes. `squash` (squashState[0]) is the single
+	 * writer of `.is-squash`; the class is rendered from it and cleared by the
+	 * timer below after SQUASH_MS. */
 	function squashOnce() {
-	if (Array.isArray(releaseTimers.current)) {
-		releaseTimers.current.forEach(function (id) { clearTimeout(id); });
-	}
-	releaseTimers.current = [];
-	var squashTarget = null;
-	if (typeof document !== 'undefined' && document.querySelector) {
-		squashTarget = document.querySelector('.dwm-root .dwm-3d');
-	}
-	if (squashTarget && squashTarget.classList) squashTarget.classList.add('is-squash');		if (reducedMotion.current) return;
+		if (reducedMotion.current) return;
+		if (squashTimer.current !== undefined) clearTimeout(squashTimer.current);
 		setSquash(true);
-		var id = setTimeout(function () {
+		squashTimer.current = setTimeout(function () {
+			squashTimer.current = undefined;
 			setSquash(false);
 		}, SQUASH_MS);
-		releaseTimers.current.push(id);
 	}
 
-	/* --- drag geometry --------------------------------------------------- */	/* --- drag geometry --------------------------------------------------- */
+	/* --- drag geometry --------------------------------------------------- */
 	function dragPosition(drag, clientX, clientY) {
 		var width = (rootRef.current && rootRef.current.offsetWidth) || 0;
 		return {
@@ -3953,10 +4114,29 @@ function onClick() {
 		};
 	}
 
+	/* A pose command, a tap or a grab must take the sprite back from a static
+	 * portrait: `dwmPortraitShow` hides the `.dwm-3d` layers, so without this the
+	 * next ANIM state would play on an invisible body. */
+	function restoreSprite() {
+		if (typeof dwmHidePose === 'function') dwmHidePose();
+	}
+
+	/* Drop a pending "swallow the click" guard (new gesture, or unmount). */
+	function clearClickGuard() {
+		if (clickGuard.current !== undefined) clearTimeout(clickGuard.current);
+		clickGuard.current = undefined;
+		suppressClick.current = false;
+	}
+
 	function onPointerDown(event) {
 		var body = bodyRef.current;
 		var root = rootRef.current;
 		if (!body || !root) return;
+		/* One drag at a time: a second pointer (second finger, a synthetic
+		 * pointerdown) must never replace the active drag or steal its capture. */
+		if (dragRef.current !== null) return;
+		clearClickGuard();
+		restoreSprite();
 		var rect = root.getBoundingClientRect();
 		dragRef.current = {
 			pointerId: event.pointerId,
@@ -3993,7 +4173,6 @@ function onClick() {
 			drag.lastX = event.clientX;
 			drag.lastY = event.clientY;
 			setAnimState('drag');
-			setPos(dragPosition(drag, event.clientX, event.clientY));			setAnimState('drag');
 			setPos(dragPosition(drag, event.clientX, event.clientY));
 			return;
 		}
@@ -4004,6 +4183,8 @@ function onClick() {
 		var drag = dragRef.current;
 		if (!drag || event.pointerId !== drag.pointerId) return;
 		dragRef.current = null;
+		/* Every exit path (pointerup, pointercancel, unmount) frees the capture
+		 * and the cursor class before anything else can throw. */
 		var body = bodyRef.current;
 		if (body) {
 			body.classList.remove('is-dragging');
@@ -4013,21 +4194,21 @@ function onClick() {
 				/* already released */
 			}
 		}
-		suppressClick.current = drag.moved;
-		if (drag.moved) {
-			setTimeout(function () {
-				suppressClick.current = false;
-			}, 0);
-			var released = releasePhysics(drag, dragPosition(drag, event.clientX, event.clientY));
-			setPos(released);
-			setAnimState('idle');
-			resetTilt();
-			writeJSON(KEY_POS, released);			var next = dragPosition(drag, event.clientX, event.clientY);
-			setPos(next);
-			setAnimState('idle');
-			resetTilt();
-			writeJSON(KEY_POS, next);
-		}
+		/* A tap keeps the click; a drag swallows exactly the click the browser is
+		 * about to synthesise for this gesture. The guard is a tracked timer, so
+		 * a missing click cannot leave the flag stuck on forever. */
+		clearClickGuard();
+		if (!drag.moved) return;
+		suppressClick.current = true;
+		clickGuard.current = setTimeout(function () {
+			clickGuard.current = undefined;
+			suppressClick.current = false;
+		}, CLICK_GUARD_MS);
+		var released = releasePhysics(drag, dragPosition(drag, event.clientX, event.clientY));
+		setPos(released);
+		setAnimState('idle');
+		resetTilt();
+		writeJSON(KEY_POS, released);
 	}
 
 	/* --- frame playback -------------------------------------------------- */
@@ -4165,6 +4346,9 @@ function onClick() {
 			var detail = event && event.detail ? event.detail : {};
 			var next = typeof detail.state === 'string' ? detail.state : 'idle';
 			if (!ANIM[next]) return;
+			/* A state command always wins over a static portrait: otherwise the new
+			 * frames would play behind the hidden `.dwm-3d` layers. */
+			restoreSprite();
 			if (detail.hold === true) {
 				var timers = sequenceTimers.current;
 				for (var i = 0; i < timers.length; i++) clearTimeout(timers[i]);
@@ -4235,6 +4419,31 @@ function onClick() {
 			if (thinkTimer.current !== undefined) clearTimeout(thinkTimer.current);
 			if (walkTimer.current !== undefined) clearTimeout(walkTimer.current);
 			if (rafRef.current !== undefined) cancelAnimationFrame(rafRef.current);
+			/* release physics: drop the spring-back chain and the squash timer so
+			 * neither can setState on an unmounted component. */
+			clearReleaseTimers();
+			if (squashTimer.current !== undefined) {
+				clearTimeout(squashTimer.current);
+				squashTimer.current = undefined;
+			}
+			clearClickGuard();
+			/* an unmount in the middle of a drag must not leave the pointer capture
+			 * (or the grabbing cursor) behind on a node React is about to drop. */
+			var body = bodyRef.current;
+			var drag = dragRef.current;
+			dragRef.current = null;
+			if (body) {
+				body.classList.remove('is-dragging');
+				body.style.setProperty('--dwm-drag-angle', '0deg');
+				body.style.transition = '';
+				if (drag) {
+					try {
+						body.releasePointerCapture(drag.pointerId);
+					} catch (error) {
+						/* already released */
+					}
+				}
+			}
 		};
 	}, []);
 
@@ -4367,7 +4576,7 @@ function onClick() {
 				{ className: 'dwm-flip', style: { transform: 'scaleX(' + flip + ')' } },
 				h(
 					'span',
-					{ className: 'dwm-3d' },
+					{ className: squash ? 'dwm-3d is-squash' : 'dwm-3d' },
 					h(Sprite, { state: animState, frame: frame, layer: 'depth' }),
 					h(Sprite, { state: animState, frame: frame }),
 					h(Shine, { state: animState, frame: frame }),
@@ -4408,9 +4617,6 @@ function onClick() {
 			: null,
 		h(DwmFxLayer, null),
 	);
-	releaseTimers.current.push(setTimeout(function () {
-		if (squashTarget && squashTarget.classList) squashTarget.classList.remove('is-squash');
-	}, SQUASH_MS));
 }
 
     /* ---- src/locale-table.js ---- */
@@ -5192,6 +5398,29 @@ function CompanionPanel(props) {
 	}
 
 	function commitCity(raw) {
+	// 2.1.0: validate before trusting a hand-typed city, and say why when it fails.
+	var typed = typeof raw === 'string' ? raw.trim() : '';
+	if (typed !== '' && typeof dwmWeatherValidateCity === 'function') {
+		dwmWeatherValidateCity(typed).then(function (result) {
+			if (!result || !result.ok) {
+				var reason = result && result.reason;
+				dwmSpeak(
+					reason === 'network'
+						? '网络不通，先保留原来的城市'
+						: '找不到「' + typed + '」，试试加省份或区（例如「杭州市西湖区」）',
+					'important',
+				);
+				return;
+			}
+			var next = normalizeOptions(Object.assign({}, readOptions(), { city: result.label }));
+			writeJSON(KEY_OPTIONS, next);
+			if (typeof window !== "undefined" && window.dispatchEvent) window.dispatchEvent(new CustomEvent(OPTIONS_EVENT));
+			if (typeof dwmWeatherRefresh === "function") dwmWeatherRefresh();
+			dwmSpeak('已识别：' + result.label, 'important');
+		});
+		return;
+	}
+
 		var next = String(raw === undefined || raw === null ? '' : raw).trim();
 		if (next === '') next = DWM_WEATHER_DEFAULT_CITY;
 		if (next === readOptions().city) return;
@@ -5202,6 +5431,35 @@ function CompanionPanel(props) {
 	}
 
 	function weatherBlock() {
+		var candState = useState([]);
+		var candidates = candState[0];
+		var setCandidates = candState[1];
+
+		function searchCity(text) {
+			var query = typeof text === 'string' ? text.trim() : '';
+			if (query === '' || typeof dwmWeatherCandidates !== 'function') { setCandidates([]); return; }
+			dwmWeatherCandidates(query).then(function (rows) { setCandidates(rows); });
+		}
+
+		function pickCity(candidate) {
+			var next = normalizeOptions(Object.assign({}, readOptions(), { city: candidate.label }));
+			writeJSON(KEY_OPTIONS, next);
+			if (typeof window !== 'undefined' && window.dispatchEvent) window.dispatchEvent(new CustomEvent(OPTIONS_EVENT));
+			if (typeof dwmWeatherRefresh === 'function') dwmWeatherRefresh('manual');
+			setCandidates([]);
+			dwmSpeak('已切换到 ' + candidate.label, 'important');
+		}
+
+		var rows = candidates.map(function (candidate) {
+			return h('button', {
+				key: 'cand-' + candidate.label + candidate.lat,
+				type: 'button',
+				className: 'dwm-panel-weather-candidate',
+				onClick: function () { pickCity(candidate); },
+				style: { display: 'block', width: '100%', textAlign: 'left', margin: '4px 0 0', padding: '6px 10px', cursor: 'pointer', font: 'inherit', borderRadius: '8px', border: '1px solid var(--dsw-alias-border-l2, #e2e4ea)', background: 'var(--dsw-alias-bg-layer-2, #fff)', color: 'var(--dsw-alias-label-primary, #1c1f26)' },
+			}, candidate.label);
+		});
+
 		return h(
 			'div',
 			{ className: 'dwm-panel-weather' },
@@ -5217,7 +5475,7 @@ function CompanionPanel(props) {
 					'aria-label': dwmT('panel.weather.city', '城市', 'City'),
 					onKeyDown: function (event) {
 						if (event.key !== 'Enter') return;
-						commitCity(event.currentTarget.value);
+						searchCity(event.currentTarget.value);
 					},
 					onBlur: function (event) {
 						commitCity(event.currentTarget.value);
@@ -5230,13 +5488,15 @@ function CompanionPanel(props) {
 						className: 'dwm-panel-weather-button',
 						onClick: function () {
 							dwmWeatherRefresh('manual');
-						}
+						},
 					},
 					dwmT('panel.weather.refresh', '刷新天气', 'Refresh'),
-				)
-			)
+				),
+			),
+			rows,
 		);
 	}
+
 
 	function check(key, zh, en) {
 		return h(
@@ -5485,7 +5745,7 @@ function dwmPreviewPlayPose(name) {
 		dwmSpeak('这张姿势图还没进包：' + name, 'error', 'important');
 		return;
 	}
-	dwmShowPose({ context: name, pose: name, image: image, state: null }, 4000);
+	dwmPortraitShow({ context: name, pose: name, image: image, state: null }, 4000, true);
 	dwmSpeak(DWM_PREVIEW_POSE_LABELS[name] || name, 'normal', 'important');
 }
 
@@ -5534,6 +5794,95 @@ function PosePreviewPanel() {
 		h('div', { style: { display: 'flex', flexWrap: 'wrap', gap: '6px', marginBottom: '10px' } }, stateCells),
 		h('div', { style: { fontSize: '12px', opacity: 0.65, margin: '0 0 6px' } }, '姿势立绘（' + poses.length + ' 张）'),
 		h('div', { style: { display: 'flex', flexWrap: 'wrap', gap: '6px' } }, poseCells),
+	);
+}
+
+    /* ---- src/weather-ui.js ---- */
+/*
+ * dsh-whale-maid — city picker (2.2.0).
+ *
+ * Self-contained so it does not depend on the companion panel internals: a
+ * status line, a search box and a candidate list. Picking a candidate writes
+ * the city, refreshes the weather and confirms with a bubble.
+ */
+
+function dwmCityStatusText() {
+	var record = typeof dwmWeatherRead === "function" ? dwmWeatherRead() : null;
+	if (!record || !record.city) return "还没有天气数据，先选一个城市。";
+	var parts = [record.city];
+	if (typeof record.tempC === "number") parts.push(Math.round(record.tempC) + "°C");
+	if (record.precision === "coordinates") parts.push("（仅坐标）");
+	else if (record.precision === "city") parts.push("（市级）");
+	return parts.join(" · ");
+}
+
+function WeatherCityPicker() {
+	var queryState = useState("");
+	var query = queryState[0];
+	var setQuery = queryState[1];
+	var listState = useState([]);
+	var candidates = listState[0];
+	var setCandidates = listState[1];
+	var noteState = useState("");
+	var note = noteState[0];
+	var setNote = noteState[1];
+
+	function search() {
+		var text = typeof query === "string" ? query.trim() : "";
+		if (text === "") { setCandidates([]); setNote("请输入城市名，例如「杭州」或「朝阳区」。"); return; }
+		setNote("查询中…");
+		if (typeof dwmWeatherCandidates !== "function") { setNote("当前版本不支持候选查询。"); return; }
+		dwmWeatherCandidates(text).then(function (rows) {
+			setCandidates(rows);
+			setNote(rows.length === 0 ? "没找到匹配的城市，试试加省份，例如「浙江 杭州」。" : "点一个候选项即可生效。");
+		});
+	}
+
+	function pick(candidate) {
+		var next = normalizeOptions(Object.assign({}, readOptions(), { city: candidate.label }));
+		writeJSON(KEY_OPTIONS, next);
+		if (typeof window !== "undefined" && window.dispatchEvent) window.dispatchEvent(new CustomEvent(OPTIONS_EVENT));
+		if (typeof dwmWeatherRefresh === "function") dwmWeatherRefresh();
+		setCandidates([]);
+		setNote("已切换到 " + candidate.label);
+		dwmSpeak("已切换到 " + candidate.label, "important");
+	}
+
+	var rows = candidates.map(function (candidate) {
+		return h("button", {
+			key: "cand-" + candidate.label + candidate.lat,
+			type: "button",
+			onClick: function () { pick(candidate); },
+			style: {
+				display: "block", width: "100%", textAlign: "left", margin: "0 0 4px",
+				padding: "6px 10px", cursor: "pointer", font: "inherit", borderRadius: "8px",
+				border: "1px solid var(--dsw-alias-border-l2, #e2e4ea)",
+				background: "var(--dsw-alias-bg-layer-2, #fff)",
+				color: "var(--dsw-alias-label-primary, #1c1f26)",
+			},
+		}, candidate.label);
+	});
+
+	return h("div", { className: "dwm-settings-group" },
+		h("p", { style: { margin: "0 0 6px", fontSize: "12px", opacity: 0.7 } }, dwmCityStatusText()),
+		h("div", { style: { display: "flex", gap: "6px", marginBottom: "6px" } },
+			h("input", {
+				type: "text",
+				value: query,
+				onChange: function (event) { setQuery(event && event.target ? event.target.value : ""); },
+				onKeyDown: function (event) { if (event && event.key === "Enter") search(); },
+				placeholder: "城市不对？输入城市名回车，从候选里选",
+				style: {
+					flex: "1 1 auto", padding: "6px 10px", font: "inherit", borderRadius: "8px",
+					border: "1px solid var(--dsw-alias-border-l2, #e2e4ea)",
+					background: "var(--dsw-alias-bg-layer-1, #fff)",
+					color: "var(--dsw-alias-label-primary, #1c1f26)",
+				},
+			}),
+			h("button", { type: "button", onClick: search, style: { padding: "6px 12px", cursor: "pointer", font: "inherit", borderRadius: "8px", border: "1px solid var(--dsw-alias-border-l2, #e2e4ea)", background: "var(--dsw-alias-bg-layer-2, #fff)", color: "var(--dsw-alias-label-primary, #1c1f26)" } }, "查询"),
+		),
+		note === "" ? null : h("p", { style: { margin: "0 0 6px", fontSize: "12px", opacity: 0.7 } }, note),
+		rows,
 	);
 }
 
@@ -5678,7 +6027,7 @@ function dwmWorkChipText(phase, language) {
  * forced (`think` / `work` / `joy` / `sad`) and nothing changes on screen; the
  * moment a portrait ships, that portrait takes over instead.
  */
-function dwmApplyWorkPose(phase) {
+function dwmApplyWorkPoseRaw(phase) {
 	dwmSetWorkGlow(phase !== 'idle');
 	if (DWM_RUNTIME.state === 'drag') return;
 	if (phase === 'idle') return;
@@ -5918,6 +6267,35 @@ function dwmStopSignals() {
 		}
 		DWM_SIGNAL_TIMERS.observer = null;
 	}
+}
+
+/*
+ * Pose changes are debounced: a turn alternates between "thinking" and
+ * "running a tool" every few hundred milliseconds, which used to flip the
+ * sprite between think.png and work.png and look like two pets fighting.
+ * A new pose is only painted once it has been the truth for a moment, and
+ * a running tool outranks a thinking blip so the work pose stays put.
+ */
+var DWM_WORK_POSE_STABLE_MS = 1500;
+var DWM_WORK_POSE_STICKY_MS = 6000;
+var DWM_WORK_POSE_LAST = { state: null, at: 0, toolAt: 0 };
+
+function dwmApplyWorkPoseStable(state) {
+	var now = dwmNow();
+	if (state === 'work') DWM_WORK_POSE_LAST.toolAt = now;
+	// A thinking blip right after a tool must not repaint: the turn alternates
+	// between the two every few hundred ms and it reads as two pets fighting.
+	if (state === 'think' && now - DWM_WORK_POSE_LAST.toolAt < DWM_WORK_POSE_STICKY_MS) return;
+	if (state === DWM_WORK_POSE_LAST.state) return;
+	DWM_WORK_POSE_LAST.state = state;
+	DWM_WORK_POSE_LAST.at = now;
+	dwmApplyWorkPoseRaw(state);
+}
+
+
+/* Callers keep using the old name; it now goes through the debounce. */
+function dwmApplyWorkPose(state) {
+	return dwmApplyWorkPoseStable(state);
 }
 
     /* ---- src/care.js ---- */
@@ -6306,18 +6684,83 @@ function dwmStopCare() {
  * the particle layer instead of the speech bubble, which also avoids two
  * bubbles fighting over the same slot.
  *
- * Zone rectangles are tuned to this artwork (see src/sprites/*.png): the tail
- * sweeps to the right of the body, the headdress occupies the top third.
+ * Zone rectangles are measured from this artwork, not eyeballed: see the
+ * measurement block below, taken from src/sprites/idle.png frame 0.
  */
 
+/*
+ * Measured geometry — src/sprites/idle.png, frame 0 of the horizontal sheet
+ * (768x256 = 3 frames of 256x256, frame 0 = source x 0..255). Measured with
+ * Pillow from the alpha channel plus colour masks (skin / white cloth / dark
+ * navy) on 2026-10-26. All values are frame pixels, 0..255, origin top-left.
+ *
+ *   alpha bounding box ....... x  29..227   y  31..255   (art never fills the frame)
+ *   ahoge ("horn") ........... x  84..112   y  31..47    (topmost ink; only thing above y 43)
+ *   headdress white frill .... x  52..155   y  43..79
+ *   fin ear, left ............ x  31..50    y 106..128   (tip x 31 at y 116)
+ *   fin ear, right ........... x 163..188   y  98..130   (tip x 188 at y 122)
+ *   face skin, brow -> chin .. x  69..127   y 102..145
+ *   head incl. hair+frill+fins x  31..190   y  43..168
+ *   hand, left (skin) ........ x  49..59    y 195..206
+ *   hand, right (skin) ....... x 143..159   y 195..209
+ *   waist belt (2 buttons) ... x  66..146   y 172..183   (solid dark band at y 174..182)
+ *   apron / belly ............ x  54..158   y 179..228
+ *   feet (two shoes) ......... x  83..127   y 236..255   (shoes are clipped by the frame edge)
+ *   tail (stem + fluke) ...... x 168..227   y 130..205   (fluke tip x 227 at y 148)
+ *
+ * Each rect below is that band / 256, rounded to 3 decimals, plus 2..6 px of
+ * hit padding so thin parts (ahoge, hands, belt) stay tappable at small pet
+ * sizes. `horn` and `tail` also take the empty frame margin outside the art:
+ * nothing is drawn there, so a tap on the sprite box's top/right edge belongs
+ * to the nearest part instead of falling through to the belly default.
+ *
+ * Order is top-down and the FIRST match wins, so a narrow part must be listed
+ * before the broad band that contains it:
+ *   - ear / face before head   (both sit inside the head block);
+ *   - waist before hand/belly  (the belt is a 12 px band inside the torso; it
+ *     used to be listed after belly, which made it unreachable);
+ *   - hand before belly        (the hands sit on the belly band's outer edges);
+ *   - tail near the end        (no body rect reaches past x 0.625, so the
+ *     right-hand sweep cannot be shadowed by the dress).
+ * `head` appears three times: the headdress/upper-hair band, then the two long
+ * side strands that hang beside the face.
+ */
 var DWM_ZONES = [
-	{ id: 'tail', x0: 0.55, y0: 0.5, x1: 1.0, y1: 0.92 },
-	{ id: 'head', x0: 0.18, y0: 0.0, x1: 0.82, y1: 0.42 },
-	{ id: 'belly', x0: 0.18, y0: 0.42, x1: 0.82, y1: 0.76 }
+	/* ahoge — the only ink above y 43, padded up to the frame edge */
+	{ id: 'horn', x0: 0.300, y0: 0.000, x1: 0.550, y1: 0.200 },
+	/* fin ears, left then right */
+	{ id: 'ear', x0: 0.115, y0: 0.400, x1: 0.205, y1: 0.520 },
+	{ id: 'ear', x0: 0.625, y0: 0.375, x1: 0.745, y1: 0.520 },
+	/* face skin oval (brow y 102 -> chin y 145), inside the head block */
+	{ id: 'face', x0: 0.265, y0: 0.395, x1: 0.500, y1: 0.575 },
+	/* headdress frill + hair above the brow, full head width */
+	{ id: 'head', x0: 0.120, y0: 0.155, x1: 0.720, y1: 0.395 },
+	/* long side strands hanging beside the face */
+	{ id: 'head', x0: 0.115, y0: 0.395, x1: 0.230, y1: 0.660 },
+	{ id: 'head', x0: 0.550, y0: 0.395, x1: 0.650, y1: 0.660 },
+	/* waist belt, the narrow band between bodice and apron */
+	{ id: 'waist', x0: 0.258, y0: 0.656, x1: 0.570, y1: 0.734 },
+	/* hands rest at the skirt line, on the belly band's outer edges */
+	{ id: 'hand', x0: 0.180, y0: 0.750, x1: 0.245, y1: 0.820 },
+	{ id: 'hand', x0: 0.545, y0: 0.750, x1: 0.635, y1: 0.825 },
+	/* apron + skirt */
+	{ id: 'belly', x0: 0.200, y0: 0.700, x1: 0.625, y1: 0.900 },
+	/* whale tail sweeping to the right of the dress */
+	{ id: 'tail', x0: 0.650, y0: 0.490, x1: 1.000, y1: 0.900 },
+	/* shoes, clipped by the frame's bottom edge */
+	{ id: 'feet', x0: 0.320, y0: 0.910, x1: 0.510, y1: 1.000 }
 ];
 
-var DWM_ZONE_BANK = { head: 'patHead', belly: 'patBelly', tail: 'patTail' };
-var DWM_ZONE_FX = { head: 'heart', belly: 'sparkle', tail: 'note' };
+var DWM_ZONE_BANK = {
+	head: 'patHead', horn: 'patHorn', ear: 'patEar', face: 'patFace',
+	belly: 'patBelly', hand: 'patHand', waist: 'patWaist', feet: 'patFeet',
+	tail: 'patTail'
+};
+var DWM_ZONE_FX = {
+	head: 'heart', belly: 'sparkle', tail: 'note',
+	horn: 'sparkle', ear: 'heart', hand: 'heart',
+	feet: 'note', waist: 'heart', face: 'heart'
+};
 
 var DWM_ZONE_STATE = {
 	element: null,
@@ -6334,7 +6777,7 @@ function dwmHitZone(nx, ny) {
 		var zone = DWM_ZONES[i];
 		if (nx >= zone.x0 && nx <= zone.x1 && ny >= zone.y0 && ny <= zone.y1) return zone.id;
 	}
-	return 'head';
+	return 'belly';
 }
 
 function dwmZoneReact(zone) {
@@ -6359,7 +6802,7 @@ function dwmZoneReact(zone) {
 		return;
 	}
 
-	var type = zone === 'belly' ? 'pat-belly' : zone === 'tail' ? 'pat-tail' : 'pat-head';
+	var type = 'pat-' + zone;
 	dwmGrowthApply(type);
 	dwmFx(DWM_ZONE_FX[zone] || 'heart', 2);
 	dwmSpeak(dwmPickLine(bank, language));
@@ -6632,7 +7075,7 @@ function dwmWeatherGeocode(city) {
 }
 
 /* Resolve a place: system geolocation first, the configured city as fallback. */
-function dwmWeatherLocate() {
+function dwmWeatherLocateRaw() {
 	var geo = typeof navigator !== 'undefined' ? navigator.geolocation : null;
 	if (!geo || typeof geo.getCurrentPosition !== 'function') return Promise.reject(new Error('no geolocation'));
 	return new Promise(function (resolve, reject) {
@@ -6833,6 +7276,99 @@ function dwmWeatherForget() {
 	} catch (error) {
 		/* ignore */
 	}
+}
+
+/*
+ * Reverse geocoding: turn the coordinates the browser gives us into a place
+ * name. Nominatim is the only free endpoint that answers reliably for China
+ * (Open-Meteo geocoding cannot resolve districts).
+ */
+function dwmWeatherReverse(lat, lon) {
+	var url = DWM_WEATHER_NOMINATIM + '/reverse?format=jsonv2&zoom=14&addressdetails=1&accept-language=zh-CN&lat=' + lat + '&lon=' + lon;
+	return dwmWeatherWithTimeout(url, DWM_WEATHER_GEOCODE_MS).then(function (data) {
+		var address = (data && data.address) || {};
+		var city = address.city || address.town || address.county || address.state || '';
+		var district = address.city_district || address.district || address.suburb || address.county || '';
+		var label = city && district && city !== district ? city + district : city || district;
+		if (!label) return null;
+		return {
+			city: label,
+			lat: Number(lat),
+			lon: Number(lon),
+			precision: district && district !== city ? 'district' : 'city',
+		};
+	}).catch(function () {
+		return null;
+	});
+}
+
+/* Validate a hand-typed city before we trust it. */
+function dwmWeatherValidateCity(text) {
+	var query = typeof text === 'string' ? text.trim() : '';
+	if (query === '') return Promise.resolve({ ok: false, reason: 'empty' });
+	return dwmWeatherGeocode(query).then(function (place) {
+		if (!place) return { ok: false, reason: 'not-found', query: query };
+		return { ok: true, query: query, label: place.city, lat: place.lat, lon: place.lon, precision: place.precision };
+	}).catch(function () {
+		return { ok: false, reason: 'network', query: query };
+	});
+}
+
+/* Auto-locate, then turn the coordinates into a readable place name. */
+function dwmWeatherLocateQuiet() {
+	return dwmWeatherLocateRaw().then(function (position) {
+		if (!position || typeof position.lat !== 'number' || typeof position.lon !== 'number') return position;
+		return dwmWeatherReverse(position.lat, position.lon).then(function (place) {
+			if (!place) { position.precision = 'coordinates'; return position; }
+			return { city: place.city, lat: position.lat, lon: position.lon, precision: place.precision };
+		});
+	});
+}
+
+/* Up to five matches for a partial name, so the user can pick one. */
+function dwmWeatherCandidates(text) {
+	var query = typeof text === 'string' ? text.trim() : '';
+	if (query === '') return Promise.resolve([]);
+	var url = DWM_WEATHER_NOMINATIM + '/search?format=jsonv2&limit=5&addressdetails=1&accept-language=zh-CN&q=' + encodeURIComponent(query);
+	return dwmWeatherWithTimeout(url, DWM_WEATHER_GEOCODE_MS).then(function (list) {
+		if (!Array.isArray(list)) return [];
+		return list.map(function (item) {
+			var address = (item && item.address) || {};
+			var city = address.city || address.town || address.county || address.state || '';
+			var district = address.city_district || address.district || address.suburb || address.county || '';
+			var label = city && district && city !== district ? city + district : city || district;
+			return {
+				label: label || (item && item.display_name) || query,
+				lat: Number(item.lat),
+				lon: Number(item.lon),
+				precision: district && district !== city ? 'district' : 'city',
+			};
+		}).filter(function (item) {
+			return item.label && isFinite(item.lat) && isFinite(item.lon);
+		});
+	}).catch(function () {
+		return [];
+	});
+}
+
+/*
+ * Locate, but tell the user when the browser refuses or the lookup fails,
+ * instead of silently falling back to the stored city.
+ */
+var dwmWeatherLocateReported = false;
+
+function dwmWeatherLocate() {
+	return dwmWeatherLocateQuiet().then(function (position) {
+		dwmWeatherLocateReported = false;
+		return position;
+	}, function (error) {
+		if (!dwmWeatherLocateReported) {
+			dwmWeatherLocateReported = true;
+			var denied = error && /denied|permission/i.test(String(error.message || error));
+			dwmSpeak(denied ? '浏览器未授予定位权限，已改用你填写的城市' : '定位失败，已改用你填写的城市', 'important');
+		}
+		throw error;
+	});
 }
 
     /* ---- src/plugin.js ---- */

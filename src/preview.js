@@ -31,7 +31,7 @@ function dwmPreviewPlayPose(name) {
 		dwmSpeak('这张姿势图还没进包：' + name, 'error', 'important');
 		return;
 	}
-	dwmShowPose({ context: name, pose: name, image: image, state: null }, 4000);
+	dwmPortraitShow({ context: name, pose: name, image: image, state: null }, 4000, true);
 	dwmSpeak(DWM_PREVIEW_POSE_LABELS[name] || name, 'normal', 'important');
 }
 

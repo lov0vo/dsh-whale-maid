@@ -379,14 +379,18 @@ test('quests only pay out when finished', () => {
 /* --- hit zones and text probing ------------------------------------------ */
 
 test('hit zones follow the artwork layout', () => {
-	assert.equal(api.zoneAt(0.9, 0.7), 'tail');
-	assert.equal(api.zoneAt(0.5, 0.2), 'head');
-	assert.equal(api.zoneAt(0.5, 0.6), 'belly');
-	/* outside every rectangle falls back to the head, never to null */
-	assert.equal(api.zoneAt(0.02, 0.99), 'head');
-});
-
-test('topics and keyword reactions', () => {
+	assert.equal(api.zoneAt(0.425, 0.1), 'horn');
+	assert.equal(api.zoneAt(0.16, 0.46), 'ear');
+	assert.equal(api.zoneAt(0.383, 0.485), 'face');
+	assert.equal(api.zoneAt(0.42, 0.275), 'head');
+	assert.equal(api.zoneAt(0.414, 0.695), 'waist');
+	assert.equal(api.zoneAt(0.212, 0.785), 'hand');
+	assert.equal(api.zoneAt(0.412, 0.8), 'belly');
+	assert.equal(api.zoneAt(0.825, 0.695), 'tail');
+	assert.equal(api.zoneAt(0.415, 0.955), 'feet');
+	/* a miss is far more likely to be the body than the head */
+	assert.equal(api.zoneAt(0.02, 0.99), 'belly');
+});test('topics and keyword reactions', () => {
 	assert.deepEqual(api.probe('这段代码报错了，帮我看看'), { topic: 'debug', keyword: 'broken' });
 	assert.deepEqual(api.probe('谢谢你'), { topic: 'thanks', keyword: 'thanks' });
 	assert.deepEqual(api.probe('晚安，我去睡了'), { topic: 'night', keyword: 'night' });

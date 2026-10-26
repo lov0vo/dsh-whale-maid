@@ -68,21 +68,44 @@
 
 .dwm-root .dwm-flip {width:100%;height:100%;transform-style:preserve-3d;transition:transform .3s var(--ease);display:block}
 
+/* Release squash (the "she lands" beat when a drag is let go).
+ *
+ * `animation` is a shorthand, so the original `animation: dwm-squash ...` here
+ * *replaced* the `dwm-sway` animation declared on `.dwm-3d` below: both keyframe
+ * sets animate `transform`, so the 3D sway disappeared for the whole 320ms (the
+ * pet snapped from her swayed 3D pose into a flat 2D plane and back) and, once
+ * the class came off, `dwm-sway` restarted at 0% instead of continuing its 8s
+ * cycle — a visible jump on every release.
+ *
+ * The fix is to stop making the two animations compete for one property: keep
+ * `dwm-sway` in the list (it owns `transform`, and keeping the same name at the
+ * same index means the running animation is not restarted) and drive the squash
+ * through the independent `scale` property, which composes with `transform`
+ * instead of overriding it. `.dwm` (the parent) keeps its inline
+ * `--dwm-tilt-x/y` / `--dwm-drag-angle` transform; it is a different element, so
+ * the drag tilt and the release squash now show at the same time. */
 .dwm-root .dwm-3d.is-squash {
-	animation: dwm-squash 320ms cubic-bezier(.34, 1.3, .64, 1);
+	animation:
+		8s ease-in-out infinite alternate dwm-sway,
+		320ms cubic-bezier(.34, 1.3, .64, 1) dwm-squash;
 }
 
 @keyframes dwm-squash {
-	0% { transform: scale(1, 1); }
-	45% { transform: scale(1.05, .96); }
-	100% { transform: scale(1, 1); }
+	0% { scale: 1 1; }
+	45% { scale: 1.05 .96; }
+	100% { scale: 1 1; }
 }
 
 .dwm-root .dwm-3d {width:100%;height:100%;transform-style:preserve-3d;will-change:transform;animation:8s ease-in-out infinite alternate dwm-sway;display:block}
 
 .dwm-root .dwm-sprite.dwm-depth {filter:blur(6px)brightness(.5)saturate(.75);pointer-events:none;position:absolute;inset:0;transform:translateZ(-32px)}
 
-.dwm-root .dwm-sprite {image-rendering:pixelated;filter:drop-shadow(0 12px 10px rgb(var(--shadow-rgb) / 30%));background-repeat:no-repeat;position:absolute;inset:0}
+/* The artwork itself. It is decorative: it sits over the whole box, so leaving
+ * it hit-testable only made it the pointer target for a button that already
+ * handles the gesture. `pointer-events: none` here, while `.dwm` and the two
+ * wrappers (`.dwm-flip`, `.dwm-3d`) keep `auto` via `inherit` at the bottom of
+ * this file, is the split that keeps drag/click working. */
+.dwm-root .dwm-sprite {image-rendering:pixelated;filter:drop-shadow(0 12px 10px rgb(var(--shadow-rgb) / 30%));background-repeat:no-repeat;position:absolute;inset:0;pointer-events:none}
 
 .dwm-root .dwm-sprite.is-tilt {animation:.9s ease-in-out infinite alternate dwm-tilt}
 
@@ -97,7 +120,13 @@
 
 .dwm-root .dwm-shadow {background:rgb(var(--shadow-rgb) / 14%);pointer-events:none;border-radius:50%;height:10px;position:absolute;bottom:-4px;left:10%;right:10%}
 
-.dwm-root .dwm-pop {pointer-events:none;flex-direction:column;align-items:flex-end;gap:6px;display:flex;position:absolute;bottom:calc(100% + 10px);right:0}
+/* `z-index: 2` because the bubble/menu container is the *first* child of
+ * `.dwm-root`, and `.dwm` (with its `transform`, hence its own stacking context)
+ * comes after it: at equal `z-index: auto` the sprite painted over the pop, and
+ * the `data-dwm-work` halo on `.dwm-3d::after` (inset -12%, so it reaches ~13px
+ * above the box) washed over the bottom of the speech bubble during a running
+ * turn. Lifting the pop above the sprite fixes both. */
+.dwm-root .dwm-pop {pointer-events:none;flex-direction:column;align-items:flex-end;gap:6px;display:flex;position:absolute;bottom:calc(100% + 10px);right:0;z-index:2}
 
 .dwm-root .dwm-bubble {box-sizing:border-box;border:1px solid var(--line);background:var(--surface);max-width:min(250px,100vw - 32px);box-shadow:var(--shadow-md);color:var(--ink);pointer-events:auto;animation:dwm-pop-in var(--duration-fast) var(--ease);border-radius:12px 12px 2px;margin:0;padding:8px 12px;font-size:13px;line-height:1.5}
 
@@ -132,7 +161,10 @@
 	line-height: 1.4;
 }
 
-@media (prefers-reduced-motion:reduce) {.dwm-root .dwm-3d,.dwm-root .dwm-sprite,.dwm-root .dwm-bubble-dot{animation:none}.dwm-root .dwm-depth{display:none}.dwm-root .dwm,.dwm-root .dwm-flip{transition:none}.dwm-root .dwm-bubble-dot{display:none}}
+/* `.is-squash` is listed explicitly: it is (0,3,0) and would otherwise outrank
+   the (0,2,0) `.dwm-root .dwm-3d` below, so a caller that adds the class itself
+   could still animate a squash for a user who asked for no motion. */
+@media (prefers-reduced-motion:reduce) {.dwm-root .dwm-3d,.dwm-root .dwm-3d.is-squash,.dwm-root .dwm-sprite,.dwm-root .dwm-bubble-dot{animation:none}.dwm-root .dwm-depth{display:none}.dwm-root .dwm,.dwm-root .dwm-flip{transition:none}.dwm-root .dwm-bubble-dot{display:none}}
 
 /* ---- settings panel (plugin addition, not part of the source site) ---- */
 
@@ -428,3 +460,74 @@
 
 /* 1.5.2: the single settings entry stacks options above the companion panel. */
 .dwm-settings-stack {display:flex;flex-direction:column;gap:18px}
+
+
+/* 2.1.0: pose portraits breathe instead of sitting dead still. */
+@keyframes dwm-portrait-float {
+	0%, 100% { transform: translateY(0); }
+	50% { transform: translateY(-4px); }
+}
+
+/* The portrait is an <img data-dwm-portrait> that `dwmPortraitShow()` in
+ * src/runtime.js appends to <body> — it is NOT a sibling of `.dwm-root`, so the
+ * old `.dwm-root ~ img[data-dwm-portrait]` sibling selector never matched and
+ * the reduced-motion opt-out silently did nothing. Target the attribute
+ * directly instead.
+ *
+ * The layer is `position: fixed` over the pet's own box at `z-index: 60`, i.e.
+ * it can sit above the sprite, so it must stay click-through; runtime.js sets
+ * that inline and this rule is the stylesheet-level guarantee that a portrait
+ * can never eat a drag or a click meant for the pet. */
+img[data-dwm-portrait] {
+	pointer-events: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+	img[data-dwm-portrait] { animation: none !important; }
+}
+
+
+/* City candidates rendered inside the weather block. */
+.dwm-root .dwm-panel-weather-candidate {
+	display: block;
+	width: 100%;
+	text-align: left;
+	font: inherit;
+	cursor: pointer;
+}
+.dwm-root .dwm-panel-weather-candidate:hover {
+	border-color: var(--dsw-alias-brand-primary, #2f5fbf);
+}
+
+/* The two wrappers between the button and the artwork. They must keep taking
+   input (`inherit` resolves to the button's `auto`), so the drag gesture still
+   starts on the sprite even though every decorative layer inside them — the
+   sprites, the depth blur and the shine — is `pointer-events: none`. */
+.dwm-root .dwm-3d {
+	pointer-events: inherit;
+}
+
+.dwm-root .dwm-flip {
+	pointer-events: inherit;
+}
+
+/* 2.0.0 preview gallery (src/preview.js). These two class names are the only
+   `dwm-*` classes the sources build that had no rule here: the cell and its
+   group are styled inline in preview.js, which is why nothing looked broken, but
+   the "every dwm-* class in JS has a CSS rule" invariant (test/companion.test.mjs)
+   is meant to hold for the whole sheet. Keep these rules additive — the inline
+   styles still win, so they only supply what inline markup cannot: a hover
+   response and the column layout for the group. */
+.dwm-settings-group {
+	display: flex;
+	flex-direction: column;
+	gap: 8px;
+}
+
+.dwm-preview-cell {
+	cursor: pointer;
+}
+
+.dwm-preview-cell:hover {
+	filter: brightness(.96);
+}

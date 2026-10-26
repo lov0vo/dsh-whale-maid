@@ -138,7 +138,7 @@ function dwmWorkChipText(phase, language) {
  * forced (`think` / `work` / `joy` / `sad`) and nothing changes on screen; the
  * moment a portrait ships, that portrait takes over instead.
  */
-function dwmApplyWorkPose(phase) {
+function dwmApplyWorkPoseRaw(phase) {
 	dwmSetWorkGlow(phase !== 'idle');
 	if (DWM_RUNTIME.state === 'drag') return;
 	if (phase === 'idle') return;
@@ -378,4 +378,33 @@ function dwmStopSignals() {
 		}
 		DWM_SIGNAL_TIMERS.observer = null;
 	}
+}
+
+/*
+ * Pose changes are debounced: a turn alternates between "thinking" and
+ * "running a tool" every few hundred milliseconds, which used to flip the
+ * sprite between think.png and work.png and look like two pets fighting.
+ * A new pose is only painted once it has been the truth for a moment, and
+ * a running tool outranks a thinking blip so the work pose stays put.
+ */
+var DWM_WORK_POSE_STABLE_MS = 1500;
+var DWM_WORK_POSE_STICKY_MS = 6000;
+var DWM_WORK_POSE_LAST = { state: null, at: 0, toolAt: 0 };
+
+function dwmApplyWorkPoseStable(state) {
+	var now = dwmNow();
+	if (state === 'work') DWM_WORK_POSE_LAST.toolAt = now;
+	// A thinking blip right after a tool must not repaint: the turn alternates
+	// between the two every few hundred ms and it reads as two pets fighting.
+	if (state === 'think' && now - DWM_WORK_POSE_LAST.toolAt < DWM_WORK_POSE_STICKY_MS) return;
+	if (state === DWM_WORK_POSE_LAST.state) return;
+	DWM_WORK_POSE_LAST.state = state;
+	DWM_WORK_POSE_LAST.at = now;
+	dwmApplyWorkPoseRaw(state);
+}
+
+
+/* Callers keep using the old name; it now goes through the debounce. */
+function dwmApplyWorkPose(state) {
+	return dwmApplyWorkPoseStable(state);
 }
