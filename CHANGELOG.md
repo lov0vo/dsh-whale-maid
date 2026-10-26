@@ -1,3 +1,24 @@
+# 变更记录
+
+本项目遵循 [语义化版本](https://semver.org/lang/zh-CN/)。
+
+## 2.0.0 — 2026-10-26
+
+### 新增
+
+- **按部位区分的互动台词**：可点击区由 3 个扩到 **9 个**（`horn` 呆毛 / `ear` 鳍耳 / `face` 脸 / `head` 头与头发 / `waist` 腰 / `hand` 手 / `belly` 围裙与腹 / `feet` 脚 / `tail` 鲸尾），一个矩形都没命中时回落到 `belly`。每个区用自己的新库**加上**原有的 `patHead` / `patBelly` / `patTail`，原有台词一句没删。新库在 `src/lines-parts.js`（`DWM_LINES_PARTS`，9 个库，每库 14 条中文 + 6 条英文，共 **180 条**）；区 → 库映射是 `src/zones.js` 的 `DWM_ZONE_BANK`，值改为数组，由 `dwmPickLineFrom` 合并抽取。
+- **19 张姿势立绘改为 3 帧循环**：`src/sprites/poses/` 下的文件由单张 256×256 改为 **768×256** 三格横排，用与 `drag` / `think` / `work` / `sad` 相同的伪帧配方从原图生成（缩放 1.00 → 1.02、纵向偏移 0 → −2px、旋转 −1° → +1°，锚点脚底中心）。播放走 CSS `@keyframes dwm-pose-cycle`（`background-size: 300% 100%`，0.9 s 一轮），不占 JS 定时器；`prefers-reduced-motion` 下钉在第 0 帧。`dwmPortraitShow` 相应改为建 `div[data-dwm-portrait]` 背景图层，不再是 `<img>`。
+- **动作与姿势预览画廊**（`src/preview.js`）：设置页里一格一个按钮的网格，动作状态点一下播 3 秒、姿势立绘播 4 秒，不必等对应场景出现。
+
+### 修复
+
+- **轻放不再甩出**：松手速度低于 `DRAG_LIGHT_SPEED` 时只播压扁，不位移。
+- **压扁不再卡住、也不再压扁角色**：`.is-squash` 改由 `squash` 状态唯一写入、由 `SQUASH_MS`（320 ms）定时清除；压扁改走独立的 `scale` 属性，不再和 `dwm-sway` 争 `transform`。
+- **第二次 `pointerdown` 不再抢拖动**：拖动进行中直接返回，不替换当前拖动、也不抢走 pointer capture。
+- **立绘模式不再吃掉状态切换**：状态指令、点击、再次按下都会先 `restoreSprite()` 把舞台交还给精灵，新帧不会播在隐藏的 `.dwm-3d` 后面。
+- **设置页合并成一个入口**：原本两个几乎同名的 `settings.section` 行合并为 `WhaleSettingsSection`，基础选项、陪伴面板、预览画廊上下排列。
+- **分区命中矩形按立绘重新量过**：此前裙子一带会被判成尾巴。
+
 ## 1.9.0 — 2026-10-26
 
 ### 变更
@@ -19,9 +40,6 @@
 - 设置页每 5 s 重读本地存储 → 改为 30 s 并在切回标签页时立即刷新。
 - 松手回弹的定时器不再累积。
 - 羁绊动作与称号取消等级门槛，默认全部可用，称号常显于面板首屏。
-# 变更记录
-
-本项目遵循 [语义化版本](https://semver.org/lang/zh-CN/)。
 
 ## 1.4.0 — 2026-10-26
 

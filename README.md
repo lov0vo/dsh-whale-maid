@@ -150,10 +150,34 @@ target: <本仓库的绝对路径>
 | 玩耍（🎮） | 冒爱心，播放抛接球动画 |
 | 点空白 / `Esc` | 关闭菜单 |
 | 长时间不操作 | 60 秒后趴下睡觉；点击会先播「醒来」再「欢呼」 |
-| 点头顶 / 肚子 / 尾巴 | 分区反应：不同台词 + 不同粒子（心 / 闪光 / 音符） |
+| 点不同部位 | 9 个命中区各自的台词 + 粒子（心 / 闪光 / 音符），见下方「部位互动台词」 |
 | 1.2 秒内连点三次 | 三连击庆祝（星星 + 爱心 + 专属台词） |
 
 宠物会自己走动，所以位置不总是右下角——这是原始行为。
+
+### 部位互动台词（可点击部位）
+
+可点击区按立绘量过，共 **9 个**。命中矩形写在 `src/zones.js` 的 `DWM_ZONES` 里，坐标归一化到精灵帧（0–1），所以宠物放大缩小都点得准；列表**从上到下先命中先返回**，窄部位排在包住它的大块之前。一个矩形都没命中时回落到 `belly`。
+
+| 区 `id` | 部位 | 矩形数 | 台词库（新 + 原） |
+| --- | --- | --- | --- |
+| `horn` | 呆毛 | 1 | `patHorn` + `patHead` |
+| `ear` | 鳍耳 | 2（左右） | `patEar` + `patHead` |
+| `face` | 脸 | 1 | `patFace` + `patHead` |
+| `head` | 头 / 头发 | 3（发饰带 + 两侧长发） | `patHeadPart` + `patHead` |
+| `waist` | 腰（腰带） | 1 | `patWaist` + `patBelly` |
+| `hand` | 手 | 2（左右） | `patHand` + `patBelly` |
+| `belly` | 围裙 / 腹 | 1（默认区） | `patBellyPart` + `patBelly` |
+| `feet` | 脚 | 1 | `patFeet` + `patBelly` |
+| `tail` | 鲸尾 | 1 | `patTailPart` + `patTail` |
+
+台词库分三处，互不覆盖：
+
+- 每个区自己的新库在 `src/lines-parts.js`（`DWM_LINES_PARTS`，9 个库，每库 **14 条中文 + 6 条英文**，合计 **180 条**）；
+- 原有的 `patHead` / `patBelly` / `patTail` 仍留在 `src/lines.js`，**一句没删**；`src/lines-parts.js` 末尾把**新库** `concat` 进 `DWM_LINES`，所以是追加，不是替换；
+- 区 → 库的映射是 `src/zones.js` 的 `DWM_ZONE_BANK`，值现在是**数组**，由 `dwmPickLineFrom(banks, language)` 把几个库并成一个池子随机抽，并避开上一次抽到的那条。
+
+口径：鲸鱼女仆对主人说话，可以 teasing、可以暧昧，但**不写露骨内容**；每句最多一个 emoji，中文台词不带 emoji（与原版一致）。
 
 ## 配置
 
@@ -190,7 +214,14 @@ target: <本仓库的绝对路径>
 
 > 这些开关只影响**陪伴层**。关掉全部开关后，宠物的行为与 1.0.0 完全一致。
 
-### 公开 API,1.4.0 追加四个方法：,,- `exportSave()` → 返回存档 JSON 字符串（`{ schema: "dsh-whale-maid/save", version: 1, data: {...} }`）,- `importSave(text)` → `{ ok: true }` 或 `{ ok: false, reason: "not-json" | "wrong-schema" | "wrong-version" }`,- `clearSave()` → 清空本插件全部存档键,- `moodTier()` → 当前心情档位 0–4,
+### 公开 API
+
+1.4.0 追加四个方法：
+
+- `exportSave()` → 返回存档 JSON 字符串（`{ schema: "dsh-whale-maid/save", version: 1, data: {...} }`）
+- `importSave(text)` → `{ ok: true }` 或 `{ ok: false, reason: "not-json" | "wrong-schema" | "wrong-version" }`
+- `clearSave()` → 清空本插件全部存档键
+- `moodTier()` → 当前心情档位 0–4
 
 渲染进程里可用 `window.dshWhaleMaid`：
 
@@ -251,7 +282,7 @@ dshWhaleMaid.setCity('上海')                // 改备用城市并立即刷新
 | `workSlack` / `workRam` / `coolShades` / `workPat` / `balanceLow` | `poses/<名字>.png` | 独立立绘 |
 | `hidden` | —— | 参考插件里是 `null`，本插件用 `hidden` 开关 + 🐋 唤回按钮实现 |
 
-> `src/sprites/poses/` 里的 19 张是**素材库存**：它们已被生成、抠图、归一化到与精灵帧完全相同的规格（256×256、角色高 225px、脚底贴 `y=256`、`x=128` 居中），但**尚未接进状态机**——把某个姿态真正用起来需要一个「场合 → 姿态」的映射表，那属于功能决策，等确认口径后再接。
+> `src/sprites/poses/` 里的 19 张已生成、抠图、归一化到与精灵帧完全相同的规格（角色高 225px、脚底贴 `y=256`、`x=128` 居中），并由 `src/pose-map.js` 的「场合 → 姿态」映射表接进状态机（详见下文「场合 → 姿态映射」）。每个文件现在是 768×256 的三格横排，循环播放方式见「立绘的 3 帧循环」。
 
 ## 动作表
 
@@ -271,32 +302,47 @@ dshWhaleMaid.setCity('上海')                // 改备用城市并立即刷新
 | `wake` | `wake.png` | 2 | 3 | once | 睡眠中被点击 |
 | `walk` | `walk.png` | 3 | 6 | ping-pong | 随机漫步 |
 
+### 立绘的 3 帧循环
+
+`src/sprites/poses/` 里的 19 张姿势立绘不再是单张静止图：每个文件现在是 **768×256** 的横排三格，每格 256×256，与原精灵帧同规格。
+
+- 三帧由原来那张单图生成，用的是 `drag` / `think` / `work` / `sad` 已经用过的伪帧配方：**缩放 1.00 → 1.02、纵向偏移 0 → −2px、旋转 −1° → +1°**，锚点固定在脚底中心，所以脚不会飘。
+- 生成脚本是 `_tmp/whale-gen/pseudo_poses.py`，放在包外、不随包发布；原图备份在 `_tmp/whale-gen/backup-poses/`。
+- 播放不靠 JS 定时器：`@keyframes dwm-pose-cycle` 以 `background-size: 300% 100%` 把 `background-position` 依次走到 0% → 50% → 100%，每轮 0.9 s，再与原有的 `dwm-portrait-float` 浮动叠加。`prefers-reduced-motion` 下整段动画关掉，并钉在第 0 帧。
+- 渲染器 `dwmPortraitShow`（`src/runtime.js`）现在建的是带背景图的 `div[data-dwm-portrait]`，不再是 `<img>`；该层 `pointer-events: none`、`z-index: 60`，不会吃掉点击或拖动。
+
 ## 目录结构
 
 ```
 dsh-whale-maid/
 ├── index.js              Host 半边：空 apply，只为让 Loader 挂载并暴露 dsh.client
-├── client.js             浏览器产物（约 2.0 MB，由 build.mjs 生成，勿手改）
+├── client.js             浏览器产物（约 300 KiB，由 build.mjs 生成，勿手改）
 ├── cordis.patch.yml      手工安装用的 insert 行
 ├── package.json          清单：exports / files / dsh.bundle / dsh.client
 ├── build.mjs             构建脚本：校验 PNG 尺寸 → base64 内联 → 拼 client.js
 ├── src/
-│   ├── pet.js            宠物组件：ANIM 表、切帧、遮罩高光、拖拽、漫步、投喂、玩耍、气泡
-│   ├── pet.css           原站样式 + 主题变量桥接（全部规则作用域在 .dwm-root 下）
-│   ├── settings.js       设置页「鲸鱼女仆」分区
-│   ├── plugin.js         apply(ctx)：注入样式、注册 slot、挂公开 API
-│   ├── runtime.js        共享运行时状态、存储键、事件名、随机与时间工具
-│   ├── lines.js          台词库（中/英各约 260 句）、关键词表、话题分类
-│   ├── growth.js         成长：心情/饱食/好感/等级/签到/每日任务/41 项成就/日记
-│   ├── signals.js        工作状态探测器：读宿主 DOM → 姿态 + 状态标签 + 工作期台词
-│   ├── care.js           主动关怀与闲聊心跳
-│   ├── zones.js          分区点击与三连击
-│   ├── fx.js             状态小标签与粒子层（两个独立组件）
-│   ├── panel.js          设置页「鲸鱼女仆」分区
-│   └── sprites/*.png     10 组精灵图集（每帧 256×256，横向排列）
-├── test/companion.test.mjs   node:test 单测：18 例，真实 client.js + stub DOM
-├── locale/{en,zh}.json   插件名/描述的本地化
-├── icon.svg              插件图标
+│   ├── care.js               13 KB
+│   ├── fx.js                 3 KB
+│   ├── growth.js             25 KB
+│   ├── lines-mood.js         3 KB
+│   ├── lines-more.js         37 KB
+│   ├── lines-parts.js        9 KB
+│   ├── lines-weather.js      5 KB
+│   ├── lines.js              21 KB
+│   ├── locale-table.js       10 KB
+│   ├── panel.js              19 KB
+│   ├── pet.css               23 KB
+│   ├── pet.js                42 KB
+│   ├── plugin.js             8 KB
+│   ├── portable.js           4 KB
+│   ├── pose-map.js           3 KB
+│   ├── preview.js            3 KB
+│   ├── runtime.js            15 KB
+│   ├── settings.js           7 KB
+│   ├── signals.js            15 KB
+│   ├── weather-ui.js         4 KB
+│   ├── weather.js            18 KB
+│   ├── zones.js              7 KB
 ├── assets/preview.png    README 预览图（由精灵图合成，非界面截图）
 ├── CHANGELOG.md
 ├── LICENSE               MIT（仅代码）
@@ -311,7 +357,7 @@ node build.mjs
 
 产物写入 `client.js`。构建时会校验每张精灵图的像素尺寸是否等于 `帧数 × 256`，尺寸不符直接失败——防止放错图导致画面错位。
 
-`build.mjs` 按固定顺序把 `src/` 下的十个脚本拼进同一个闭包（`runtime → lines → growth → fx → pet → settings → panel → signals → care → zones → plugin`），所以它们之间可以直接互相调用函数声明，但**不能写 `import` / `export`**（构建会直接报错）。
+`build.mjs` 按固定顺序把 `src/` 下的脚本拼进同一个闭包（`runtime → lines → lines-more → lines-mood → lines-weather → lines-parts → growth → fx → portable → pose-map → preview → pet → settings → panel → weather → weather-ui → locale-table → signals → care → zones → plugin`），所以它们之间可以直接互相调用函数声明，但**不能写 `import` / `export`**（构建会直接报错）。
 
 ### 测试
 
@@ -380,7 +426,10 @@ node --test test/companion.test.mjs
 2. 帧数不同的话，同步修改 `build.mjs` 的 `SHEETS` 表与 `src/pet.js` 的 `ANIM` 表（`frames` 字段）；
 3. 运行 `node build.mjs` 重新生成 `client.js`。
 
-## 已知限制,- **locale 表是静态生成的**：`locale/*.json` 由源码里的 `label(中文, English)` 对生成，改了文案要重新生成一次，否则翻译表会和界面不同步。,- **姿态素材未接线**：`src/sprites/poses/` 里的 19 张立绘是库存，当前状态机只用到 12 张精灵表；接线需要先定「场合 → 姿态」映射。
+## 已知限制
+
+- **locale 表是静态生成的**：`locale/*.json` 由源码里的 `label(中文, English)` 对生成，改了文案要重新生成一次，否则翻译表会和界面不同步。
+- **姿态按场合轮换**：`src/pose-map.js` 把 36 条场景规则映射到姿势立绘，未命中时回落到 12 张精灵表的动作态，所以并不是每个场景都会换立绘。
 
 - **天气陪伴需要联网**（Open-Meteo）。请求失败时沿用上次结果，超过 6 小时就不再提天气；完全离线时宠物其余功能不受影响。
 - 天气台词**只有中文**（英文界面会回退到中文，不会留空）。
@@ -388,12 +437,14 @@ node --test test/companion.test.mjs
 
 - 宠物渲染在 `shell.overlay` 层（`z-index: 20`，自成层叠上下文），**DSH 的弹窗与吐司会盖住它**，这是宿主层级决定的。
 - 拖到屏幕边缘时会被夹回视口内（留 12px 边距），窗口缩小时也会被夹取。
-- `client.js` 约 2.36 MB，其中 1.66 MB 是十二张精灵图；这是「无静态资源路由」的必然代价。
+- `client.js` 约 300 KiB；精灵图与姿势图（3.4 MB）通过 `/api/dsh-whale-maid/assets` 由宿主提供，不再内联进包。
 - 系统开启「减少动态效果」时，帧动画与摇摆会自动停用，只保留静态姿态。
 - **工作状态联动依赖宿主 DOM 契约**（1.1.0）。探测器读的是 `[data-chat-running]`、`[data-tool][data-state]`、`[data-variant="think"]` 这些属性；宿主改版后可能失效。失效时的表现是「她不再跟着工作换姿态」，其余功能不受影响——用 `dshWhaleMaid.scanNow()` 一看就知道是不是探测不到。探测器只读 DOM，不发请求、不碰 host 总线。
 - 探测间隔 1.5 秒（`MutationObserver` 去抖），所以姿态切换有最多 1.5 秒延迟，这是刻意的：轮询太密会让长会话掉帧。
 - 成长数据只存在本机 `localStorage`，换机器/清缓存就没了，也没有云端同步。
 - 台词是按话题随机挑的，不读对话内容原文——只做关键词与话题的粗分类，不做语义理解。
+- 分区命中矩形是按 `idle` 第 0 帧量的，姿态一变就可能偏几个像素：`walk` 的 alpha 包围盒是 x56..198，`idle` 是 x29..227，走动时点边缘部位可能落到隔壁区。
+- 320 ms 内连续松手会重播一次压扁动画。
 
 ## 许可
 
