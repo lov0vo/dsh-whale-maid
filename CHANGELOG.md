@@ -1,3 +1,18 @@
+## 2.0.1 — 2026-10-26
+
+修掉 2.0.0 里三个能看见的问题，并补上 2.0.0 缺失的发布流程。
+
+### 修复
+
+- **点击部位漂移**：分区矩形是按 `idle` 第 0 帧量的，但每个姿势都在重画角色（刚性配准包络 `s 0.860–1.040 / dx −2..16 / dy −12.5..22` px），实测点击期望部位只有 **68.5%** 落到正确分区，`sleep` 上脸下半截会掉进 `belly` 兜底。现在 `dwmHitZone` 先用 33 行 `DWM_HIT_REG`（`状态#帧 → [s, dx, dy]`，按质心配准，`idle#0` 恰为恒等）把点击点映射回参考帧，再比对矩形；`feet` 矩形加宽到 `x 0.100–0.900`（y ≥ 0.900 无其它矩形，零歧义）。
+- **松手压缩看不见**：`.dwm-3d.is-squash` 用 `animation` 简写覆盖了 sway 的 `transform`，压缩期间整只鲸鱼被拍平成 2D 且结束时跳帧。现在 squash 改动画独立 `scale` 属性，与 sway 的 `transform` 合成；`prefers-reduced-motion` 下压缩不再运行。
+- **装饰层抢指针**：立绘本体 `.dwm-sprite` 原本是 `pointer-events: auto`，气泡被光晕盖住。现在装饰层全部 `none`、`.dwm-pop` 加 `z-index: 2`，立绘的减弱动效规则改用属性选择器（原兄弟选择器永不匹配，因为立绘挂在 `body` 上）。
+
+### 工程
+
+- 新增 `scripts/push.mjs`（`npm run push`）：构建 → 测试 → 同步两处安装目录 → 提交 → 带退避重试推送 main 与 tag → **用 `ls-remote` 回读校验远端 SHA 与 tag**，校验失败直接非零退出。
+- 仓库级 git 配置 `http.version=HTTP/1.1`、`postBuffer=524288000`、`lowSpeedLimit/lowSpeedTime`，绕开本机到 github.com 的 HTTP/2 连接重置（`TLS connect error: … unexpected eof while reading`）。
+- README 增加「推送排障（GitHub TLS）」一节。
 # 变更记录
 
 本项目遵循 [语义化版本](https://semver.org/lang/zh-CN/)。
