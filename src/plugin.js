@@ -201,6 +201,7 @@ function WhaleSettingsSection() {
 		{ className: 'dwm-settings-stack' },
 		h(SettingsSection, null),
 		h(CompanionPanel, null),
+		h(PosePreviewPanel, null),
 	);
 }
 

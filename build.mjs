@@ -59,6 +59,7 @@ const SOURCES = [
 	'src/locale-table.js',
 	'src/settings.js',
 	'src/panel.js',
+	'src/preview.js',
 	'src/signals.js',
 	'src/care.js',
 	'src/zones.js',
