@@ -45,7 +45,8 @@
   ],
   "scripts": {
     "build": "node build.mjs",
-    "test": "node --test test/companion.test.mjs"
+    "test": "node --test test/companion.test.mjs",
+    "push": "node scripts/push.mjs"
   },
   "dsh": {
     "manifestVersion": 1,

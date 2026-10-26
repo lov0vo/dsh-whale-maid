@@ -446,6 +446,29 @@ node --test test/companion.test.mjs
 - 分区命中矩形是按 `idle` 第 0 帧量的，姿态一变就可能偏几个像素：`walk` 的 alpha 包围盒是 x56..198，`idle` 是 x29..227，走动时点边缘部位可能落到隔壁区。
 - 320 ms 内连续松手会重播一次压扁动画。
 
+### 推送排障（GitHub TLS）
+
+本机到 github.com 的 HTTP/2 连接会被中间设备重置，`git push` 会随机失败并报：
+
+```
+fatal: unable to access 'https://github.com/lov0vo/dsh-whale-maid.git/':
+TLS connect error: error:0A000126:SSL routines::unexpected eof while reading
+```
+
+这不是仓库问题，而且**失败时提交可能已经落地**，所以不能只看 `git push` 的返回值。仓库已做两件事：
+
+1. 仓库级配置（已写入 `.git/config`，克隆后需重设一次）：`http.version=HTTP/1.1`、`http.postBuffer=524288000`、`http.lowSpeedLimit=1000`、`http.lowSpeedTime=60`。
+2. 新增 `scripts/push.mjs`：构建 → 测试 → 同步两处安装目录 → 提交 → **带退避重试地推送 main 与 tag** → **用 `ls-remote` 回读校验远端 SHA 与 tag**，校验不通过直接非零退出。
+
+```bash
+node scripts/push.mjs -m "fix: something"   # 提交并推送（含构建与测试）
+node scripts/push.mjs --no-build            # 只推送已提交的内容
+npm run push -m "…"                          # 同上，走 package.json scripts
+```
+
+推送后用 `git ls-remote origin main` 与 `git ls-remote --tags origin` 复核，两者都应与本地一致。
+
+### 推送排障（GitHub TLS）— 完
 ## 许可
 
 代码：[MIT](LICENSE) · 角色美术：见上文[形象来源与授权](#形象来源与授权)
