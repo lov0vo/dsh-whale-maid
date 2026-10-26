@@ -285,6 +285,12 @@ function GamepadIcon() {
 
 /* ------------------------------------------------------------- component */
 
+/* React hooks, shared by every component in this module. */
+var React_ = React;
+var useState = React_.useState;
+var useRef = React_.useRef;
+var useEffect = React_.useEffect;
+
 /* --- speech bubble with an optional typewriter reveal ------------------ */
 function Bubble(props) {
 	var text = props.text || '';
@@ -326,10 +332,6 @@ function Bubble(props) {
 }
 
 function WhaleGirl() {
-	var React_ = React;
-	var useState = React_.useState;
-	var useRef = React_.useRef;
-	var useEffect = React_.useEffect;
 
 	var optionsState = useState(readOptions);
 	var options = optionsState[0];

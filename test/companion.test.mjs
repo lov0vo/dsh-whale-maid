@@ -285,6 +285,21 @@ test('the typewriter reveal can be switched off', () => {
 	assert.equal(api.getOptions().typewriter, true);
 });
 
+/* Regression: 1.2.1 crashed the whole overlay slot with
+   "ReferenceError: useState is not defined" because the hook aliases lived
+   inside WhaleGirl while Bubble sat at module scope. They must be hoisted. */
+test('hook aliases are hoisted above every component', () => {
+	const alias = 'var useState = React_.useState;';
+	const aliasAt = bundle.indexOf(alias);
+	const bubbleAt = bundle.indexOf('function Bubble(props)');
+	assert.ok(aliasAt > 0, 'a module-level useState alias must exist');
+	assert.ok(bubbleAt > aliasAt, 'Bubble must be declared after the module-level hook aliases');
+	assert.ok(
+		bundle.lastIndexOf(alias, bubbleAt) >= 0,
+		'the alias must appear before Bubble, not only inside a component'
+	);
+});
+
 /* --- companion switches -------------------------------------------------- */
 
 test('companion switches default to on and persist', () => {

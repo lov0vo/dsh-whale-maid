@@ -2,6 +2,18 @@
 
 本项目遵循 [语义化版本](https://semver.org/lang/zh-CN/)。
 
+## 1.2.2 — 2026-10-26
+
+修掉 1.2.1 里的致命回归：**点击宠物后整个桌宠消失**。
+
+### 修复
+
+- **点击即崩溃**（`ReferenceError: useState is not defined`）：1.2.1 新增的打字机气泡组件 `Bubble` 在模块作用域，但 React hook 别名 `var useState = React_.useState` 等声明在 `WhaleGirl()` 函数体内，作用域不可见 → 渲染气泡时抛错，`shell.overlay` 槽位整棵子树被卸载，桌宠消失（重载后复现）。现在 hook 别名提升到模块作用域。
+- **气泡被挤成窄列**：`.dwm-pop` 是 110px 根节点里的 shrink-to-fit 绝对定位元素，长句会折成两行。现在按内容宽度布局，上限 250px（仍受视口宽度约束）。
+
+### 测试
+
+- 新增静态回归测试「hook aliases are hoisted above every component」：断言别名存在且声明位置在 `function Bubble` 之前。测试数 21 → 22。
 ## 1.2.1 — 2026-10-26
 
 三个体验修复 + 一个气泡效果。**只增量**：包名、cordis row id、存储键、事件名、公开 API、`.dwm-*` 前缀、十状态精灵动画全部未改。

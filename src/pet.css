@@ -264,3 +264,11 @@
 		animation: none;
 	}
 }
+
+/* --- bubble sizing (1.2.1) -------------------------------------------- */
+/* The pop container is shrink-to-fit inside a 110px root, which used to
+   wrap every bubble into a narrow column. Let it size to the text instead. */
+.dwm-root .dwm-pop {
+	width: max-content;
+	max-width: min(250px, 100vw - 32px);
+}
