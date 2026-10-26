@@ -9,6 +9,11 @@
  *
  * Every control writes to localStorage and dispatches an event, so the running
  * pet picks the change up without a reload.
+ *
+ * A11: every user-visible string goes through `dwmT(key, zh, en)` (see
+ * src/locale-table.js, generated from locale/zh.json + locale/en.json). The
+ * inline zh/en pair stays as the fallback so a missing key still renders text;
+ * `dwmFill()` interpolates the {name} placeholders of the templated keys.
  */
 
 function dwmFormatDuration(ms) {
@@ -16,19 +21,15 @@ function dwmFormatDuration(ms) {
 	var days = Math.floor(total / 86400);
 	var hours = Math.floor((total - days * 86400) / 3600);
 	var minutes = Math.floor((total - days * 86400 - hours * 3600) / 60);
-	if (days > 0) return days + (dwmUiLanguage() === 'zh' ? ' 天 ' : 'd ') + hours + (dwmUiLanguage() === 'zh' ? ' 小时' : ' h');
-	if (hours > 0) return hours + (dwmUiLanguage() === 'zh' ? ' 小时 ' : ' h ') + minutes + (dwmUiLanguage() === 'zh' ? ' 分' : ' m');
-	return minutes + (dwmUiLanguage() === 'zh' ? ' 分钟' : ' min');
+	if (days > 0) return dwmFill(dwmT('panel.duration.dayHour', '{d} 天 {h} 小时', '{d}d {h} h'), { d: days, h: hours });
+	if (hours > 0)
+		return dwmFill(dwmT('panel.duration.hourMinute', '{h} 小时 {m} 分', '{h} h {m} m'), { h: hours, m: minutes });
+	return dwmFill(dwmT('panel.duration.minute', '{m} 分钟', '{m} min'), { m: minutes });
 }
 
 /* Export / import the whole save. Kept in its own component so the panel
    stays readable and the textarea state cannot re-render the whole tree. */
 function SaveBlock() {
-	var language = dwmUiLanguage();
-	var isZh = language === "zh";
-	function t(zh, en) {
-		return isZh ? zh : en;
-	}
 	var textState = useState("");
 	var text = textState[0];
 	var setText = textState[1];
@@ -38,11 +39,15 @@ function SaveBlock() {
 	return h(
 		'div',
 		{ className: 'dwm-panel-save' },
-		h('h4', { className: 'dwm-panel-title' }, t('存档', 'Save file')),
+		h('h4', { className: 'dwm-panel-title' }, dwmT('panel.save.title', '存档', 'Save file')),
 		h(
 			'p',
 			{ className: 'dwm-panel-muted' },
-			t('导出全部数据（位置、投喂、配置、成长、天气），或粘贴一份存档导入。', 'Export everything (position, feeds, options, growth, weather), or paste a save to import.'),
+			dwmT(
+				'panel.save.hint',
+				'导出全部数据（位置、投喂、配置、成长、天气），或粘贴一份存档导入。',
+				'Export everything (position, feeds, options, growth, weather), or paste a save to import.',
+			),
 		),
 		h(
 			'textarea',
@@ -50,7 +55,11 @@ function SaveBlock() {
 				className: 'dwm-panel-textarea',
 				rows: 4,
 				value: text,
-				placeholder: t('点「导出」生成存档，或在此粘贴存档 JSON', 'Press export, or paste a save JSON here'),
+				placeholder: dwmT(
+					'panel.save.placeholder',
+					'点「导出」生成存档，或在此粘贴存档 JSON',
+					'Press export, or paste a save JSON here',
+				),
 				onChange: function (event) {
 					setText(event.target.value);
 				},
@@ -65,10 +74,10 @@ function SaveBlock() {
 					type: 'button',
 					onClick: function () {
 						setText(dwmSaveExport());
-						setStatus(t('已导出到下面的文本框', 'Exported into the box below'));
+						setStatus(dwmT('panel.save.exported', '已导出到下面的文本框', 'Exported into the box below'));
 					},
 				},
-				t('导出', 'Export'),
+				dwmT('panel.save.export', '导出', 'Export'),
 			),
 			h(
 				'button',
@@ -78,12 +87,17 @@ function SaveBlock() {
 						var result = dwmSaveImport(text);
 						setStatus(
 							result.ok
-								? t('已导入 ' + result.imported + ' 项', 'Imported ' + result.imported + ' entries')
-								: t('导入失败：' + result.reason, 'Import failed: ' + result.reason),
+								? dwmFill(dwmT('panel.save.imported', '已导入 {n} 项', 'Imported {n} entries'), {
+										n: result.imported,
+									})
+								: dwmFill(
+										dwmT('panel.save.importFailed', '导入失败：{reason}', 'Import failed: {reason}'),
+										{ reason: result.reason },
+									),
 						);
 					},
 				},
-				t('导入', 'Import'),
+				dwmT('panel.save.import', '导入', 'Import'),
 			),
 			h(
 				'button',
@@ -92,10 +106,10 @@ function SaveBlock() {
 					onClick: function () {
 						var cleared = dwmSaveClear();
 						setText('');
-						setStatus(t('已清空 ' + cleared + ' 项', 'Cleared ' + cleared + ' entries'));
+						setStatus(dwmFill(dwmT('panel.save.cleared', '已清空 {n} 项', 'Cleared {n} entries'), { n: cleared }));
 					},
 				},
-				t('清空存档', 'Clear save'),
+				dwmT('panel.save.clear', '清空存档', 'Clear save'),
 			),
 		),
 		status ? h('p', { className: 'dwm-panel-muted' }, status) : null,
@@ -129,7 +143,8 @@ function CompanionPanel(props) {
 		}
 		window.addEventListener(DWM_EVENT_GROWTH, refresh);
 		window.addEventListener(DWM_EVENT_COMPANION, refresh);
-		var timer = setInterval(refresh, 5000);
+		var timer = setInterval(refresh, 30000);
+		if (typeof document !== 'undefined' && document.addEventListener) document.addEventListener('visibilitychange', refresh);
 		return function () {
 			window.removeEventListener(DWM_EVENT_GROWTH, refresh);
 			window.removeEventListener(DWM_EVENT_COMPANION, refresh);
@@ -138,17 +153,6 @@ function CompanionPanel(props) {
 	}, []);
 
 	var language = dwmUiLanguage();
-	var isZh = language === 'zh';
-	function label(zh, en) {
-		/* gettext-style lookup: the Chinese string is the message id, so the
-		   Client locale service can translate it without a parallel key table.
-		   Falls back to the zh/en pair when the host has no entry. */
-		if (props && typeof props.t === "function") {
-			var translated = props.t(zh);
-			if (typeof translated === "string" && translated !== "" && translated !== zh) return translated;
-		}
-		return isZh ? zh : en;
-	}
 
 	function commitCompanion(patch) {
 		var next = dwmWriteCompanion(patch);
@@ -165,11 +169,11 @@ function CompanionPanel(props) {
 		);
 	}
 
-	function statRow(zh, en, value, extra) {
+	function statRow(key, zh, en, value, extra) {
 		return h(
 			'div',
 			{ className: 'dwm-panel-stat' },
-			h('span', { className: 'dwm-panel-stat-label' }, label(zh, en)),
+			h('span', { className: 'dwm-panel-stat-label' }, dwmT(key, zh, en)),
 			h('span', { className: 'dwm-panel-stat-value' }, value),
 			extra || null,
 		);
@@ -177,7 +181,8 @@ function CompanionPanel(props) {
 
 	/* --- quests --------------------------------------------------------- */
 	function questList() {
-		if (snapshot.quests.length === 0) return h('p', { className: 'dwm-panel-muted' }, label('今天没有任务', 'No quests today'));
+		if (snapshot.quests.length === 0)
+			return h('p', { className: 'dwm-panel-muted' }, dwmT('panel.quests.empty', '今天没有任务', 'No quests today'));
 		return h(
 			'ul',
 			{ className: 'dwm-panel-quests' },
@@ -188,7 +193,9 @@ function CompanionPanel(props) {
 					h(
 						'span',
 						{ className: 'dwm-panel-quest-text' },
-						label(quest.zh, quest.en) + ' ' + quest.progress + '/' + quest.target,
+						/* data-driven text from src/growth.js: no table entry, so the
+						   zh/en pair is selected by the active language. */
+						dwmT(null, quest.zh, quest.en) + ' ' + quest.progress + '/' + quest.target,
 					),
 					h(
 						'button',
@@ -200,7 +207,7 @@ function CompanionPanel(props) {
 								if (result) {
 									setSnapshot(dwmGrowthSnapshot());
 									dwmChip(
-										label('任务完成！', 'Quest done!'),
+										dwmT('panel.quests.done', '任务完成！', 'Quest done!'),
 										'ok',
 										2400,
 									);
@@ -208,7 +215,11 @@ function CompanionPanel(props) {
 								}
 							}
 						},
-						quest.claimed ? label('已领取', 'Claimed') : quest.ready ? label('领取', 'Claim') : label('进行中', 'In progress'),
+						quest.claimed
+							? dwmT('panel.quests.claimed', '已领取', 'Claimed')
+							: quest.ready
+								? dwmT('panel.quests.claim', '领取', 'Claim')
+								: dwmT('panel.quests.progress', '进行中', 'In progress'),
 					),
 				);
 			}),
@@ -234,14 +245,18 @@ function CompanionPanel(props) {
 						var result = dwmGrowthSignin();
 						if (result) {
 							setSnapshot(dwmGrowthSnapshot());
-							dwmChip(label('签到成功', 'Checked in'), 'ok', 2400);
+							dwmChip(dwmT('panel.signin.success', '签到成功', 'Checked in'), 'ok', 2400);
 							dwmFx('heart', 2);
 						} else {
-							dwmChip(label('今天已经签过了', 'Already checked in today'), 'info', 2200);
+							dwmChip(
+								dwmT('panel.signin.already', '今天已经签过了', 'Already checked in today'),
+								'info',
+								2200,
+							);
 						}
 					}
 				},
-				label('打卡签到', 'Check in'),
+				dwmT('panel.signin.button', '打卡签到', 'Check in'),
 			),
 		);
 	}
@@ -252,15 +267,16 @@ function CompanionPanel(props) {
 			'div',
 			{ className: 'dwm-panel-achievements' },
 			snapshot.achievements.map(function (entry) {
+				var name = dwmT(null, entry.zh, entry.en);
 				return h(
 					'span',
 					{
 						key: entry.id,
 						className: 'dwm-ach' + (entry.unlocked ? ' is-on' : ''),
-						title: label(entry.zh, entry.en) + (entry.unlocked ? '' : label('（未解锁）', ' (locked)'))
+						title: name + (entry.unlocked ? '' : dwmT('panel.achievements.locked', '（未解锁）', ' (locked)'))
 					},
 					h('span', { className: 'dwm-ach-icon' }, entry.icon),
-					h('span', { className: 'dwm-ach-name' }, label(entry.zh, entry.en)),
+					h('span', { className: 'dwm-ach-name' }, name),
 				);
 			}),
 		);
@@ -268,12 +284,13 @@ function CompanionPanel(props) {
 
 	/* --- diary ------------------------------------------------------------ */
 	function diaryList() {
-		if (snapshot.diary.length === 0) return h('p', { className: 'dwm-panel-muted' }, label('还没有记录', 'Nothing recorded yet'));
+		if (snapshot.diary.length === 0)
+			return h('p', { className: 'dwm-panel-muted' }, dwmT('panel.diary.empty', '还没有记录', 'Nothing recorded yet'));
 		return h(
 			'ul',
 			{ className: 'dwm-panel-diary' },
 			snapshot.diary.slice(0, 6).map(function (entry) {
-				return h('li', { key: entry.at + '-' + entry.kind }, label(entry.zh, entry.en));
+				return h('li', { key: entry.at + '-' + entry.kind }, dwmT(null, entry.zh, entry.en));
 			}),
 		);
 	}
@@ -300,8 +317,8 @@ function CompanionPanel(props) {
 					className: 'dwm-panel-weather-input',
 					type: 'text',
 					defaultValue: readOptions().city,
-					placeholder: label('城市，例如 北京', 'City, e.g. Beijing'),
-					'aria-label': label('城市', 'City'),
+					placeholder: dwmT('panel.weather.cityPlaceholder', '城市，例如 北京', 'City, e.g. Beijing'),
+					'aria-label': dwmT('panel.weather.city', '城市', 'City'),
 					onKeyDown: function (event) {
 						if (event.key !== 'Enter') return;
 						commitCity(event.currentTarget.value);
@@ -319,7 +336,7 @@ function CompanionPanel(props) {
 							dwmWeatherRefresh('manual');
 						}
 					},
-					label('刷新天气', 'Refresh'),
+					dwmT('panel.weather.refresh', '刷新天气', 'Refresh'),
 				)
 			)
 		);
@@ -338,7 +355,7 @@ function CompanionPanel(props) {
 					commitCompanion(patch);
 				}
 			}),
-			h('span', null, label(zh, en)),
+			h('span', null, dwmT('panel.switches.' + key, zh, en)),
 		);
 	}
 
@@ -348,7 +365,8 @@ function CompanionPanel(props) {
 		h(
 			'p',
 			{ className: 'dwm-settings-hint' },
-			label(
+			dwmT(
+				'panel.intro',
 				'陪伴与成长：她会跟着你的工作状态换姿势、在合适的时候开口，也会记住你们一起写代码的每一天。所有数据只存在本机。',
 				'Companion mode: she follows what the Harness is doing, speaks up at the right moments, and remembers the days you spent coding together. All data stays on this machine.',
 			),
@@ -361,33 +379,43 @@ function CompanionPanel(props) {
 			h(
 				'div',
 				{ className: 'dwm-panel-hero-text' },
-				h('strong', null, label(snapshot.bondZh, snapshot.bondEn)),
-				h('span', null, label('成就 ', 'Achievements ') + snapshot.unlockedCount + '/' + snapshot.totalCount),
+				h('strong', null, dwmT(null, snapshot.bondZh, snapshot.bondEn)),
+				h(
+					'span',
+					null,
+					dwmT('panel.hero.achievements', '成就 ', 'Achievements ') +
+						snapshot.unlockedCount + '/' + snapshot.totalCount,
+				),
 			),
 		),
 
-		statRow('心情', 'Mood', Math.round(snapshot.mood) + ' / 100', bar(snapshot.mood, 100, 'mood')),
-		statRow('饱食', 'Satiety', Math.round(snapshot.satiety) + ' / 100', bar(snapshot.satiety, 100, 'satiety')),
-		statRow('好感', 'Affinity', Math.round(snapshot.affinity) + ' / 10000', bar(snapshot.affinity, 10000, 'affinity')),
-		statRow('陪伴时长', 'Time together', dwmFormatDuration(snapshot.companionshipMs)),
-		statRow('连续签到', 'Sign-in streak', snapshot.signinStreak + label(' 天', ' d')),
+		statRow('panel.stats.mood', '心情', 'Mood', Math.round(snapshot.mood) + ' / 100', bar(snapshot.mood, 100, 'mood')),
+		statRow('panel.stats.satiety', '饱食', 'Satiety', Math.round(snapshot.satiety) + ' / 100', bar(snapshot.satiety, 100, 'satiety')),
+		statRow('panel.stats.affinity', '好感', 'Affinity', Math.round(snapshot.affinity) + ' / 10000', bar(snapshot.affinity, 10000, 'affinity')),
+		statRow('panel.stats.companionship', '陪伴时长', 'Time together', dwmFormatDuration(snapshot.companionshipMs)),
+		statRow(
+			'panel.stats.signinStreak',
+			'连续签到',
+			'Sign-in streak',
+			snapshot.signinStreak + dwmT('panel.stats.days', ' 天', ' d'),
+		),
 
-		h('h4', { className: 'dwm-panel-title' }, label('天气陪伴', 'Weather')),
+		h('h4', { className: 'dwm-panel-title' }, dwmT('panel.weather.title', '天气陪伴', 'Weather')),
 		weatherBlock(),
 
-		h('h4', { className: 'dwm-panel-title' }, label('每日任务', 'Daily quests')),
+		h('h4', { className: 'dwm-panel-title' }, dwmT('panel.quests.title', '每日任务', 'Daily quests')),
 		questList(),
 
-		h('h4', { className: 'dwm-panel-title' }, label('本周签到', 'This week')),
+		h('h4', { className: 'dwm-panel-title' }, dwmT('panel.signin.title', '本周签到', 'This week')),
 		signinBoard(),
 
-		h('h4', { className: 'dwm-panel-title' }, label('成就', 'Achievements')),
+		h('h4', { className: 'dwm-panel-title' }, dwmT('panel.achievements.title', '成就', 'Achievements')),
 		achievementGrid(),
 
-		h('h4', { className: 'dwm-panel-title' }, label('成长日记', 'Diary')),
+		h('h4', { className: 'dwm-panel-title' }, dwmT('panel.diary.title', '成长日记', 'Diary')),
 		diaryList(),
 
-		h('h4', { className: 'dwm-panel-title' }, label('陪伴开关', 'Companion switches')),
+		h('h4', { className: 'dwm-panel-title' }, dwmT('panel.switches.title', '陪伴开关', 'Companion switches')),
 		h(
 			'div',
 			{ className: 'dwm-settings-checks' },
@@ -402,19 +430,19 @@ function CompanionPanel(props) {
 		h(
 			'div',
 			{ className: 'dwm-settings-row' },
-			h('span', { className: 'dwm-settings-label' }, label('工作台词频率', 'Work chatter')),
+			h('span', { className: 'dwm-settings-label' }, dwmT('panel.workSpeech', '工作台词频率', 'Work chatter')),
 			h(
 				'select',
 				{
 					value: companion.workSpeech,
-					'aria-label': label('工作台词频率', 'Work chatter'),
+					'aria-label': dwmT('panel.workSpeech', '工作台词频率', 'Work chatter'),
 					onChange: function (event) {
 						commitCompanion({ workSpeech: event.target.value });
 					}
 				},
-				h('option', { value: 'chatty' }, label('话痨（15–40 秒）', 'Chatty (15–40 s)')),
-				h('option', { value: 'quiet' }, label('安静（90–240 秒）', 'Quiet (90–240 s)')),
-				h('option', { value: 'off' }, label('关闭', 'Off')),
+				h('option', { value: 'chatty' }, dwmT('panel.workSpeech.chatty', '话痨（15–40 秒）', 'Chatty (15–40 s)')),
+				h('option', { value: 'quiet' }, dwmT('panel.workSpeech.quiet', '安静（90–240 秒）', 'Quiet (90–240 s)')),
+				h('option', { value: 'off' }, dwmT('panel.workSpeech.off', '关闭', 'Off')),
 			),
 		),
 
@@ -424,7 +452,7 @@ function CompanionPanel(props) {
 			h(
 				'div',
 				{ className: 'dwm-settings-row-head' },
-				h('span', { className: 'dwm-settings-label' }, label('信号中断钉住', 'Hold after a signal drops')),
+				h('span', { className: 'dwm-settings-label' }, dwmT('panel.workHold', '信号中断钉住', 'Hold after a signal drops')),
 				h('span', { className: 'dwm-settings-value' }, formatNumber(companion.workHold / 1000, 1) + ' s'),
 			),
 			h('input', {
@@ -433,14 +461,14 @@ function CompanionPanel(props) {
 				max: 20000,
 				step: 500,
 				value: companion.workHold,
-				'aria-label': label('信号中断钉住', 'Hold after a signal drops'),
+				'aria-label': dwmT('panel.workHold', '信号中断钉住', 'Hold after a signal drops'),
 				onChange: function (event) {
 					commitCompanion({ workHold: Number(event.target.value) });
 				}
 			}),
 		),
 
-		h('h4', { className: 'dwm-panel-title' }, label('试一试', 'Try it')),
+		h('h4', { className: 'dwm-panel-title' }, dwmT('panel.try.title', '试一试', 'Try it')),
 		h(SaveBlock, { key: 'dwm-save' }),
 		h(
 			'div',
@@ -454,7 +482,7 @@ function CompanionPanel(props) {
 						dwmChip(dwmWorkChipText('thinking', language), 'work', 2400);
 					}
 				},
-				label('思考中', 'Thinking'),
+				dwmT('panel.try.thinking', '思考中', 'Thinking'),
 			),
 			h(
 				'button',
@@ -465,7 +493,7 @@ function CompanionPanel(props) {
 						dwmChip(dwmWorkChipText('tool', language), 'work', 2400);
 					}
 				},
-				label('工作中', 'Working'),
+				dwmT('panel.try.working', '工作中的陪伴', 'Companion while working'),
 			),
 			h(
 				'button',
@@ -477,7 +505,7 @@ function CompanionPanel(props) {
 						dwmFx('star', 3);
 					}
 				},
-				label('完成', 'Done'),
+				dwmT('panel.try.done', '完成', 'Done'),
 			),
 			h(
 				'button',
@@ -489,7 +517,7 @@ function CompanionPanel(props) {
 						dwmFx('sparkle', 2);
 					}
 				},
-				label('出错', 'Error'),
+				dwmT('panel.try.error', '出错', 'Error'),
 			),
 			h(
 				'button',
@@ -499,7 +527,7 @@ function CompanionPanel(props) {
 						dwmSpeak(dwmPickLine('chat' + DWM_CARE.topic.charAt(0).toUpperCase() + DWM_CARE.topic.slice(1), language) || dwmPickLine('chatGeneral', language));
 					}
 				},
-				label('说一句闲聊', 'Say something'),
+				dwmT('panel.try.chat', '说一句闲聊', 'Say something'),
 			),
 			h(
 				'button',
@@ -509,7 +537,7 @@ function CompanionPanel(props) {
 						dwmSpeak(dwmPickLine('careLongSit', language));
 					}
 				},
-				label('试一句关怀', 'Try a care line'),
+				dwmT('panel.try.care', '试一句关怀', 'Try a care line'),
 			),
 			h(
 				'button',
@@ -518,10 +546,10 @@ function CompanionPanel(props) {
 					onClick: function () {
 						dwmGrowthReset();
 						setSnapshot(dwmGrowthSnapshot());
-						dwmChip(label('成长数据已重置', 'Growth data reset'), 'info', 2400);
+						dwmChip(dwmT('panel.try.growthReset', '成长数据已重置', 'Growth data reset'), 'info', 2400);
 					}
 				},
-				label('重置成长数据', 'Reset growth data'),
+				dwmT('panel.try.resetGrowth', '重置成长数据', 'Reset growth data'),
 			),
 		),
 	);

@@ -48,7 +48,7 @@
 - 只用 **Open-Meteo** 免费接口、无需 key：`geocoding-api.open-meteo.com` 把城市名转经纬度，`api.open-meteo.com` 取当前天气；
 - 缓存 + 离线降级：失败沿用上次结果；**超过 6 小时不再播报**天气台词（姿态也不换）；
 - 失败重试指数退避：**1 分钟 → 5 分钟 → 15 分钟**，最多 3 次；
-- 设置面板「鲸鱼女仆 · 成长」里有 **天气陪伴** 区块：显示「城市 · 天气 · 温度」，可改城市，有 **刷新天气** 按钮；
+- 设置面板「鲸鱼女仆」里有 **天气陪伴** 区块：显示「城市 · 天气 · 温度」，可改城市，有 **刷新天气** 按钮；
 - 纯 `fetch` 单向拉取，无账号、不上传任何本地数据（只把城市名/坐标发给你请求的那个公开接口）。
 
 **天气陪伴**（体感部分）：
@@ -174,7 +174,7 @@ target: <本仓库的绝对路径>
 
 ### 陪伴开关（1.1.0）
 
-设置页：`设置（Ctrl+,）→ 左侧「鲸鱼女仆 · 成长」`。存在 `localStorage['dsh-whale-maid:companion']`。
+设置页：`设置（Ctrl+,）→ 左侧「鲸鱼女仆」`。存在 `localStorage['dsh-whale-maid:companion']`。
 
 | 键 | 类型 | 默认 | 说明 |
 | --- | --- | --- | --- |
@@ -266,6 +266,7 @@ dshWhaleMaid.setCity('上海')                // 改备用城市并立即刷新
 | `think` | `think.png` | 3 | 2 | loop + float | 空闲思考（1.3.0 起 3 帧伪帧） |
 | `work` | `work.png` | 3 | 2 | loop + float | 工具运行中（1.2.0 加姿态，1.3.0 起 3 帧） |
 | `sad` | `sad.png` | 3 | 2 | loop | 工具报错 / 任务失败（1.2.0 加姿态，1.3.0 起 3 帧） |
+| `wink` | 眨眼 | 1 | 2 | `loop` |
 | `sleep` | `sleep.png` | 2 | 1 | loop | 空闲 60s |
 | `wake` | `wake.png` | 2 | 3 | once | 睡眠中被点击 |
 | `walk` | `walk.png` | 3 | 6 | ping-pong | 随机漫步 |
@@ -291,7 +292,7 @@ dsh-whale-maid/
 │   ├── care.js           主动关怀与闲聊心跳
 │   ├── zones.js          分区点击与三连击
 │   ├── fx.js             状态小标签与粒子层（两个独立组件）
-│   ├── panel.js          设置页「鲸鱼女仆 · 成长」分区
+│   ├── panel.js          设置页「鲸鱼女仆」分区
 │   └── sprites/*.png     10 组精灵图集（每帧 256×256，横向排列）
 ├── test/companion.test.mjs   node:test 单测：18 例，真实 client.js + stub DOM
 ├── locale/{en,zh}.json   插件名/描述的本地化
@@ -397,3 +398,35 @@ node --test test/companion.test.mjs
 ## 许可
 
 代码：[MIT](LICENSE) · 角色美术：见上文[形象来源与授权](#形象来源与授权)
+
+## 1.9.0 变更（2026-10-26）
+
+### 资源改为 HTTP 路由
+
+精灵表与姿势立绘不再内联进 `client.js`。构建时 `build.mjs` 把它们复制到 `assets/`，插件宿主半边 `index.js` 注册只读路由 `/api/dsh-whale-maid/assets`：
+
+- 只响应 `GET` / `HEAD`，其余返回 405；
+- 有路径穿越防护（`safeResolve`）、MIME 表、`Content-Length`、`Cache-Control: public, max-age=3600`、弱 `ETag` + 304；
+- 路由注册失败只记 `warn`，不会让插件行挂掉（此时宠物会没有贴图）。
+
+`client.js` 因此从 4.89 MB 降到 **264 KB**，图片总量 3.4 MB 放在 `assets/`，随包发布。
+
+### 界面文案走翻译系统
+
+`locale/zh.json` 与 `locale/en.json` 现在是 81 个扁平键（`settings.*` 19 个、`panel.*` 60 个、`meta.*` 2 个）。运行时由 `src/locale-table.js` 的 `dwmT(key, zh, en)` 查表；缺键时回落到传入的中英文，所以新增语言只需加一个 JSON 表。
+
+### 气泡优先级
+
+`dwmSpeak(message, tone, priority)` 支持 `normal < state < important`。状态提示用 `state`，关怀与里程碑用 `important`，普通闲聊用 `normal`——高优先级未过期时不会被低优先级顶掉。
+
+### 工作状态判定
+
+轮询 3 s 一次，切回标签页立即重扫。「运行标记消失但文档隐藏、或设置页已挂载」判为**保持**而不是结束，`workHold` 仍是最终兜底，避免切到设置页就把进行中的回合误判为结束。
+
+### 场合 → 姿势
+
+`src/pose-map.js` 定义了 36 条场景规则（会话、工作、互动、心情、关怀、天气、节日），每条映射到一个姿势立绘；另有 15 条回落表指定「该姿势没有图时播哪个动作态」。已接入工作相位（thinking / tool / long / success / failure）与关怀时刻（久坐 / 卡住 / 回来 / 深夜 / 饥饿 / 心情）。当前 12 个上下文里有 5 个命中真立绘（success / afk / curious / night / star），其余回落原动作态，**既有转场行为不变**。
+
+### 发布
+
+`node scripts/release.mjs patch|minor|major` 会依次完成版本号、构建、测试、同步两处安装目录、`git commit`、`git tag`。

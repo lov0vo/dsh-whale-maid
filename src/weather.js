@@ -27,6 +27,10 @@ var DWM_WEATHER_REFRESH_MS = 30 * 60 * 1000;
 var DWM_WEATHER_STALE_MS = 6 * 60 * 60 * 1000;
 var DWM_WEATHER_RETRY_MS = [60000, 300000, 900000];
 var DWM_WEATHER_GEO_MS = 8000;
+/* Geocoding is capped separately: Nominatim can be slow, and a stalled
+   lookup must not hold the whole refresh open. */
+var DWM_WEATHER_GEOCODE_MS = 8000;
+var DWM_WEATHER_NOMINATIM = 'https://nominatim.openstreetmap.org/search';
 var DWM_WEATHER_DAY_TICK_MS = 60000;
 var DWM_WEATHER_DEFAULT_CITY = '北京';
 
@@ -106,6 +110,7 @@ function dwmWeatherRead() {
 		isDay: record.isDay !== false,
 		bucket: typeof record.bucket === 'string' ? record.bucket : 'cloudy',
 		seenDate: typeof record.seenDate === 'string' ? record.seenDate : '',
+		precision: typeof record.precision === 'string' ? record.precision : 'city',
 	};
 }
 
@@ -128,14 +133,88 @@ function dwmWeatherHttp(url) {
 	});
 }
 
-function dwmWeatherGeocode(city) {
+function dwmWeatherWithTimeout(promise, ms, label) {
+	return new Promise(function (resolve, reject) {
+		var settled = false;
+		var timer = setTimeout(function () {
+			if (settled) return;
+			settled = true;
+			reject(new Error(label + ' timeout'));
+		}, ms);
+		promise.then(
+			function (value) {
+				if (settled) return;
+				settled = true;
+				clearTimeout(timer);
+				resolve(value);
+			},
+			function (error) {
+				if (settled) return;
+				settled = true;
+				clearTimeout(timer);
+				reject(error);
+			},
+		);
+	});
+}
+
+/*
+ * Compose a human label from a Nominatim hit. Nominatim lists places
+ * small-to-big, so for Chinese names the first two segments are reversed
+ * ("朝阳区, 北京市" -> "北京市朝阳区"); elsewhere they stay in order.
+ */
+function dwmWeatherComposeLabel(hit) {
+	var display = hit && typeof hit.display_name === 'string' ? hit.display_name : '';
+	var segments = display.split(',').map(function (part) { return part.trim(); }).filter(function (part) { return part !== ''; });
+	if (segments.length > 1) segments = segments.slice(0, segments.length - 1); /* drop the country */
+	if (segments.length === 0) {
+		return hit && typeof hit.name === 'string' ? hit.name : '';
+	}
+	if (segments.length === 1) return segments[0];
+	var first = segments[0];
+	var second = segments[1];
+	var cjk = /[\u4e00-\u9fff]/.test(first) && /[\u4e00-\u9fff]/.test(second);
+	return cjk ? second + first : first + ' · ' + second;
+}
+
+/* Nominatim resolves districts (区/县) and city districts; Open-Meteo does not. */
+function dwmWeatherNominatim(city) {
+	var url =
+		DWM_WEATHER_NOMINATIM +
+		'?format=json&limit=1&addressdetails=1&accept-language=zh&q=' +
+		encodeURIComponent(city);
+	return dwmWeatherWithTimeout(dwmWeatherHttp(url), DWM_WEATHER_GEOCODE_MS, 'nominatim').then(function (data) {
+		var hit = Array.isArray(data) ? data[0] : null;
+		if (!hit) throw new Error('nominatim miss');
+		var lat = Number(hit.lat);
+		var lon = Number(hit.lon);
+		if (!Number.isFinite(lat) || !Number.isFinite(lon)) throw new Error('nominatim bad coords');
+		var label = dwmWeatherComposeLabel(hit);
+		var precision = /[区縣县旗]/.test(label) ? 'district' : 'city';
+		return { lat: lat, lon: lon, city: label === '' ? city : label, precision: precision };
+	});
+}
+
+/* City-level fallback: Open-Meteo has no district index for CN names. */
+function dwmWeatherOpenMeteoGeocode(city) {
 	var url =
 		'https://geocoding-api.open-meteo.com/v1/search?count=1&language=zh&format=json&name=' +
 		encodeURIComponent(city);
-	return dwmWeatherHttp(url).then(function (data) {
+	return dwmWeatherWithTimeout(dwmWeatherHttp(url), DWM_WEATHER_GEOCODE_MS, 'geocode').then(function (data) {
 		var hit = data && Array.isArray(data.results) ? data.results[0] : null;
 		if (!hit) throw new Error('geocode miss');
-		return { lat: Number(hit.latitude), lon: Number(hit.longitude), city: hit.name || city };
+		return {
+			lat: Number(hit.latitude),
+			lon: Number(hit.longitude),
+			city: hit.name || city,
+			precision: 'city',
+		};
+	});
+}
+
+function dwmWeatherGeocode(city) {
+	return dwmWeatherNominatim(city).catch(function () {
+		return dwmWeatherOpenMeteoGeocode(city);
 	});
 }
 
@@ -155,7 +234,12 @@ function dwmWeatherLocate() {
 				if (settled) return;
 				settled = true;
 				clearTimeout(timer);
-				resolve({ lat: position.coords.latitude, lon: position.coords.longitude, city: '' });
+				resolve({
+					lat: position.coords.latitude,
+					lon: position.coords.longitude,
+					city: '',
+					precision: 'coordinates',
+				});
 			},
 			function () {
 				if (settled) return;
@@ -190,6 +274,7 @@ function dwmWeatherForecast(place) {
 			isDay: Number(current.is_day) === 1,
 			bucket: bucket,
 			seenDate: '',
+			precision: place.precision || 'city',
 		};
 	});
 }
@@ -284,7 +369,10 @@ function dwmWeatherDescribe(record, language) {
 	var label = dwmWeatherBucketLabel(record.bucket, language);
 	var city = record.city === '' ? (language === 'en' ? 'my location' : '当前位置') : record.city;
 	var temp = Number.isFinite(record.tempC) ? Math.round(record.tempC) + '°C' : '';
-	return city + ' · ' + label + (temp === '' ? '' : ' · ' + temp);
+	var suffix = '';
+	if (record.precision === 'coordinates') suffix = language === 'en' ? ' (GPS)' : '（定位）';
+	else if (record.precision === 'city') suffix = language === 'en' ? ' (city)' : '（市级）';
+	return city + suffix + ' · ' + label + (temp === '' ? '' : ' · ' + temp);
 }
 
 function dwmWeatherStart() {

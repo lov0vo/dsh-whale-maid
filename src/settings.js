@@ -10,6 +10,10 @@
  * the Harness settings page. Every change is written to localStorage and a
  * `dsh-whale-maid:options` event is dispatched, which the live pet listens to —
  * adjustments apply immediately, without a reload.
+ *
+ * A11: every user-visible string goes through `dwmT(key, zh, en)` (see
+ * src/locale-table.js, generated from locale/zh.json + locale/en.json). The
+ * inline zh/en pair stays as the fallback so a missing key still renders text.
  */
 
 var SIZE_AUTO = 'auto';
@@ -49,17 +53,6 @@ function SettingsSection(props) {
 
 	var language = resolveLanguage(options.language);
 	var text = TEXTS[language];
-	var isZh = language === 'zh';
-	function label(zh, en) {
-		/* gettext-style lookup: the Chinese string is the message id, so the
-		   Client locale service can translate it without a parallel key table.
-		   Falls back to the zh/en pair when the host has no entry. */
-		if (props && typeof props.t === "function") {
-			var translated = props.t(zh);
-			if (typeof translated === "string" && translated !== "" && translated !== zh) return translated;
-		}
-		return isZh ? zh : en;
-	}
 
 	function commit(patch) {
 		var next = normalizeOptions(Object.assign({}, readOptions(), patch));
@@ -78,11 +71,13 @@ function SettingsSection(props) {
 			h(
 				'div',
 				{ className: 'dwm-settings-row-head' },
-				h('span', { className: 'dwm-settings-label' }, label('尺寸', 'Size')),
+				h('span', { className: 'dwm-settings-label' }, dwmT('settings.size', '尺寸', 'Size')),
 				h(
 					'span',
 					{ className: 'dwm-settings-value' },
-					autoSize ? label('自动（110px，窄屏 72px）', 'Auto (110px, 72px when narrow)') : sizeValue + ' px',
+					autoSize
+						? dwmT('settings.size.auto', '自动（110px，窄屏 72px）', 'Auto (110px, 72px when narrow)')
+						: sizeValue + ' px',
 				),
 			),
 			h('input', {
@@ -92,7 +87,7 @@ function SettingsSection(props) {
 				step: 2,
 				value: sizeValue,
 				disabled: autoSize,
-				'aria-label': label('尺寸', 'Size'),
+				'aria-label': dwmT('settings.size', '尺寸', 'Size'),
 				onChange: function (event) {
 					commit({ size: Number(event.target.value) });
 				},
@@ -107,20 +102,21 @@ function SettingsSection(props) {
 						commit({ size: event.target.checked ? null : sizeValue });
 					},
 				}),
-				h('span', null, label('跟随响应式默认值', 'Use the responsive default')),
+				h('span', null, dwmT('settings.size.followDefault', '跟随响应式默认值', 'Use the responsive default')),
 			),
 		);
 	}
 
 	function rangeRow(key, zhTitle, enTitle, min, max, step, digits, format) {
 		var value = options[key];
+		var title = dwmT('settings.' + key, zhTitle, enTitle);
 		return h(
 			'div',
 			{ className: 'dwm-settings-row' },
 			h(
 				'div',
 				{ className: 'dwm-settings-row-head' },
-				h('span', { className: 'dwm-settings-label' }, label(zhTitle, enTitle)),
+				h('span', { className: 'dwm-settings-label' }, title),
 				h('span', { className: 'dwm-settings-value' }, format ? format(value) : formatNumber(value, digits)),
 			),
 			h('input', {
@@ -129,7 +125,7 @@ function SettingsSection(props) {
 				max: max,
 				step: step,
 				value: value,
-				'aria-label': label(zhTitle, enTitle),
+				'aria-label': title,
 				onChange: function (event) {
 					var patch = {};
 					patch[key] = Number(event.target.value);
@@ -152,7 +148,7 @@ function SettingsSection(props) {
 					commit(patch);
 				},
 			}),
-			h('span', null, label(zhTitle, enTitle)),
+			h('span', null, dwmT('settings.' + key, zhTitle, enTitle)),
 		);
 	}
 
@@ -162,7 +158,8 @@ function SettingsSection(props) {
 		h(
 			'p',
 			{ className: 'dwm-settings-hint' },
-			label(
+			dwmT(
+				'settings.hint',
 				'鲸鱼女仆桌宠取自 1024Store 插件市场的角色动画。拖动可移动，单击打招呼并展开「喂食 / 玩耍」，闲置会自动发呆、漫步并睡着。',
 				'The whale girl is ported from the 1024Store plugin-market character. Drag to move, click to greet and open Feed / Play; left alone she thinks, wanders and falls asleep.',
 			),
@@ -177,19 +174,19 @@ function SettingsSection(props) {
 		h(
 			'div',
 			{ className: 'dwm-settings-row' },
-			h('span', { className: 'dwm-settings-label' }, label('气泡语言', 'Bubble language')),
+			h('span', { className: 'dwm-settings-label' }, dwmT('settings.language', '气泡语言', 'Bubble language')),
 			h(
 				'select',
 				{
 					value: options.language,
-					'aria-label': label('气泡语言', 'Bubble language'),
+					'aria-label': dwmT('settings.language', '气泡语言', 'Bubble language'),
 					onChange: function (event) {
 						commit({ language: event.target.value });
 					},
 				},
-				h('option', { value: 'auto' }, label('跟随界面', 'Follow the interface')),
-				h('option', { value: 'zh' }, '中文'),
-				h('option', { value: 'en' }, 'English'),
+				h('option', { value: 'auto' }, dwmT('settings.language.auto', '跟随界面', 'Follow the interface')),
+				h('option', { value: 'zh' }, dwmT('settings.language.zh', '中文', '中文')),
+				h('option', { value: 'en' }, dwmT('settings.language.en', 'English', 'English')),
 			),
 		),
 		h(
@@ -214,7 +211,7 @@ function SettingsSection(props) {
 						);
 					},
 				},
-				label('预览一句台词', 'Preview a line'),
+				dwmT('settings.previewLine', '预览一句台词', 'Preview a line'),
 			),
 			h(
 				'button',
@@ -224,7 +221,7 @@ function SettingsSection(props) {
 						window.dispatchEvent(new CustomEvent(RESET_POS_EVENT));
 					},
 				},
-				label('回到右下角', 'Send her back to the corner'),
+				dwmT('settings.resetPosition', '回到右下角', 'Send her back to the corner'),
 			),
 			h(
 				'button',
@@ -234,7 +231,7 @@ function SettingsSection(props) {
 						commit(DEFAULT_OPTIONS);
 					},
 				},
-				label('恢复默认参数', 'Reset options'),
+				dwmT('settings.reset', '恢复默认参数', 'Reset options'),
 			),
 			h(
 				'button',
@@ -249,7 +246,10 @@ function SettingsSection(props) {
 						setFeeds(0);
 					},
 				},
-				label('清零投喂计数（当前 ' + feeds + '）', 'Clear the feed counter (now ' + feeds + ')'),
+				dwmFill(
+					dwmT('settings.clearFeeds', '清零投喂计数（当前 {n}）', 'Clear the feed counter (now {n})'),
+					{ n: feeds },
+				),
 			),
 		),
 	);

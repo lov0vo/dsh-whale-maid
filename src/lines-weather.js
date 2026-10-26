@@ -89,6 +89,34 @@ var DWM_LINES_WEATHER = {
 	],
 };
 
+var DWM_LINES_BOND = {
+	zh: {
+		bondL3: ['我们好像更熟一点了。', '这个动作，只给熟的人看。', '羁绊 Lv3 解锁：我学会眨眼啦。'],
+		bondL5: ['鲸汐守护者——这个称号我收下了。', '从今天起，我是你的守护者。'],
+		bondL7: ['彩蛋时间！这个保留节目，只此一家。', '嘘——这是 Lv7 才有的秘密。'],
+	},
+	en: {
+		bondL3: ['We are a little closer now.', 'This move is only for people I know.', 'Bond Lv3: I learned to wink.'],
+		bondL5: ['Tide Guardian — I accept the title.', 'From today, I am your guardian.'],
+		bondL7: ['Easter egg time! Reserved showing, one house only.', 'Shh — this secret needs Lv7.'],
+	},
+};
+
+(function mergeBondLines(table) {
+	if (typeof DWM_LINES !== 'object' || DWM_LINES === null) return;
+	var langs = ['zh', 'en'];
+	for (var l = 0; l < langs.length; l++) {
+		var lang = langs[l];
+		if (typeof DWM_LINES[lang] !== 'object' || DWM_LINES[lang] === null) DWM_LINES[lang] = {};
+		var banks = table[lang];
+		for (var bank in banks) {
+			if (!Object.prototype.hasOwnProperty.call(banks, bank)) continue;
+			var existing = Array.isArray(DWM_LINES[lang][bank]) ? DWM_LINES[lang][bank] : [];
+			DWM_LINES[lang][bank] = existing.concat(banks[bank]);
+		}
+	}
+})(DWM_LINES_BOND);
+
 (function mergeWeatherLines(table) {
 	if (typeof DWM_LINES !== 'object' || DWM_LINES === null) return;
 	if (typeof DWM_LINES.zh !== 'object' || DWM_LINES.zh === null) DWM_LINES.zh = {};

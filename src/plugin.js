@@ -85,6 +85,9 @@ function createPublicApi() {
 		/* --- 1.1.0 companion API (additive) --------------------------------- */
 
 		/** Companion switches (work link, care, chip, zones, chatter —. */
+		poseFor: dwmPoseFor,
+		poseImage: dwmPoseImage,
+		poseList: dwmPoseList,
 		companion: dwmReadCompanion,
 		/** Merge a partial companion object and apply it live. */
 		setCompanion: function (patch) {
@@ -191,6 +194,16 @@ function createPublicApi() {
 	};
 }
 
+/* Single settings entry: basic options on top, companion/growth below. */
+function WhaleSettingsSection() {
+	return h(
+		'div',
+		{ className: 'dwm-settings-stack' },
+		h(SettingsSection, null),
+		h(CompanionPanel, null),
+	);
+}
+
 function apply(ctx) {
 	ctx.effect(injectStyles, 'dsh-whale-maid: sprite pet stylesheet');
 
@@ -198,6 +211,9 @@ function apply(ctx) {
 		return ctx.slots.register({ name: 'shell.overlay', id: 'dsh-whale-maid', order: 100 }, WhaleGirl);
 	});
 
+	/* One settings entry (1.5.2). The companion panel used to be a second
+	 * `settings.section` row, so the nav showed two near-identical items;
+	 * both halves now render inside a single stacked component. */
 	ctx.slots.inject('settings.section', function () {
 		return ctx.slots.register(
 			{
@@ -209,23 +225,7 @@ function apply(ctx) {
 					return resolveLanguage(readOptions().language) === 'zh' ? '鲸鱼女仆' : 'Whale girl';
 				},
 			},
-			SettingsSection,
-		);
-	});
-
-	/* 1.1.0 —companion settings sit right after the original section. */
-	ctx.slots.inject('settings.section', function () {
-		return ctx.slots.register(
-			{
-				name: 'settings.section',
-				locale: 'dsh-whale-maid',
-				id: 'dsh-whale-maid-companion',
-				order: 61,
-				label: function () {
-					return resolveLanguage(readOptions().language) === 'zh' ? '鲸鱼女仆 · 成长' : 'Whale girl · Companion';
-				},
-			},
-			CompanionPanel,
+			WhaleSettingsSection,
 		);
 	});
 

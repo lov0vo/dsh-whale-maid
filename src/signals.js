@@ -25,6 +25,17 @@
  *      `workHold` grace period (default 6 s) papers over that and over the gap
  *      between two tool cards.
  *
+ * 1.8.0 (A5) revisited both consequences:
+ *
+ *   - The 1.5 s interval was pure waste: a turn lasts minutes, and the mutation
+ *     observer already catches every relevant DOM change. The interval is now
+ *     `DWM_SIGNAL_POLL_MS` (3 s) and only acts as a floor, not as the detector.
+ *   - A missing running marker is no longer read as "the turn ended" when the
+ *     document is hidden or the settings view is mounted: both unmount the chat
+ *     view without ending the turn. Those two cases HOLD instead of ending, and
+ *     `visibilitychange` forces an immediate rescan the moment the tab comes
+ *     back. `workHold` stays as the final safety net.
+ *
  * Nothing here writes to the host DOM, so a future attribute change can break
  * the link but can never break the UI.
  */
@@ -35,10 +46,23 @@ var DWM_SIGNAL_SELECTORS = {
 	thinking: ['[data-variant="think"][data-state="running"]', '[data-streaming][data-variant="think"]'],
 	activity: ['[data-process-activity="thinking"]'],
 	error: ['[data-tool][data-state="error"]'],
-	code: ['pre']
+	code: ['pre'],
+	/**
+	 * The settings view. Opening it replaces the session view, so
+	 * `[data-chat-running]` disappears even though the turn is still running.
+	 * Both selectors are the ones this repo already relies on for the settings
+	 * surface (`settings.section` is registered in plugin.js, and
+	 * `[data-shortcut-modal="settings"]` is the modal route into it).
+	 */
+	settings: ['[data-shortcut-modal="settings"]', '[data-slot="settings.header"]']
 };
 
-var DWM_SIGNAL_TIMERS = { interval: undefined, debounce: undefined, observer: null };
+/** 1.8.0 (A5): the poll floor. The mutation observer does the real work. */
+var DWM_SIGNAL_POLL_MS = 3000;
+/** A turn running longer than this gets the "long" pose / line. */
+var DWM_WORK_LONG_MS = 12 * 60000;
+
+var DWM_SIGNAL_TIMERS = { interval: undefined, debounce: undefined, observer: null, visibility: null };
 
 function dwmCountAny(selectorList) {
 	var total = 0;
@@ -64,28 +88,78 @@ function dwmWorkPose(phase) {
 	return 'idle';
 }
 
-function dwmWorkChipText(phase, language) {
-	var zh = language === 'zh';
-	if (phase === 'thinking') return zh ? '思考中' : 'Thinking';
-	if (phase === 'tool') return zh ? '工作中' : 'Working';
-	if (phase === 'failure') return zh ? '出错' : 'Error';
-	if (phase === 'success') return zh ? '完成' : 'Done';
+/**
+ * 1.8.0 (A5): the same phases, as keys of the pose map in `src/pose-map.js`.
+ * 'long' is not a phase of its own — it is the tool phase once the turn has
+ * been running past `DWM_WORK_LONG_MS`.
+ */
+function dwmWorkPoseContext(phase) {
+	if (phase === 'thinking') return 'workThinking';
+	if (phase === 'tool') {
+		var since = DWM_RUNTIME.work.since;
+		if (since && dwmNow() - since > DWM_WORK_LONG_MS) return 'workLong';
+		return 'workTool';
+	}
+	if (phase === 'failure') return 'workFailure';
+	if (phase === 'success') return 'workSuccess';
 	return '';
 }
 
-/** Push the current phase onto the pet unless the user is dragging her. */
+/** True while the document is in a background tab. */
+function dwmDocumentHidden() {
+	return typeof document !== 'undefined' && document.visibilityState === 'hidden';
+}
+
+/** True while the settings view is mounted over the session. */
+function dwmSettingsViewOpen() {
+	return dwmQueryAny(DWM_SIGNAL_SELECTORS.settings);
+}
+
+function dwmWorkChipText(phase, language) {
+	var zh = language === 'zh';
+	if (phase === 'thinking') return zh ? '思考中 · 正在琢磨你的问题' : 'Thinking · working out your question';
+	if (phase === 'tool') {
+		var busyMs = DWM_RUNTIME.work.since ? dwmNow() - DWM_RUNTIME.work.since : 0;
+		if (busyMs > DWM_WORK_LONG_MS) {
+			return zh ? '还在忙 · 这个任务有点大，我在盯着' : 'Still busy · this task is a big one, I am watching it';
+		}
+		return zh ? '工作中 · 正在调用工具处理' : 'Working · running tools for you';
+	}
+	if (phase === 'failure') return zh ? '出错 · 需要你看一眼' : 'Error · needs your eyes';
+	if (phase === 'success') return zh ? '完成 · 交给你了' : 'Done · handing it over';
+	return '';
+}
+
+/**
+ * Push the current phase onto the pet unless the user is dragging her.
+ *
+ * 1.8.0: the phase now goes through the pose map. Every work portrait is still
+ * pending art, so `dwmPoseFor` returns the same animation state the 1.1.0 code
+ * forced (`think` / `work` / `joy` / `sad`) and nothing changes on screen; the
+ * moment a portrait ships, that portrait takes over instead.
+ */
 function dwmApplyWorkPose(phase) {
 	dwmSetWorkGlow(phase !== 'idle');
 	if (DWM_RUNTIME.state === 'drag') return;
 	if (phase === 'idle') return;
+	var context = dwmWorkPoseContext(phase);
+	if (context !== '' && typeof dwmPoseFor === 'function') {
+		var pose = dwmPoseFor(context);
+		if (pose && (pose.image || pose.state)) {
+			dwmShowPose(pose, 0, true);
+			return;
+		}
+	}
 	dwmForceState(dwmWorkPose(phase), 0, true);
 }
 
 function dwmResetWork(work) {
 	dwmSetWorkGlow(false);
+	dwmHidePose();
 	work.active = false;
 	work.phase = 'idle';
 	work.held = false;
+	work.longShown = false;
 	work.hadError = false;
 	work.hadTool = false;
 	work.hadCode = false;
@@ -126,7 +200,7 @@ function dwmScanSignals() {
 			};
 			dwmGrowthApply('tool-seen');
 			dwmApplyWorkPose(phase);
-			if (companion.chip) dwmChip(dwmWorkChipText(phase, dwmUiLanguage()), 'work', 2400);
+			if (companion.chip) dwmChip(dwmWorkChipText(phase, dwmUiLanguage()), 'work', 2400, 'state');
 			if (DWM_RUNTIME.api && DWM_RUNTIME.api.resetSleep) DWM_RUNTIME.api.resetSleep();
 			if (DWM_RUNTIME.api && DWM_RUNTIME.api.stopWalk) DWM_RUNTIME.api.stopWalk();
 		}
@@ -140,8 +214,16 @@ function dwmScanSignals() {
 			work.changedAt = now;
 			dwmApplyWorkPose(phase);
 			if (companion.chip && phase !== 'thinking') {
-				dwmChip(dwmWorkChipText(phase, dwmUiLanguage()), 'work', 2400);
+				dwmChip(dwmWorkChipText(phase, dwmUiLanguage()), 'work', 2400, 'state');
 			}
+		} else if (phase === 'tool' && !work.longShown && now - work.since > DWM_WORK_LONG_MS) {
+			/*
+			 * A5: the turn crossed the "long" threshold without changing phase, so
+			 * nothing above would repaint. Do it once, and only once, per session.
+			 */
+			work.longShown = true;
+			dwmApplyWorkPose('tool');
+			if (companion.chip) dwmChip(dwmWorkChipText('tool', dwmUiLanguage()), 'work', 2400, 'state');
 		}
 		work.goneAt = now;
 		work.held = false;
@@ -162,6 +244,16 @@ function dwmScanSignals() {
 		work.phase = 'idle';
 		return;
 	}
+	/*
+	 * A5: an unmounted session view is not a finished turn. Both the settings
+	 * page and a background tab unmount `[data-chat-running]` while the turn
+	 * keeps running, so hold the phase instead of ending it. `workHold` below
+	 * still ends the turn if neither condition ever clears.
+	 */
+	if (dwmSettingsViewOpen() || dwmDocumentHidden()) {
+		work.held = true;
+		return;
+	}
 	if (now - work.goneAt < companion.workHold) {
 		work.held = true;
 		return;
@@ -172,17 +264,32 @@ function dwmScanSignals() {
 	dwmResetWork(work);
 	if (failed) {
 		dwmGrowthApply('failure');
-		dwmPlaySequence([['sad', 2000]]);
-		if (companion.chip) dwmChip(dwmWorkChipText('failure', dwmUiLanguage()), 'error', 2600);
+		dwmPlayWorkOutcome('workFailure', 'sad', 2000);
+		if (companion.chip) dwmChip(dwmWorkChipText('failure', dwmUiLanguage()), 'error', 2600, 'state');
 		dwmFx('sparkle', 2);
-		if (companion.workSpeech !== 'off') dwmSpeak(dwmPickLine('workFailure', dwmUiLanguage()));
+		if (companion.workSpeech !== 'off') dwmSpeak(dwmPickLine('workFailure', dwmUiLanguage()), undefined, 'state');
 	} else {
 		dwmGrowthApply('success');
-		dwmPlaySequence([['joy', 1500]]);
-		if (companion.chip) dwmChip(dwmWorkChipText('success', dwmUiLanguage()), 'ok', 2200);
+		dwmPlayWorkOutcome('workSuccess', 'joy', 1500);
+		if (companion.chip) dwmChip(dwmWorkChipText('success', dwmUiLanguage()), 'ok', 2200, 'state');
 		dwmFx('star', 3);
-		if (companion.workSpeech !== 'off') dwmSpeak(dwmPickLine('workSuccess', dwmUiLanguage()));
+		if (companion.workSpeech !== 'off') dwmSpeak(dwmPickLine('workSuccess', dwmUiLanguage()), undefined, 'state');
 	}
+}
+
+/**
+ * The closing pose of a turn. A portrait wins when one is shipped; otherwise the
+ * 1.1.0 sequence runs unchanged, so the outcome looks exactly as it always did.
+ */
+function dwmPlayWorkOutcome(context, state, ms) {
+	if (typeof dwmPoseFor === 'function') {
+		var pose = dwmPoseFor(context);
+		if (pose && (pose.image || pose.state)) {
+			dwmShowPose(pose, ms);
+			return;
+		}
+	}
+	dwmPlaySequence([[state, ms]]);
 }
 
 /**
@@ -220,7 +327,7 @@ function dwmScheduleScan() {
 function dwmStartSignals() {
 	dwmStopSignals();
 	dwmScheduleScan();
-	DWM_SIGNAL_TIMERS.interval = setInterval(dwmScanSignals, 1500);
+	DWM_SIGNAL_TIMERS.interval = setInterval(dwmScanSignals, DWM_SIGNAL_POLL_MS);
 	if (typeof MutationObserver === 'function' && document.body) {
 		DWM_SIGNAL_TIMERS.observer = new MutationObserver(dwmScheduleScan);
 		DWM_SIGNAL_TIMERS.observer.observe(document.body, {
@@ -230,6 +337,21 @@ function dwmStartSignals() {
 			attributeFilter: ['data-chat-running', 'data-tool', 'data-state', 'data-variant', 'data-streaming', 'data-process-activity']
 		});
 	}
+	/*
+	 * A5: a hidden tab stops mutating, so the interval is the only thing that
+	 * could notice the turn ending — and it is now 3 s. Coming back to the tab is
+	 * the one moment where being late is visible, so rescan right away instead of
+	 * waiting for the next tick.
+	 */
+	if (typeof document !== 'undefined' && typeof document.addEventListener === 'function') {
+		DWM_SIGNAL_TIMERS.visibility = function () {
+			if (dwmDocumentHidden()) return;
+			if (DWM_SIGNAL_TIMERS.debounce !== undefined) clearTimeout(DWM_SIGNAL_TIMERS.debounce);
+			DWM_SIGNAL_TIMERS.debounce = undefined;
+			dwmScanSignals();
+		};
+		document.addEventListener('visibilitychange', DWM_SIGNAL_TIMERS.visibility);
+	}
 	return dwmStopSignals;
 }
 
@@ -238,6 +360,16 @@ function dwmStopSignals() {
 	if (DWM_SIGNAL_TIMERS.debounce !== undefined) clearTimeout(DWM_SIGNAL_TIMERS.debounce);
 	DWM_SIGNAL_TIMERS.interval = undefined;
 	DWM_SIGNAL_TIMERS.debounce = undefined;
+	if (DWM_SIGNAL_TIMERS.visibility) {
+		if (typeof document !== 'undefined' && typeof document.removeEventListener === 'function') {
+			try {
+				document.removeEventListener('visibilitychange', DWM_SIGNAL_TIMERS.visibility);
+			} catch (error) {
+				/* ignore */
+			}
+		}
+		DWM_SIGNAL_TIMERS.visibility = null;
+	}
 	if (DWM_SIGNAL_TIMERS.observer) {
 		try {
 			DWM_SIGNAL_TIMERS.observer.disconnect();

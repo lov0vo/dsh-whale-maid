@@ -15,6 +15,32 @@
 
 var KEY_GROWTH = 'dsh-whale-maid:growth';
 
+/* Bond milestones (added in 1.5.0, mirrors the reference plugin's BOND table):
+ * Lv3 unlocks an extra idle reaction, Lv5 unlocks a title/badge, Lv7 fires a
+ * one-shot easter egg. Level is derived from affinity, never stored. */
+/* Bond titles are no longer gated by level (1.6.1): every unlock is
+ * available from the first launch. `level` is kept because achievements read it. */
+var DWM_BOND = {
+	lv3Action: 3,
+	lv5Badge: 5,
+	lv7Egg: 7,
+	badges: [{ id: 'bond-lv5', zh: '鲸汐守护者', en: 'Tide Guardian', minLevel: 5 }],
+};
+
+function dwmBondUnlocks(level) {
+	var lv = typeof level === 'number' && isFinite(level) ? level : 1;
+	var badges = [];
+	for (var i = 0; i < DWM_BOND.badges.length; i++) {
+		badges.push(DWM_BOND.badges[i]);
+	}
+	return {
+		action: true,
+		badge: true,
+		egg: true,
+		badges: badges,
+	};
+}
+
 var DWM_GROWTH_RULES = {
 	moodMax: 100,
 	affinityMax: 10000,
@@ -317,6 +343,18 @@ var DWM_GROWTH_DELTAS = {
  * type: a key of DWM_GROWTH_DELTAS, or 'quest' / 'quest-all' / 'signin' / 'sleep'.
  * Returns { growth, unlocks, leveledUp }.
  */
+/* Fires once per level-up. The reference plugin unlocks an extra idle action
+ * at Lv3, a title at Lv5 and a one-shot easter egg at Lv7 — same shape here,
+ * but the pose art is limited to what this bundle ships (wink). */
+function dwmBondAfterLevel(level) {
+	var unlocks = dwmBondUnlocks(level);
+	var bank = level >= DWM_BOND.lv7Egg ? 'bondL7' : level >= DWM_BOND.lv5Badge ? 'bondL5' : 'bondL3';
+	var line = typeof dwmPickLine === 'function' ? dwmPickLine(bank, 'auto') : '';
+	if (line) dwmSpeak(line, 'ok');
+	if (unlocks.action && typeof dwmForceState === 'function') dwmForceState('wink', 2600);
+	if (typeof dwmEmitGrowth === 'function') dwmEmitGrowth();
+}
+
 function dwmGrowthApply(type, payload) {
 	var now = dwmNow();
 	var growth = dwmGrowthRead();
@@ -354,8 +392,10 @@ function dwmGrowthApply(type, payload) {
 
 	var previousLevel = growth.level;
 	growth.level = dwmLevelFor(growth.affinity);
+
 	var leveledUp = growth.level > previousLevel;
 	if (leveledUp) {
+		dwmBondAfterLevel(growth.level);
 		dwmGrowthDiary(
 			growth,
 			'羁绊升到 Lv' + growth.level + '（' + dwmBondTitle(growth.level, 'zh') + '）',

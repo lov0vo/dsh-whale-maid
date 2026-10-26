@@ -247,14 +247,14 @@ test.after(() => harness.dispose());
 
 /* --- registration -------------------------------------------------------- */
 
-test('registers the overlay and both settings sections', () => {
+test('registers the overlay and the single settings section', () => {
 	assert.deepEqual(
 		harness.registrations.map((entry) => entry.declaration.name),
-		['shell.overlay', 'settings.section', 'settings.section']
+		['shell.overlay', 'settings.section']
 	);
 	assert.deepEqual(
 		harness.registrations.map((entry) => entry.declaration.id),
-		['dsh-whale-maid', 'dsh-whale-maid', 'dsh-whale-maid-companion']
+		['dsh-whale-maid', 'dsh-whale-maid']
 	);
 	for (const entry of harness.registrations) {
 		assert.equal(typeof entry.component, 'function');
@@ -275,6 +275,7 @@ test('keeps the 1.0.0 public API and its defaults', () => {
 	assert.deepEqual(Object.keys(options).sort(), [
 		'bubbleDuration',
 		'city',
+		'dragPhysics',
 		'greeting',
 		'greetings',
 		'hidden',

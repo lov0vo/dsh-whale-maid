@@ -1,6 +1,6 @@
 {
   "name": "dsh-whale-maid",
-  "version": "1.4.0",
+  "version": "1.9.0",
   "private": true,
   "description": "Whale girl desktop pet for the DeepSeek Harness: twelve sprite animations, work-status link, growth, achievements, weather companion.",
   "license": "MIT",
@@ -24,6 +24,7 @@
   "files": [
     "index.js",
     "client.js",
+    "assets",
     "cordis.patch.yml",
     "locale",
     "icon.svg",

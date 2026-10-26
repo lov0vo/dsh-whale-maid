@@ -1,14 +1,13 @@
 /*
- * dsh-whale-maid —client bundle builder.
+ * dsh-whale-maid — client bundle builder.
  *
  * The DSH browser artifact must be a single classic script that calls
  * `window.__ModuleLoader__.load({ id, factory })`. There is no bundler in the
  * Harness, and the renderer runs sandboxed (`nodeIntegration: false`), so the
  * client cannot read files from the plugin directory at runtime.
  *
- * Therefore every runtime asset is inlined here:
+ * What ships inside the bundle:
  *   - `src/pet.css`            -> a JS string, injected into <head> by the plugin
- *   - `src/sprites/*.png`      -> base64 `data:` URLs
  *   - `src/runtime.js`         -> shared state, events, small helpers (1.1.0)
  *   - `src/lines.js`           -> companion text banks + keyword topics (1.1.0)
  *   - `src/lines-more.js`      -> 403 extra lines per language, appended (1.3.0)
@@ -22,13 +21,22 @@
  *   - `src/zones.js`           -> hit zones + triple tap (1.1.0)
  *   - `src/plugin.js`          -> slot registration + public API
  *
+ * What does NOT ship inside the bundle (A7): the PNG art. Base64-inlining 13
+ * sprite sheets + 19 pose portraits pushed `client.js` to 4.78 MB. Instead every
+ * `src/sprites/*.png` and `src/sprites/poses/*.png` is *copied* to `assets/` at
+ * the package root, and the bundle only holds URL strings built from
+ * `ASSET_BASE`. The Host half (`index.js`) serves that directory over
+ * `/api/dsh-whale-maid/assets/`. The variable names `SPRITES` / `POSES` and the
+ * shape of their values (a string usable as a CSS `url()` / `<img>` source) are
+ * unchanged, so `src/pet.js` and `src/pose-map.js` need no edits.
+ *
  * Every file is plain script (no import/export); they share one closure, so a
  * `function` declaration in any of them is visible to all the others.
  *
  * Usage: node build.mjs
  */
 
-import { readFileSync, writeFileSync, existsSync } from 'node:fs';
+import { readFileSync, readdirSync, existsSync, writeFileSync, mkdirSync, copyFileSync, statSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -43,10 +51,12 @@ const SOURCES = [
 	'src/lines.js',
 	'src/lines-more.js',
 	'src/lines-weather.js',
+	'src/pose-map.js',
 	'src/lines-mood.js',
 	'src/growth.js',
 	'src/fx.js',
 	'src/pet.js',
+	'src/locale-table.js',
 	'src/settings.js',
 	'src/panel.js',
 	'src/signals.js',
@@ -58,6 +68,7 @@ const SOURCES = [
 
 /** Sheet name -> expected frame count. Must mirror the ANIM table in src/pet.js. */
 const SHEETS = {
+	wink: 1,
 	idle: 3,
 	joy: 2,
 	eat: 3,
@@ -74,6 +85,12 @@ const SHEETS = {
 
 const FRAME_SIZE = 256;
 const PNG_SIGNATURE = Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]);
+
+/** Where the Host half serves the art from. Mirrors `ROUTE` in index.js. */
+const ASSET_BASE = '/api/dsh-whale-maid/assets/';
+const ASSET_DIR = join(root, 'assets');
+const ASSET_POSE_DIR = join(ASSET_DIR, 'poses');
+const POSE_SRC_DIR = join(root, 'src', 'sprites', 'poses');
 
 function fail(message) {
 	console.error('build failed: ' + message);
@@ -95,6 +112,23 @@ function pngSize(buffer, name) {
 	return { width, height };
 }
 
+/**
+ * Copy one source PNG into `assets/` (the HTTP-served tree) and return its
+ * public URL. Verifies the copy landed with the same byte length, so a broken
+ * or half-written asset fails the build instead of 404ing at runtime.
+ */
+function publishAsset(sourcePath, targetPath, publicPath, label) {
+	copyFileSync(sourcePath, targetPath);
+	const copied = statSync(targetPath).size;
+	if (copied !== statSync(sourcePath).size) {
+		fail(label + ': copy into assets/ is ' + copied + ' B, expected ' + statSync(sourcePath).size + ' B');
+	}
+	return ASSET_BASE + publicPath;
+}
+
+mkdirSync(ASSET_DIR, { recursive: true });
+mkdirSync(ASSET_POSE_DIR, { recursive: true });
+
 const sprites = {};
 const report = [];
 let totalBytes = 0;
@@ -109,12 +143,27 @@ for (const [name, frames] of Object.entries(SHEETS)) {
 	if (width !== frames * FRAME_SIZE) {
 		fail(name + '.png: expected ' + frames + ' frames (' + frames * FRAME_SIZE + 'px wide), got ' + width + 'px');
 	}
-	sprites[name] = 'data:image/png;base64,' + buffer.toString('base64');
+	sprites[name] = publishAsset(path, join(ASSET_DIR, name + '.png'), name + '.png', name + '.png');
 	totalBytes += buffer.length;
 	report.push('  ' + name.padEnd(8) + frames + ' frame(s)  ' + width + 'x' + height + '  ' + buffer.length + ' B');
 }
 
 const stylesheet = readText('src/pet.css');
+
+// A3: pose portraits ship too, so the pose map can use them. A7: served over
+// HTTP like the sheets, not inlined.
+const poses = {};
+let poseBytes = 0;
+if (existsSync(POSE_SRC_DIR)) {
+	const names = readdirSync(POSE_SRC_DIR)
+		.filter((name) => name.endsWith('.png'))
+		.sort();
+	for (const name of names) {
+		const source = join(POSE_SRC_DIR, name);
+		poses[name.slice(0, -4)] = publishAsset(source, join(ASSET_POSE_DIR, name), 'poses/' + name, 'poses/' + name);
+		poseBytes += statSync(source).size;
+	}
+}
 
 const sources = [];
 for (const relative of SOURCES) {
@@ -130,8 +179,11 @@ const out = [
 	' * ' + MODULE_ID + ' —generated by build.mjs. Do not edit by hand;',
 	' * edit src/*.js or src/pet.css and run `node build.mjs`.',
 	' *',
-	' * Sprite sheets and stylesheet are inlined so the sandboxed renderer needs no',
-	' * network route and no filesystem access.',
+	' * The stylesheet is inlined so the sandboxed renderer needs no filesystem',
+	' * access. Sprite sheets and pose portraits are NOT inlined: they are served by',
+	' * the Host half (index.js) from assets/ over ASSET_BASE, which keeps this',
+	' * bundle small. SPRITES / POSES still hold one string per entry — a URL,',
+	' * usable wherever a CSS url() or an <img> source is expected.',
 	' */',
 	'window.__ModuleLoader__.load({',
 	'  id: ' + JSON.stringify(MODULE_ID) + ',',
@@ -144,9 +196,17 @@ const out = [
 	'    /* ---- src/pet.css ---- */',
 	'    var STYLESHEET = ' + JSON.stringify(stylesheet) + ';',
 	'',
+	'    /* ---- assets: served by index.js, see ASSET_BASE below ---- */',
+	'    var ASSET_BASE = ' + JSON.stringify(ASSET_BASE) + ';',
+	'',
 	'    /* ---- src/sprites/*.png ---- */',
 	'    var SPRITES = {',
-	...Object.entries(sprites).map(([name, url]) => '      ' + name + ': ' + JSON.stringify(url) + ','),
+	...Object.entries(sprites).map(([name, url]) => '      ' + name + ': ASSET_BASE + ' + JSON.stringify(url.slice(ASSET_BASE.length)) + ','),
+	'    };',
+	'',
+	'    /* ---- src/sprites/poses/*.png ---- */',
+	'    var POSES = {',
+	...Object.entries(poses).map(([name, url]) => '      ' + name + ': ASSET_BASE + ' + JSON.stringify(url.slice(ASSET_BASE.length)) + ','),
 	'    };',
 	'',
 	...sources.flatMap((entry) => ['    /* ---- ' + entry.relative + ' ---- */', entry.source, '']),
@@ -172,3 +232,4 @@ console.log('');
 console.log('  sprite bytes   ' + totalBytes + ' B (' + kb(totalBytes) + ')');
 console.log('  client.js      ' + Buffer.byteLength(out) + ' B (' + kb(Buffer.byteLength(out)) + ')');
 console.log('  written to     ' + target);
+console.log('  assets         ' + Object.keys(sprites).length + ' sheet(s) + ' + Object.keys(poses).length + ' pose(s), ' + kb(totalBytes + poseBytes) + ' -> ' + ASSET_DIR);

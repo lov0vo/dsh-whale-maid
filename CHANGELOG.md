@@ -1,3 +1,24 @@
+## 1.9.0 — 2026-10-26
+
+### 变更
+
+- **资源改由 HTTP 路由提供**：精灵表与 19 张姿势立绘不再内联为 base64，改由 host 半边注册的 `/api/dsh-whale-maid/assets` 前缀路由提供（含路径穿越防护、MIME 表、`Cache-Control: max-age=3600`、弱 ETag + 304、仅 GET/HEAD）。`client.js` 从 **4.89 MB 降到 264 KB（−94.5%）**。
+- **界面文案走翻译系统**：新增 `src/locale-table.js`（`dwmT` / `dwmFill` / `dwmLocaleLanguage`），`locale/zh.json` 与 `locale/en.json` 扩到 **81 个键**（19 个 `settings.*` + 60 个 `panel.*` + 2 个 `meta.*`）。原中英文作为回落参数保留，渲染结果逐节点一致。
+- **气泡优先级**：`dwmSpeak(message, tone, priority)` 支持 `normal < state < important` 三级，高优先级未过期时不被低优先级打断。
+- **工作状态判定更稳**：轮询由 1.5 s 放宽到 3 s，新增 `visibilitychange` 立即重扫；「运行标记消失但文档隐藏或设置页挂载」判为**保持**而非结束，`workHold` 仍是最终兜底。
+- **场合→姿势映射**：新增 `src/pose-map.js`（36 条规则 + 15 条回落表），工作相位与关怀时刻改用对应立绘，无图时回落原动作态，既有转场不变。
+
+### 新增
+
+- `scripts/release.mjs`：一条命令完成 bump → build → test → 同步两处安装目录 → commit → tag。
+- `assets/` 目录（构建产物，随包发布）。
+
+### 修复
+
+- 拖拽松手的甩出与压扁回弹此前只有算法没有接线（`.is-squash` 从未被添加、`.dwm` 变换缺 `--dwm-drag-angle`），现已接通。
+- 设置页每 5 s 重读本地存储 → 改为 30 s 并在切回标签页时立即刷新。
+- 松手回弹的定时器不再累积。
+- 羁绊动作与称号取消等级门槛，默认全部可用，称号常显于面板首屏。
 # 变更记录
 
 本项目遵循 [语义化版本](https://semver.org/lang/zh-CN/)。

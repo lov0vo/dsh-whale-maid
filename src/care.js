@@ -9,6 +9,15 @@
  * Everything is throttled and can be switched off per feature from the settings
  * panel. All timings are generous on purpose: a desktop pet that talks every
  * minute is a bug, not a feature.
+ *
+ * 1.8.0: two additions that both serve "care should not get lost in the noise".
+ *
+ *   - Care and milestone lines speak with priority 'important' (see
+ *     `dwmSpeak`), so a routine work-status line can no longer talk over the
+ *     one line that actually asks the user to stop working.
+ *   - Every care moment now asks `src/pose-map.js` for its pose. When a
+ *     portrait is shipped it is shown; when none is, the previous behaviour is
+ *     kept exactly (`careComeBack` still plays `welcome`).
  */
 
 var DWM_CARE = {
@@ -23,7 +32,9 @@ var DWM_CARE = {
 	lastTextAt: 0,
 	lastReactAt: 0,
 	topic: 'general',
-	signinDone: false
+	signinDone: false,
+	/** pending "put the work pose back" timer after a care pose */
+	poseRestore: undefined
 };
 
 var DWM_CARE_RULES = {
@@ -49,6 +60,47 @@ function dwmCareCanSpeak() {
 	if (!DWM_RUNTIME.ready) return false;
 	if (typeof document !== 'undefined' && document.visibilityState === 'hidden') return false;
 	return dwmNow() - DWM_RUNTIME.lastSayAt > DWM_CARE_RULES.speakGapMs;
+}
+
+/**
+ * Show the pose for a care moment.
+ *
+ * When the pose map names an animation state, that is an explicit instruction
+ * and `dwmShowPose` handles it. When it names only a portrait, the portrait is
+ * painted and a failed paint stays invisible on purpose: most care moments never
+ * changed her animation before 1.8.0, and forcing a fallback state here would
+ * clobber whatever she is legitimately doing — `careLongSit` fires *during* a
+ * running turn, where the work pose must survive.
+ */
+function dwmCarePose(context, ms) {
+	if (typeof dwmPoseFor !== 'function') return false;
+	var pose = null;
+	try {
+		pose = dwmPoseFor(context);
+	} catch (error) {
+		return false;
+	}
+	if (!pose) return false;
+	if (pose.state) {
+		var shown = dwmShowPose(pose, ms);
+		/*
+		 * A care pose is a moment, but the work pose lasts a turn: without this
+		 * the pet would finish her worried 3 s and then sit in `idle` for the rest
+		 * of a long session, because the work pose is only repainted on a phase
+		 * change. Put the turn's pose back when the care moment is over.
+		 */
+		if (shown && DWM_RUNTIME.work.active) {
+			if (DWM_CARE.poseRestore !== undefined) clearTimeout(DWM_CARE.poseRestore);
+			DWM_CARE.poseRestore = setTimeout(function () {
+				DWM_CARE.poseRestore = undefined;
+				if (!DWM_RUNTIME.work.active) return;
+				if (typeof dwmApplyWorkPose === 'function') dwmApplyWorkPose(DWM_RUNTIME.work.phase);
+			}, (Number(ms) > 0 ? Number(ms) : 2000) + 100);
+		}
+		return shown;
+	}
+	if (!pose.image) return false;
+	return dwmPortraitShow(pose, ms);
 }
 
 function dwmCareMoodLine(language) {
@@ -130,7 +182,12 @@ function dwmCareCheck() {
 		if (result) {
 			var streak = result.growth.signinStreak;
 			if (companion.chip) {
-				dwmChip(language === 'zh' ? '签到成功 · 连续 ' + streak + ' 天' : 'Checked in · ' + streak + ' day streak', 'ok', 3000);
+				dwmChip(
+					language === 'zh' ? '签到成功 · 连续 ' + streak + ' 天' : 'Checked in · ' + streak + ' day streak',
+					'ok',
+					3000,
+					'important',
+				);
 			}
 		}
 	}
@@ -146,7 +203,8 @@ function dwmCareCheck() {
 		if (dwmCareCanSpeak()) {
 			DWM_CARE.lastLongSitAt = now;
 			DWM_RUNTIME.lastCareAt = now;
-			dwmSpeak(dwmPickLine('careLongSit', language));
+			dwmSpeak(dwmPickLine('careLongSit', language), undefined, 'important');
+			dwmCarePose('careLongSit', 3000);
 			dwmFx('note', 1);
 			return;
 		}
@@ -157,7 +215,8 @@ function dwmCareCheck() {
 		if (dwmCareCanSpeak()) {
 			DWM_CARE.lastStuckAt = now;
 			DWM_RUNTIME.lastCareAt = now;
-			dwmSpeak(dwmPickLine('careStuck', language));
+			dwmSpeak(dwmPickLine('careStuck', language), undefined, 'important');
+			dwmCarePose('careStuck', 3000);
 			return;
 		}
 	}
@@ -167,7 +226,8 @@ function dwmCareCheck() {
 		if (dwmCareCanSpeak()) {
 			DWM_CARE.lastNightAt = now;
 			DWM_RUNTIME.lastCareAt = now;
-			dwmSpeak(dwmPickLine('careLateNight', language));
+			dwmSpeak(dwmPickLine('careLateNight', language), undefined, 'important');
+			dwmCarePose('careLateNight', 3000);
 			return;
 		}
 	}
@@ -178,7 +238,8 @@ function dwmCareCheck() {
 		if (dwmCareCanSpeak()) {
 			DWM_CARE.lastHungryAt = now;
 			DWM_RUNTIME.lastCareAt = now;
-			dwmSpeak(dwmPickLine('careSatiety', language));
+			dwmSpeak(dwmPickLine('careSatiety', language), undefined, 'important');
+			dwmCarePose('careSatiety', 3000);
 			return;
 		}
 	}
@@ -196,9 +257,12 @@ function dwmCareHeartbeat() {
 	if (awayMs > DWM_CARE_RULES.awayMs) {
 		dwmGrowthApply('click', { awayMs: awayMs });
 		if (dwmReadCompanion().care && dwmCareCanSpeak()) {
-			dwmSpeak(dwmPickLine('careComeBack', dwmUiLanguage()));
+			dwmSpeak(dwmPickLine('careComeBack', dwmUiLanguage()), undefined, 'important');
 			dwmFx('heart', 2);
-			dwmForceState('welcome', 1600);
+			/* a greeting portrait when one is shipped, otherwise the usual 'welcome' */
+			var greet = typeof dwmPoseFor === 'function' ? dwmPoseFor('careComeBack') : null;
+			if (greet) dwmShowPose(greet, 1600);
+			else dwmForceState('welcome', 1600);
 		}
 	}
 
@@ -228,10 +292,13 @@ function dwmIdleChatTick() {
 	if (DWM_RUNTIME.state === 'sleep' || DWM_RUNTIME.state === 'drag') return;
 	if (!dwmCareCanSpeak()) return;
 	var language = dwmUiLanguage();
+	var growth = dwmGrowthRead();
 	var mood = dwmCareMoodLine(language);
 	var line = mood !== '' ? mood : dwmPickLine('chat' + DWM_CARE.topic.charAt(0).toUpperCase() + DWM_CARE.topic.slice(1), language);
 	if (line === '') line = dwmPickLine('chatGeneral', language);
 	dwmSpeak(line);
+	/* the mood line gets its own pose, so a low or high mood is visible, not just read */
+	if (mood !== '') dwmCarePose(dwmMoodTier(growth.mood) <= 1 ? 'moodLow' : 'moodHigh', 3000);
 	dwmGrowthApply('chat');
 	DWM_RUNTIME.lastIdleChatAt = dwmNow();
 }
@@ -255,12 +322,21 @@ function dwmWorkSpeechTick() {
 	var companion = dwmReadCompanion();
 	if (companion.workSpeech === 'off') return;
 	if (!DWM_RUNTIME.work.active) return;
-	if (!dwmCareCanSpeak()) return;
+	/* Work speech keeps its own 8s gap instead of the global care gate. */
+	if (dwmNow() - (DWM_RUNTIME.lastWorkSpeechAt || 0) < 8000) return;
 	var language = dwmUiLanguage();
 	var phase = DWM_RUNTIME.work.phase;
-	var bank = phase === 'tool' ? 'workTool' : 'workThinking';
-	if (DWM_RUNTIME.work.since && dwmNow() - DWM_RUNTIME.work.since > 12 * 60000) bank = 'workLong';
-	dwmSpeak(dwmPickLine(bank, language));
+	var busyMs = DWM_RUNTIME.work.since ? dwmNow() - DWM_RUNTIME.work.since : 0;
+	var banks;
+	if (busyMs > 12 * 60000) banks = ['workLong', 'careLongSit', 'workTool'];
+	else if (phase === 'tool') banks = ['workTool', 'workThinking', 'chatGeneral'];
+	else if (phase === 'thinking') banks = ['workThinking', 'workTool', 'chatGeneral'];
+	else if (phase === 'failure') banks = ['workFailure', 'careStuck', 'chatDebug'];
+	else if (phase === 'success') banks = ['workSuccess', 'chatGeneral'];
+	else banks = ['workThinking', 'chatGeneral'];
+	var line = dwmPickLineFrom(banks, language);
+	/* work narration is 'state': it may replace itself, never a care line */
+	if (line) dwmSpeak(line, undefined, 'state');
 	DWM_RUNTIME.lastWorkSpeechAt = dwmNow();
 }
 
@@ -269,7 +345,7 @@ function dwmCareGreetFirstMeet() {
 	var growth = dwmGrowthRead();
 	if (growth.counts.click > 0 || growth.firstSeenAt === 0) return;
 	if (!dwmCareCanSpeak()) return;
-	dwmSpeak(dwmPickLine('hello', dwmUiLanguage()));
+	dwmSpeak(dwmPickLine('hello', dwmUiLanguage()), undefined, 'important');
 }
 
 function dwmStartCare() {
@@ -285,7 +361,9 @@ function dwmStopCare() {
 	if (DWM_CARE.heartbeat !== undefined) clearInterval(DWM_CARE.heartbeat);
 	if (DWM_CARE.idleChat !== undefined) clearTimeout(DWM_CARE.idleChat);
 	if (DWM_CARE.workSpeech !== undefined) clearTimeout(DWM_CARE.workSpeech);
+	if (DWM_CARE.poseRestore !== undefined) clearTimeout(DWM_CARE.poseRestore);
 	DWM_CARE.heartbeat = undefined;
 	DWM_CARE.idleChat = undefined;
 	DWM_CARE.workSpeech = undefined;
+	DWM_CARE.poseRestore = undefined;
 }

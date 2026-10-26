@@ -15,7 +15,17 @@
 /* ---------------------------------------------------------------- tunables */
 /* Names in comments are the original minified identifiers. */
 
-var DRAG_THRESHOLD = 6; // ea   px of pointer travel before a press becomes a drag
+var DRAG_THRESHOLD = 6;
+/* Release physics (added in 1.5.0). Values mirror the reference plugin:
+ * one discrete nudge of velocity * 2.4 capped at 70px, a 420ms spring-back
+ * rotation capped at 20deg, and a squash-only reaction below 6px/event. */
+var DRAG_RELEASE_GAIN = 2.4;
+var DRAG_RELEASE_CAP = 70;
+var DRAG_LIGHT_SPEED = 6;
+var DRAG_TILT_GAIN = 1.25;
+var DRAG_TILT_CAP = 20;
+var SQUASH_MS = 320;
+ // ea   px of pointer travel before a press becomes a drag
 var BUBBLE_MS = 4500; // ta   how long a speech bubble stays up
 var SLEEP_MS = 60000; // na   idle time before the pet falls asleep
 var THINK_MIN_MS = 15000; // t    think-event interval base
@@ -45,6 +55,8 @@ var ANIM = {
 	think: { sheet: 'think', frames: 3, fps: 2, playback: 'loop', motion: 'float' },
 	work: { sheet: 'work', frames: 3, fps: 2, playback: 'loop', motion: 'float' },
 	sad: { sheet: 'sad', frames: 3, fps: 2, playback: 'loop' },
+	/* Added in 1.5.1 for the bond Lv3 unlock; never entered by the idle loop. */
+	wink: { sheet: 'wink', frames: 1, fps: 2, playback: 'loop' },
 	sleep: { sheet: 'sleep', frames: 2, fps: 1, playback: 'loop' },
 	wake: { sheet: 'wake', frames: 2, fps: 3, playback: 'once' },
 	walk: { sheet: 'walk', frames: 3, fps: 6, playback: 'pingpong' },
@@ -145,7 +157,8 @@ var DEFAULT_OPTIONS = {
 	speed: 1, // multiplier for frame rate and wander speed
 	language: 'auto', // 'auto' | 'zh' | 'en'
 	greeting: true, // greet once on first ever mount
-	sleep: true, // doze off after a while when idle
+	sleep: true,	dragPhysics: true,
+ // doze off after a while when idle
 	walk: true, // wander across the viewport on its own
 	bubbleDuration: BUBBLE_MS,
 	typewriter: true, // reveal bubble text one character at a time
@@ -167,6 +180,8 @@ function normalizeOptions(input) {
 	options.sleep = options.sleep !== false;
 	options.walk = options.walk !== false;
 	options.typewriter = options.typewriter !== false;
+	options.dragPhysics = options.dragPhysics !== false;
+
 	options.hidden = options.hidden === true;
 	var city = typeof options.city === 'string' ? options.city.trim() : '';
 	options.city = city === '' ? '北京' : city;
@@ -405,8 +420,12 @@ function WhaleGirl() {
 	var rootRef = useRef(null);
 	var bodyRef = useRef(null);
 	var bubbleTimer = useRef(undefined);
-	var dragRef = useRef(null);
-	var suppressClick = useRef(false);
+	var squashState = useState(false);
+	var squash = squashState[0];
+	var setSquash = squashState[1];
+	var releaseTimers = useRef([]);
+	var dragRef = useRef(null);	var dragRef = useRef(null);
+	var suppressClick = useRef(false);	var suppressClick = useRef(false);
 	var stateRef = useRef('idle');
 	stateRef.current = animState;
 	var sequenceTimers = useRef([]);
@@ -687,7 +706,64 @@ function onClick() {
 		]);
 	}
 
-	/* --- drag geometry --------------------------------------------------- */
+	/* --- release physics (added in 1.5.0) -------------------------------- */
+	/* A single discrete nudge in the direction of the last pointer movement,
+	 * plus a spring-back rotation — the same shape the reference plugin uses
+	 * (no animation loop, no friction): a slow release only squashes. */
+	function releasePhysics(drag, base) {
+		var speed = Math.hypot(drag.vx || 0, drag.vy || 0);
+		if (options.dragPhysics === false || speed < DRAG_LIGHT_SPEED) {
+			if (speed < DRAG_LIGHT_SPEED) squashOnce();
+			return base;
+		}
+		var width = (rootRef.current && rootRef.current.offsetWidth) || 0;
+		var stepX = clamp((drag.vx || 0) * DRAG_RELEASE_GAIN, -DRAG_RELEASE_CAP, DRAG_RELEASE_CAP);
+		var stepY = clamp((drag.vy || 0) * DRAG_RELEASE_GAIN, -DRAG_RELEASE_CAP, DRAG_RELEASE_CAP);
+		var maxX = Math.max(0, window.innerWidth - width);
+		var maxY = Math.max(0, window.innerHeight - width);
+		var nextX = clamp(base.x + stepX, 0, maxX);
+		var nextY = clamp(base.y + stepY, 0, maxY);
+		var hitEdge =
+			(nextX <= 0 && stepX < 0) || (nextX >= maxX && stepX > 0) ||
+			(nextY <= 0 && stepY < 0) || (nextY >= maxY && stepY > 0);
+		var angle = hitEdge ? 0 : clamp((drag.vx || 0) * DRAG_TILT_GAIN, -DRAG_TILT_CAP, DRAG_TILT_CAP);
+		spinRelease(angle);
+		return { x: nextX, y: nextY };
+	}
+
+	function spinRelease(angle) {
+		var body = bodyRef.current;
+		if (!body || reducedMotion.current) return;
+		body.style.setProperty('--dwm-drag-angle', angle.toFixed(1) + 'deg');
+		body.style.transition = 'transform 420ms cubic-bezier(.2,.9,.3,1)';
+		var settle = setTimeout(function () {
+			body.style.setProperty('--dwm-drag-angle', '0deg');
+			var clear = setTimeout(function () {
+				body.style.transition = '';
+			}, 480);
+			releaseTimers.current.push(clear);
+		}, 30);
+		releaseTimers.current.push(settle);
+	}
+
+	function squashOnce() {
+	if (Array.isArray(releaseTimers.current)) {
+		releaseTimers.current.forEach(function (id) { clearTimeout(id); });
+	}
+	releaseTimers.current = [];
+	var squashTarget = null;
+	if (typeof document !== 'undefined' && document.querySelector) {
+		squashTarget = document.querySelector('.dwm-root .dwm-3d');
+	}
+	if (squashTarget && squashTarget.classList) squashTarget.classList.add('is-squash');		if (reducedMotion.current) return;
+		setSquash(true);
+		var id = setTimeout(function () {
+			setSquash(false);
+		}, SQUASH_MS);
+		releaseTimers.current.push(id);
+	}
+
+	/* --- drag geometry --------------------------------------------------- */	/* --- drag geometry --------------------------------------------------- */
 	function dragPosition(drag, clientX, clientY) {
 		var width = (rootRef.current && rootRef.current.offsetWidth) || 0;
 		return {
@@ -708,6 +784,10 @@ function onClick() {
 			baseX: rect.left,
 			baseY: rect.top,
 			moved: false,
+			lastX: event.clientX,
+			lastY: event.clientY,
+			vx: 0,
+			vy: 0,
 		};
 		try {
 			body.setPointerCapture(event.pointerId);
@@ -727,7 +807,12 @@ function onClick() {
 			drag.moved = true;
 			for (var i = 0; i < sequenceTimers.current.length; i++) clearTimeout(sequenceTimers.current[i]);
 			sequenceTimers.current = [];
+			drag.vx = event.clientX - drag.lastX;
+			drag.vy = event.clientY - drag.lastY;
+			drag.lastX = event.clientX;
+			drag.lastY = event.clientY;
 			setAnimState('drag');
+			setPos(dragPosition(drag, event.clientX, event.clientY));			setAnimState('drag');
 			setPos(dragPosition(drag, event.clientX, event.clientY));
 			return;
 		}
@@ -752,7 +837,11 @@ function onClick() {
 			setTimeout(function () {
 				suppressClick.current = false;
 			}, 0);
-			var next = dragPosition(drag, event.clientX, event.clientY);
+			var released = releasePhysics(drag, dragPosition(drag, event.clientX, event.clientY));
+			setPos(released);
+			setAnimState('idle');
+			resetTilt();
+			writeJSON(KEY_POS, released);			var next = dragPosition(drag, event.clientX, event.clientY);
 			setPos(next);
 			setAnimState('idle');
 			resetTilt();
@@ -1044,7 +1133,7 @@ function onClick() {
 						key: bubble.id,
 						text: bubble.text,
 						tone: bubble.tone,
-						instant: !options.typewriter || reducedMotion.current,
+						instant: options.typewriter === false || (reducedMotion.current && options.typewriter !== true),
 						speed: options.speed,
 					})
 				: null,
@@ -1138,4 +1227,7 @@ function onClick() {
 			: null,
 		h(DwmFxLayer, null),
 	);
+	releaseTimers.current.push(setTimeout(function () {
+		if (squashTarget && squashTarget.classList) squashTarget.classList.remove('is-squash');
+	}, SQUASH_MS));
 }

@@ -445,6 +445,25 @@ function dwmPickLine(bank, language) {
 	return list[index];
 }
 
+/* Pick one line at random from the union of several banks, so a scene can
+ * draw on every bank that fits it instead of repeating a single bank. */
+function dwmPickLineFrom(banks, language) {
+	var lang = DWM_LINES[language] ? language : 'zh';
+	var pool = [];
+	for (var i = 0; i < banks.length; i++) {
+		var list = DWM_LINES[lang][banks[i]] || DWM_LINES.zh[banks[i]];
+		if (list && list.length) pool = pool.concat(list);
+	}
+	if (pool.length === 0) return '';
+	if (pool.length === 1) return pool[0];
+	var key = lang + ':' + banks.join('+');
+	var last = DWM_LINE_LAST[key];
+	var index = Math.floor(Math.random() * pool.length);
+	if (index === last) index = (index + 1) % pool.length;
+	DWM_LINE_LAST[key] = index;
+	return pool[index];
+}
+
 /* --- keyword reactions ----------------------------------------------------
  * Each entry maps a topic keyword to a pose and a particle kind. Poses stay
  * inside the existing ten-state ANIM table, so no artwork is needed. */
