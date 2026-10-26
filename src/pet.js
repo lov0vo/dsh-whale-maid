@@ -41,10 +41,10 @@ var ANIM = {
 	eat: { sheet: 'eat', frames: 3, fps: 8, playback: 'loop' },
 	play: { sheet: 'play', frames: 3, fps: 4, playback: 'loop' },
 	welcome: { sheet: 'welcome', frames: 2, fps: 3, playback: 'loop' },
-	drag: { sheet: 'drag', frames: 1, fps: 5, playback: 'loop', motion: 'tilt' },
-	think: { sheet: 'think', frames: 1, fps: 2, playback: 'loop', motion: 'float' },
-	work: { sheet: 'work', frames: 1, fps: 2, playback: 'loop', motion: 'float' },
-	sad: { sheet: 'sad', frames: 1, fps: 2, playback: 'loop' },
+	drag: { sheet: 'drag', frames: 3, fps: 5, playback: 'loop', motion: 'tilt' },
+	think: { sheet: 'think', frames: 3, fps: 2, playback: 'loop', motion: 'float' },
+	work: { sheet: 'work', frames: 3, fps: 2, playback: 'loop', motion: 'float' },
+	sad: { sheet: 'sad', frames: 3, fps: 2, playback: 'loop' },
 	sleep: { sheet: 'sleep', frames: 2, fps: 1, playback: 'loop' },
 	wake: { sheet: 'wake', frames: 2, fps: 3, playback: 'once' },
 	walk: { sheet: 'walk', frames: 3, fps: 6, playback: 'pingpong' },
@@ -147,6 +147,7 @@ var DEFAULT_OPTIONS = {
 	walk: true, // wander across the viewport on its own
 	bubbleDuration: BUBBLE_MS,
 	typewriter: true, // reveal bubble text one character at a time
+	city: '北京', // weather fallback city when geolocation is unavailable
 	greetings: null, // override the greeting lines
 };
 
@@ -163,6 +164,8 @@ function normalizeOptions(input) {
 	options.sleep = options.sleep !== false;
 	options.walk = options.walk !== false;
 	options.typewriter = options.typewriter !== false;
+	var city = typeof options.city === 'string' ? options.city.trim() : '';
+	options.city = city === '' ? '北京' : city;
 	if (!Array.isArray(options.greetings) || options.greetings.length === 0) options.greetings = null;
 	return options;
 }
@@ -291,6 +294,11 @@ var useState = React_.useState;
 var useRef = React_.useRef;
 var useEffect = React_.useEffect;
 
+/* Typing cadence, copied verbatim from dsh-whale-musume so both pets read
+ * at the same speed: 64ms per character, 260ms after CJK punctuation,
+ * 90ms after a space, and a 130ms beat every fifth character. */
+var DWM_TYPE_PAUSE = '，。！？～…、；：';
+
 /* --- speech bubble with an optional typewriter reveal ------------------ */
 function Bubble(props) {
 	var text = props.text || '';
@@ -306,26 +314,36 @@ function Bubble(props) {
 				return undefined;
 			}
 			var step = 0;
-			var interval = Math.max(12, Math.round(34 / speed));
-			var timer = setInterval(function () {
-				step += 1;
+			var timer = null;
+			function delayFor(character, index) {
+				if (DWM_TYPE_PAUSE.indexOf(character) !== -1) return 260;
+				if (character === ' ') return 90;
+				if (index % 5 === 0) return 130;
+				return 64;
+			}
+			function tick() {
 				if (step >= text.length) {
-					clearInterval(timer);
+					timer = null;
 					setShown(text.length);
 					return;
 				}
+				var character = text.charAt(step);
+				step += 1;
 				setShown(step);
-			}, interval);
+				timer = setTimeout(tick, Math.round(delayFor(character, step) / speed));
+			}
+			timer = setTimeout(tick, 0);
 			return function () {
-				clearInterval(timer);
+				if (timer !== null) clearTimeout(timer);
 			};
 		},
 		[text, instant, speed],
 	);
 	var typing = shown < text.length;
+	var tone = props.tone ? ' dwm-bubble-' + String(props.tone) : '';
 	return h(
 		'p',
-		{ className: 'dwm-bubble', role: 'status', 'aria-label': text },
+		{ className: 'dwm-bubble' + tone, role: 'status', 'aria-label': text },
 		h('span', { 'aria-hidden': 'true' }, text.slice(0, shown)),
 		typing ? h('span', { className: 'dwm-caret', 'aria-hidden': 'true' }) : null,
 	);
@@ -403,7 +421,7 @@ function WhaleGirl() {
 		}
 		function onSay(event) {
 			var message = event && event.detail && event.detail.text;
-			if (typeof message === 'string' && message !== '') say(message);
+			if (typeof message === 'string' && message !== '') say(message, event.detail.tone);
 		}
 		function onResetPos() {
 			try {
@@ -424,9 +442,9 @@ function WhaleGirl() {
 	}, []);
 
 	/* --- speech bubble ------------------------------------------------- */
-	function say(message) {
+	function say(message, tone) {
 		if (bubbleTimer.current !== undefined) clearTimeout(bubbleTimer.current);
-		setBubble({ id: Date.now(), text: message });
+		setBubble({ id: Date.now(), text: message, tone: tone || '' });
 		bubbleTimer.current = setTimeout(function () {
 			setBubble(null);
 		}, options.bubbleDuration);
@@ -986,6 +1004,7 @@ function WhaleGirl() {
 				? h(Bubble, {
 						key: bubble.id,
 						text: bubble.text,
+						tone: bubble.tone,
 						instant: !options.typewriter || reducedMotion.current,
 						speed: options.speed,
 					})
@@ -1063,7 +1082,6 @@ function WhaleGirl() {
 		}),
 		/* 1.1.0 — companion layers. Both render nothing until they are asked to,
 		 * so with every companion switch off the DOM is identical to 1.0.0. */
-		h(DwmChip, null),
 		h(DwmFxLayer, null),
 	);
 }

@@ -4,56 +4,18 @@
  * Two tiny presentational components, mounted as extra children of the existing
  * `.dwm-root` node so they inherit its position and never escape the overlay:
  *
- *   DwmChip      a short-lived pill that reports a reaction or a work phase.
- *                It deliberately does NOT reuse the speech bubble: the bubble is
- *                the pet's voice, the chip is a status line, and they must be
- *                able to coexist without fighting over one slot.
- *
  *   DwmFxLayer   the particle layer (hearts / stars / sparkles / notes).
+ *
+ * 1.3.0 removed the separate status chip: every line the pet says now goes
+ * through the single speech bubble, so there is never more than one bubble
+ * on screen.
  *
  * Both subscribe to window events and keep their own state, so the pet component
  * does not have to re-render when a particle spawns.
  */
 
-var DWM_FX_GLYPH = { heart: '♥', star: '★', sparkle: '✦', note: '♪' };
+var DWM_FX_GLYPH = { heart: '♥', star: '★', sparkle: '✦', note: '♪', rain: '☔', snow: '❄' };
 var DWM_FX_LIFETIME = 1500;
-
-function DwmChip() {
-	var React_ = React;
-	var useState = React_.useState;
-	var useEffect = React_.useEffect;
-
-	var chipState = useState(null);
-	var chip = chipState[0];
-	var setChip = chipState[1];
-
-	useEffect(function () {
-		var timer = undefined;
-		function onChip(event) {
-			var detail = event && event.detail ? event.detail : {};
-			if (!detail.text) return;
-			if (timer !== undefined) clearTimeout(timer);
-			setChip({ id: dwmNow() + Math.random(), text: String(detail.text), tone: detail.tone || 'info' });
-			timer = setTimeout(function () {
-				timer = undefined;
-				setChip(null);
-			}, Math.max(600, Number(detail.ms) || 2200));
-		}
-		window.addEventListener(DWM_EVENT_CHIP, onChip);
-		return function () {
-			window.removeEventListener(DWM_EVENT_CHIP, onChip);
-			if (timer !== undefined) clearTimeout(timer);
-		};
-	}, []);
-
-	if (!chip) return null;
-	if (!dwmReadCompanion().chip) return null;
-	return h(
-		'span',
-		{ key: chip.id, className: 'dwm-chip dwm-chip-' + chip.tone, role: 'status', 'aria-live': 'polite' },
-		chip.text,
-	);
-}
 
 function DwmFxLayer() {
 	var React_ = React;

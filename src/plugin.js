@@ -1,15 +1,15 @@
 /*
- * dsh-whale-maid — client registration.
+ * dsh-whale-maid —client registration.
  *
  * Contributions, all through slots:
  *   1. the sprite stylesheet, injected once and removed on unload;
- *   2. the pet itself, registered into `shell.overlay` — the frame-wide overlay
+ *   2. the pet itself, registered into `shell.overlay` —the frame-wide overlay
  *      slot, which is the documented seat for an overlay whose placement is
  *      known. The pet is `position: fixed` and wanders the whole viewport, so it
  *      must outlive any single panel;
  *   3. a settings section, so the parameters the extraction exposed are
  *      adjustable in-product;
- *   4. (1.1.0) a second settings section for the companion features — kept
+ *   4. (1.1.0) a second settings section for the companion features —kept
  *      separate so the original section keeps its exact behaviour and layout;
  *   5. (1.1.0) two long-lived observers: the work-status link and the proactive
  *      care loop. Both are registered with `ctx.effect`, so unloading the plugin
@@ -42,8 +42,8 @@ function createPublicApi() {
 			return next;
 		},
 		/** Show a speech bubble with arbitrary text. */
-		say: function (message) {
-			window.dispatchEvent(new CustomEvent(SAY_EVENT, { detail: { text: String(message) } }));
+		say: function (message, tone) {
+			window.dispatchEvent(new CustomEvent(SAY_EVENT, { detail: { text: String(message), tone: tone || '' } }));
 		},
 		/** Move the pet back to its default bottom-right corner. */
 		resetPosition: function () {
@@ -56,7 +56,7 @@ function createPublicApi() {
 		},
 		/** Forget everything this plugin stored (position, feeds, options, greeting). */
 		forget: function () {
-			[KEY_POS, KEY_FEEDS, KEY_GREETED, KEY_OPTIONS, KEY_GROWTH, KEY_COMPANION].forEach(function (key) {
+			[KEY_POS, KEY_FEEDS, KEY_GREETED, KEY_OPTIONS, KEY_GROWTH, KEY_COMPANION, KEY_WEATHER].forEach(function (key) {
 				try {
 					window.localStorage.removeItem(key);
 				} catch (error) {
@@ -71,13 +71,13 @@ function createPublicApi() {
 
 		/* --- 1.1.0 companion API (additive) --------------------------------- */
 
-		/** Companion switches (work link, care, chip, zones, chatter …). */
+		/** Companion switches (work link, care, chip, zones, chatter —. */
 		companion: dwmReadCompanion,
 		/** Merge a partial companion object and apply it live. */
 		setCompanion: function (patch) {
 			return dwmWriteCompanion(patch);
 		},
-		/** Read-only snapshot of the growth state (level, mood, quests, achievements …). */
+		/** Read-only snapshot of the growth state (level, mood, quests, achievements —. */
 		growth: function () {
 			return dwmGrowthSnapshot();
 		},
@@ -146,12 +146,31 @@ function createPublicApi() {
 		},
 		/** Show a status chip without going through the pet. */
 		chip: function (text, tone, ms) {
-			dwmChip(String(text || ''), tone, ms);
+			dwmSpeak(String(text || ''), tone);
 		},
 		/** Spawn particles: kind = heart | star | sparkle | note. */
 		fx: function (kind, count) {
 			dwmFx(kind, count);
 		},
+		/* --- 1.3.0 weather API (additive) ---------------------------------- */
+
+		/** The cached weather record, or null before the first successful fetch. */
+		weather: function () {
+			return dwmWeatherRead();
+		},
+		/** Fetch the weather again right now (same path as the panel button). */
+		refreshWeather: function () {
+			return dwmWeatherRefresh('api');
+		},
+		/** Change the fallback city used when geolocation is unavailable. */
+		setCity: function (city) {
+			var next = normalizeOptions(Object.assign({}, readOptions(), { city: String(city || '') }));
+			writeJSON(KEY_OPTIONS, next);
+			window.dispatchEvent(new CustomEvent(OPTIONS_EVENT));
+			dwmWeatherRefresh('api-city');
+			return next.city;
+		},
+
 		/** Force a pose from the ten-state table; hold=true keeps it. */
 		pose: function (state, ms, hold) {
 			dwmForceState(state, ms, hold);
@@ -180,7 +199,7 @@ function apply(ctx) {
 		);
 	});
 
-	/* 1.1.0 — companion settings sit right after the original section. */
+	/* 1.1.0 —companion settings sit right after the original section. */
 	ctx.slots.inject('settings.section', function () {
 		return ctx.slots.register(
 			{
@@ -195,9 +214,12 @@ function apply(ctx) {
 		);
 	});
 
-	/* 1.1.0 — the two observers. Both return their own cleanup function. */
+	/* 1.1.0 —the two observers. Both return their own cleanup function. */
 	ctx.effect(dwmStartSignals, 'dsh-whale-maid: work-status link');
 	ctx.effect(dwmStartCare, 'dsh-whale-maid: companion care loop');
+
+	/* 1.3.0 — the weather companion refreshes itself and cleans up on unload. */
+	ctx.effect(dwmWeatherStart, 'dsh-whale-maid: weather companion');
 
 	ctx.effect(function () {
 		window.dshWhaleMaid = createPublicApi();

@@ -143,6 +143,12 @@ function createHarness() {
 		}
 	};
 
+	/* 1.3.0: the weather module fetches on startup. Tests drive it through this
+   switch so nothing ever leaves the machine. */
+	let currentFetch = function () {
+		return Promise.reject(new Error('network disabled in tests'));
+	};
+
 	let descriptor = null;
 	windowStub.__ModuleLoader__ = {
 		load(next) {
@@ -160,6 +166,9 @@ function createHarness() {
 		MutationObserver: class {
 			observe() {}
 			disconnect() {}
+		},
+		fetch: function () {
+			return currentFetch.apply(null, arguments);
 		},
 		requestAnimationFrame() {
 			return 0;
@@ -210,6 +219,9 @@ function createHarness() {
 		styleTags,
 		cleanups,
 		registrations,
+		setFetch(fn) {
+			currentFetch = fn;
+		},
 		dispose() {
 			for (const entry of cleanups) {
 				if (typeof entry.disposer === 'function') {
@@ -262,6 +274,7 @@ test('keeps the 1.0.0 public API and its defaults', () => {
 	const options = api.getOptions();
 	assert.deepEqual(Object.keys(options).sort(), [
 		'bubbleDuration',
+		'city',
 		'greeting',
 		'greetings',
 		'language',
@@ -534,4 +547,85 @@ test('every registered effect exposes a cleanup that does not throw', () => {
 		assert.equal(typeof entry.disposer, 'function', entry.label + ' must return a disposer');
 		assert.doesNotThrow(() => entry.disposer());
 	}
+});
+
+
+/* --- 1.3.0 weather companion --------------------------------------------- */
+
+const WEATHER_KEY = 'dsh-whale-maid:weather';
+
+function jsonResponse(payload) {
+	return Promise.resolve({
+		ok: true,
+		status: 200,
+		json() {
+			return Promise.resolve(payload);
+		}
+	});
+}
+
+function geocodeAndForecast(code, temperature, isDay) {
+	return (url) => {
+		if (url.indexOf('geocoding-api') !== -1) {
+			return jsonResponse({ results: [{ latitude: 39.9, longitude: 116.4, name: 'Beijing' }] });
+		}
+		return jsonResponse({ current: { temperature_2m: temperature, weather_code: code, is_day: isDay ? 1 : 0 } });
+	};
+}
+
+test('the weather record is fetched, cached and exposed', async () => {
+	harness.setFetch(geocodeAndForecast(61, 12.4, true));
+	const record = await api.refreshWeather();
+	assert.ok(record, 'a refresh must resolve with a record');
+	assert.equal(record.bucket, 'rain');
+	assert.equal(record.city, 'Beijing');
+	assert.equal(Math.round(record.tempC), 12);
+	assert.equal(record.isDay, true);
+	assert.equal(typeof record.at, 'number');
+
+	const cached = api.weather();
+	assert.equal(cached.bucket, 'rain');
+	const stored = JSON.parse(harness.store.get(WEATHER_KEY));
+	assert.equal(stored.bucket, 'rain');
+	assert.equal(stored.code, 61);
+});
+
+test('an unknown weather code degrades to the cloudy bucket', async () => {
+	harness.setFetch(geocodeAndForecast(1234, 5, false));
+	const record = await api.refreshWeather();
+	assert.equal(record.bucket, 'cloudy');
+});
+
+test('a failed fetch keeps the previous record (offline degradation)', async () => {
+	const before = api.weather();
+	harness.setFetch(() => Promise.reject(new Error('offline')));
+	const result = await api.refreshWeather();
+	assert.equal(result, null, 'a failed refresh resolves with null');
+	assert.equal(api.weather().bucket, before.bucket, 'the cached record survives');
+});
+
+test('the fallback city is configurable and defaults to Beijing', () => {
+	assert.equal(api.getOptions().city, '北京');
+	assert.equal(api.setCity('上海'), '上海');
+	assert.equal(api.getOptions().city, '上海');
+	assert.equal(api.setCity(''), '北京', 'an empty city falls back to the default');
+	assert.equal(api.getOptions().city, '北京');
+});
+
+test('the weather cache is dropped by forget()', async () => {
+	harness.setFetch(geocodeAndForecast(0, 20, true));
+	await api.refreshWeather();
+	assert.ok(harness.store.has(WEATHER_KEY));
+	api.forget();
+	assert.equal(harness.store.has(WEATHER_KEY), false);
+});
+
+test('weather lines exist in Chinese for every bucket', () => {
+	const banks = ['weatherClear', 'weatherCloudy', 'weatherRain', 'weatherSnow', 'weatherThunder', 'weatherFog', 'weatherRainyNight'];
+	for (const bank of banks) {
+		assert.ok(bundle.includes(bank), 'missing bank ' + bank);
+	}
+	// 7 banks x 9 lines: count the quoted Chinese lines that follow each bank name
+	const matches = bundle.match(/weather[A-Z][A-Za-z]+: \[/g) || [];
+	assert.ok(matches.length >= 7, 'expected seven weather banks, saw ' + matches.length);
 });

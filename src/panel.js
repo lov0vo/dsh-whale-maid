@@ -36,10 +36,15 @@ function CompanionPanel() {
 	var companion = companionState[0];
 	var setCompanion = companionState[1];
 
+	var weatherState = useState(dwmWeatherRead);
+	var weather = weatherState[0];
+	var setWeather = weatherState[1];
+
 	useEffect(function () {
 		function refresh() {
 			setSnapshot(dwmGrowthSnapshot());
 			setCompanion(dwmReadCompanion());
+			setWeather(dwmWeatherRead());
 		}
 		window.addEventListener(DWM_EVENT_GROWTH, refresh);
 		window.addEventListener(DWM_EVENT_COMPANION, refresh);
@@ -185,6 +190,53 @@ function CompanionPanel() {
 		);
 	}
 
+	function commitCity(raw) {
+		var next = String(raw === undefined || raw === null ? '' : raw).trim();
+		if (next === '') next = DWM_WEATHER_DEFAULT_CITY;
+		if (next === readOptions().city) return;
+		var merged = normalizeOptions(Object.assign({}, readOptions(), { city: next }));
+		writeJSON(KEY_OPTIONS, merged);
+		window.dispatchEvent(new CustomEvent(OPTIONS_EVENT));
+		dwmWeatherRefresh('city');
+	}
+
+	function weatherBlock() {
+		return h(
+			'div',
+			{ className: 'dwm-panel-weather' },
+			h('div', { className: 'dwm-panel-weather-line' }, dwmWeatherDescribe(weather, language)),
+			h(
+				'div',
+				{ className: 'dwm-panel-weather-row' },
+				h('input', {
+					className: 'dwm-panel-weather-input',
+					type: 'text',
+					defaultValue: readOptions().city,
+					placeholder: label('城市，例如 北京', 'City, e.g. Beijing'),
+					'aria-label': label('城市', 'City'),
+					onKeyDown: function (event) {
+						if (event.key !== 'Enter') return;
+						commitCity(event.currentTarget.value);
+					},
+					onBlur: function (event) {
+						commitCity(event.currentTarget.value);
+					}
+				}),
+				h(
+					'button',
+					{
+						type: 'button',
+						className: 'dwm-panel-weather-button',
+						onClick: function () {
+							dwmWeatherRefresh('manual');
+						}
+					},
+					label('刷新天气', 'Refresh'),
+				)
+			)
+		);
+	}
+
 	function check(key, zh, en) {
 		return h(
 			'label',
@@ -231,6 +283,9 @@ function CompanionPanel() {
 		statRow('好感', 'Affinity', Math.round(snapshot.affinity) + ' / 10000', bar(snapshot.affinity, 10000, 'affinity')),
 		statRow('陪伴时长', 'Time together', dwmFormatDuration(snapshot.companionshipMs)),
 		statRow('连续签到', 'Sign-in streak', snapshot.signinStreak + label(' 天', ' d')),
+
+		h('h4', { className: 'dwm-panel-title' }, label('天气陪伴', 'Weather')),
+		weatherBlock(),
 
 		h('h4', { className: 'dwm-panel-title' }, label('每日任务', 'Daily quests')),
 		questList(),

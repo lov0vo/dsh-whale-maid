@@ -168,11 +168,11 @@ function dwmShuffle(list, rng) {
 }
 
 /** Speak through the pet's bubble, tolerating "not mounted yet". */
-function dwmSpeak(message) {
+function dwmSpeak(message, tone) {
 	if (typeof message !== 'string' || message === '') return false;
 	DWM_RUNTIME.lastSayAt = dwmNow();
 	if (DWM_RUNTIME.api && typeof DWM_RUNTIME.api.say === 'function') {
-		DWM_RUNTIME.api.say(message);
+		DWM_RUNTIME.api.say(message, tone);
 		return true;
 	}
 	if (typeof window !== 'undefined' && typeof SAY_EVENT === 'string') {
@@ -182,12 +182,15 @@ function dwmSpeak(message) {
 	return false;
 }
 
-/** Show the small status chip (separate from the speech bubble on purpose). */
-function dwmChip(text, tone, ms) {
+/**
+ * 1.3.0: the status chip was removed. Everything the pet wants to show is now
+ * spoken through the one speech bubble, so the old call sites keep working
+ * but nothing extra appears on screen.
+ */
+function dwmChip(text, tone) {
 	if (!text) return;
 	DWM_RUNTIME.lastChipAt = dwmNow();
-	if (typeof window === 'undefined') return;
-	window.dispatchEvent(new CustomEvent(DWM_EVENT_CHIP, { detail: { text: text, tone: tone || 'info', ms: ms || 2200 } }));
+	dwmSpeak(text, tone || 'info');
 }
 
 /** Spawn particles in the FX layer: kind = heart | star | sparkle | note. */

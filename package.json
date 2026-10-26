@@ -1,8 +1,8 @@
 {
   "name": "dsh-whale-maid",
-  "version": "1.2.2",
+  "version": "1.3.0",
   "private": true,
-  "description": "The 1024Store whale girl as a DSH desktop pet: the full twelve-state sprite animation (blink, joy, eat, play, welcome, drag-tilt, think, work, sad, sleep, wake, wander) ported from the plugin-market site, with drag-to-move, click-to-greet, feed and play actions, plus a settings section — and since 1.1.0 a companion layer: work-status poses, mood/affection/satiety, daily quests, check-in, 41 achievements, tap zones and proactive care.",
+  "description": "Whale girl desktop pet for the DeepSeek Harness: twelve sprite animations, work-status link, growth, achievements, weather companion.",
   "license": "MIT",
   "author": "lov0vo",
   "homepage": "https://github.com/lov0vo/dsh-whale-maid#readme",
@@ -39,7 +39,8 @@
     "sprite",
     "companion",
     "tamagotchi",
-    "achievements"
+    "achievements",
+    "weather"
   ],
   "scripts": {
     "build": "node build.mjs",
