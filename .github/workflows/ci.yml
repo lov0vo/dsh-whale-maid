@@ -20,6 +20,11 @@ jobs:
       - name: Rebuild the client bundle
         run: node build.mjs
 
+      - name: Asset QC
+        # Runs after the rebuild so the assets/ copy it compares against is the
+        # fresh one. Zero dependencies: the PNGs are decoded with node:zlib.
+        run: node tools/asset-qc.mjs
+
       - name: The committed bundle must match the sources
         run: git diff --exit-code -- client.js
 

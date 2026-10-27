@@ -1,6 +1,6 @@
 {
   "name": "dsh-whale-maid",
-  "version": "2.2.0",
+  "version": "2.3.0",
   "private": true,
   "description": "Whale girl desktop pet for the DeepSeek Harness: twelve sprite animations, work-status link, growth, achievements, weather companion.",
   "license": "MIT",
@@ -46,6 +46,7 @@
   "scripts": {
     "build": "node build.mjs",
     "test": "node --test test/companion.test.mjs",
+    "qc": "node tools/asset-qc.mjs",
     "push": "node scripts/push.mjs"
   },
   "dsh": {

@@ -280,6 +280,7 @@ test('keeps the 1.0.0 public API and its defaults', () => {
 		'greetings',
 		'hidden',
 		'language',
+		'mode',
 		'size',
 		'sleep',
 		'speed',
@@ -290,7 +291,46 @@ test('keeps the 1.0.0 public API and its defaults', () => {
 	assert.equal(options.speed, 1);
 	assert.equal(options.bubbleDuration, 4500);
 	assert.equal(options.language, 'auto');
+	assert.equal(options.mode, 'float');
 	assert.equal(options.typewriter, true);
+});
+
+test('the display mode is a validated option', () => {
+	assert.equal(api.getOptions().mode, 'float');
+	api.setOptions({ mode: 'side' });
+	assert.equal(api.getOptions().mode, 'side');
+	/* Anything unknown falls back to floating rather than leaving the pet
+	 * unmounted somewhere off screen. */
+	api.setOptions({ mode: 'nowhere' });
+	assert.equal(api.getOptions().mode, 'float');
+});
+
+test('auto resolves against the composer, and a missing anchor floats', () => {
+	const dock = api.modes();
+	assert.deepEqual(dock.modes, ['float', 'bar', 'side', 'mini', 'auto']);
+	assert.equal(dock.resolve('auto', true), 'bar');
+	assert.equal(dock.resolve('auto', false), 'float');
+	assert.equal(dock.resolve('side', false), 'side');
+	assert.equal(dock.docked('bar'), true);
+	assert.equal(dock.docked('mini'), false);
+	/* An explicit size always wins over the mode's own default. */
+	assert.equal(dock.size('mini', { size: null }), 56);
+	assert.equal(dock.size('mini', { size: 140 }), 140);
+	assert.equal(dock.size('float', { size: null }), null);
+});
+
+test('dock geometry keeps the pet on screen and above the composer', () => {
+	const dock = api.modes();
+	const viewport = { width: 1280, height: 800 };
+	const bar = dock.geometry('bar', { left: 200, top: 600, right: 1080, height: 120 }, viewport, 96);
+	assert.equal(bar.top, 512, 'feet sit just above the composer top edge');
+	assert.equal(bar.left, 976, 'right-aligned inside the composer');
+	/* A composer scrolled half off the bottom must not drag the pet with it. */
+	const clamped = dock.geometry('bar', { left: 200, top: 20, right: 1080, height: 120 }, viewport, 96);
+	assert.ok(clamped.top >= 8, 'never above the viewport');
+	const side = dock.geometry('side', { left: 0, top: 100, right: 900, height: 600 }, viewport, 72);
+	assert.ok(side.left > 800 && side.left <= viewport.width, 'hangs off the chat column edge');
+	assert.equal(dock.geometry('float', { left: 0, top: 0, right: 10, height: 10 }, viewport, 96), null);
 });
 
 test('the typewriter reveal can be switched off', () => {

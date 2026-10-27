@@ -432,3 +432,93 @@ function dwmEmitGrowth() {
 	if (typeof window === 'undefined') return;
 	window.dispatchEvent(new CustomEvent(DWM_EVENT_GROWTH));
 }
+
+/* --- display modes (2.3.0) ---------------------------------------------- */
+
+/**
+ * Five ways to place her, mirroring the reference plugin's `MODES` but with a
+ * different trade-off: `auto` never silently disappears. When a dock anchor is
+ * missing the pet falls back to the floating corner instead of going
+ * `display:none`, which is what makes the reference plugin feel like it
+ * vanished whenever the composer is not mounted.
+ */
+var DWM_MODES = ['float', 'bar', 'side', 'mini', 'auto'];
+/** Pixel size per mode; `null` keeps the responsive default (110 / 72 narrow). */
+var DWM_MODE_SIZES = { float: null, bar: 96, side: 72, mini: 56, auto: null };
+/** Host DOM anchors, most specific first. Verified against DSH 0.2.1-rc.3. */
+var DWM_DOCK_ANCHORS = {
+	bar: ['[data-composer-card]', '[data-slot="conversation.composer.bar"]'],
+	side: ['[data-slot="conversation.chat.flow"]', '[data-slot="conversation.chat.node"]'],
+};
+
+function dwmNormalizeMode(mode) {
+	return DWM_MODES.indexOf(mode) === -1 ? 'float' : mode;
+}
+
+/**
+ * `auto` means "dock to the composer while a composer exists, float otherwise".
+ * It is resolved on every layout tick, so opening the settings page (no
+ * composer) puts her back in the corner instead of leaving a gap.
+ */
+function dwmResolveMode(mode, hasComposer) {
+	var normalized = dwmNormalizeMode(mode);
+	if (normalized !== 'auto') return normalized;
+	return hasComposer ? 'bar' : 'float';
+}
+
+/** Modes that stay where they are put; dragging and wandering are off there. */
+function dwmModeIsDocked(mode) {
+	return mode === 'bar' || mode === 'side';
+}
+
+/** Effective pixel size for a mode; an explicit `options.size` always wins. */
+function dwmModeSize(mode, options) {
+	var explicit = options && typeof options.size === 'number' ? options.size : null;
+	if (explicit !== null) return explicit;
+	var size = DWM_MODE_SIZES[dwmNormalizeMode(mode)];
+	return typeof size === 'number' ? size : null;
+}
+
+/**
+ * Where the pet sits for a docked mode.
+ *
+ * `rect` is the anchor's `getBoundingClientRect()` and `viewport` is
+ * `{ width, height }`. Returns `{ left, top }` in viewport pixels, clamped so a
+ * docked pet can never hang off screen — a dock anchor that scrolls away must
+ * not take the pet with it.
+ */
+function dwmDockGeometry(kind, rect, viewport, size) {
+	if (!rect || !viewport || !(size > 0)) return null;
+	var margin = 8;
+	var left;
+	var top;
+	if (kind === 'bar') {
+		/* feet just above the composer's top edge, right-aligned inside it */
+		left = rect.right - size - margin;
+		top = rect.top - size + margin;
+	} else if (kind === 'side') {
+		/* hanging off the right edge of the chat column, a little above centre */
+		left = rect.right - size * 0.55;
+		top = rect.top + rect.height * 0.38;
+	} else {
+		return null;
+	}
+	var maxLeft = Math.max(margin, viewport.width - size - margin);
+	var maxTop = Math.max(margin, viewport.height - size - margin);
+	return {
+		left: Math.round(dwmClamp(left, margin, maxLeft)),
+		top: Math.round(dwmClamp(top, margin, maxTop)),
+	};
+}
+
+/** First selector in the mode's list that resolves to an element, or null. */
+function dwmFindDockAnchor(kind) {
+	if (typeof document === 'undefined') return null;
+	var selectors = DWM_DOCK_ANCHORS[kind];
+	if (!selectors) return null;
+	for (var i = 0; i < selectors.length; i++) {
+		var element = document.querySelector(selectors[i]);
+		if (element) return element;
+	}
+	return null;
+}

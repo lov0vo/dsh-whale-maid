@@ -55,6 +55,18 @@ function createPublicApi() {
 			return Number.isFinite(value) && value > 0 ? Math.floor(value) : 0;
 		},
 		/** Forget everything this plugin stored (position, feeds, options, greeting). */
+		/* Read-only view of the display-mode plumbing, so the behaviour can be
+		 * asserted in the DOM-less test harness instead of only on screen. */
+		modes: function () {
+			return {
+				modes: DWM_MODES.slice(),
+				anchors: Object.assign({}, DWM_DOCK_ANCHORS),
+				resolve: dwmResolveMode,
+				docked: dwmModeIsDocked,
+				size: dwmModeSize,
+				geometry: dwmDockGeometry,
+			};
+		},
 		forget: function () {
 			[KEY_POS, KEY_FEEDS, KEY_GREETED, KEY_OPTIONS, KEY_GROWTH, KEY_COMPANION, KEY_WEATHER].forEach(function (key) {
 				try {

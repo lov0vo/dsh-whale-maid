@@ -170,6 +170,7 @@ var DEFAULT_OPTIONS = {
 	bubbleDuration: BUBBLE_MS,
 	typewriter: true, // reveal bubble text one character at a time
 	city: '北京', // weather fallback city when geolocation is unavailable
+	mode: 'float', // 'float' | 'bar' | 'side' | 'mini' | 'auto' (2.3.0)
 	hidden: false, // hide the pet, leave a small 🐋 button to bring her back
 	greetings: null, // override the greeting lines
 };
@@ -190,6 +191,7 @@ function normalizeOptions(input) {
 	options.dragPhysics = options.dragPhysics !== false;
 
 	options.hidden = options.hidden === true;
+	options.mode = dwmNormalizeMode(options.mode);
 	var city = typeof options.city === 'string' ? options.city.trim() : '';
 	options.city = city === '' ? '北京' : city;
 	if (!Array.isArray(options.greetings) || options.greetings.length === 0) options.greetings = null;
@@ -388,6 +390,17 @@ function WhaleGirl() {
 	});
 	var pos = posState[0];
 	var setPos = posState[1];
+	/* Docked geometry in viewport pixels, recomputed by the layout effect below.
+	 * `resolvedMode` is state (not a ref) because the render tree advertises it
+	 * via `data-dwm-mode`, and `modeRef` exists so pointer handlers — which are
+	 * re-created on every render but run between renders — read the same value. */
+	var dockState = useState(null);
+	var dock = dockState[0];
+	var setDock = dockState[1];
+	var modeState = useState('float');
+	var resolvedMode = modeState[0];
+	var setResolvedMode = modeState[1];
+	var modeRef = useRef('float');
 
 	var feedsState = useState(function () {
 		var stored = readRaw(KEY_FEEDS);
@@ -571,6 +584,8 @@ function WhaleGirl() {
 		if (!root) return;
 		if (dragRef.current !== null) return;
 		if (walkRef.current !== null) return;
+		/* A docked pet is anchored to a host element; wandering would fight it. */
+		if (dwmModeIsDocked(modeRef.current)) return;
 		var rect = root.getBoundingClientRect();
 		var width = rect.width;
 		var left = rect.left;
@@ -643,8 +658,18 @@ function WhaleGirl() {
 
 	/* --- click: greet, toggle the action menu, wake up ------------------- */
 	/* Alt + arrow keys move her; Shift makes it a bigger step. */
-function onBodyKeyDown(event) {
-		if (!event || !event.altKey) return;
+	function onBodyKeyDown(event) {
+		if (!event) return;
+		/* Digits 1-9 pat a body part. The zones are pointer-only otherwise, which
+		 * locks keyboard and screen-reader users out of nine sets of lines. */
+		if (!event.altKey && /^[1-9]$/.test(event.key || '')) {
+			var zone = DWM_ZONE_ORDER[Number(event.key) - 1];
+			if (!zone) return;
+			event.preventDefault();
+			if (typeof dwmZoneReact === 'function') dwmZoneReact(zone);
+			return;
+		}
+		if (!event.altKey) return;
 		var step = event.shiftKey ? 32 : 8;
 		var dx = event.key === 'ArrowLeft' ? -step : event.key === 'ArrowRight' ? step : 0;
 		var dy = event.key === 'ArrowUp' ? -step : event.key === 'ArrowDown' ? step : 0;
@@ -819,6 +844,9 @@ function onRecall() {
 		/* One drag at a time: a second pointer (second finger, a synthetic
 		 * pointerdown) must never replace the active drag or steal its capture. */
 		if (dragRef.current !== null) return;
+		/* Docked modes re-anchor on the next layout tick, so a drag would snap
+		 * back mid-gesture. Clicking still works: only the drag is refused. */
+		if (dwmModeIsDocked(modeRef.current)) return;
 		clearClickGuard();
 		restoreSprite();
 		var rect = root.getBoundingClientRect();
@@ -1162,6 +1190,56 @@ function onRecall() {
 		};
 	}, []);
 
+	/* --- dock to the host (bar / side / auto) ---------------------------- */
+	useEffect(
+		function () {
+			var timer = null;
+
+			function measure() {
+				var requested = dwmNormalizeMode(options.mode);
+				var anchor = requested === 'float' || requested === 'mini' ? null : dwmFindDockAnchor('bar');
+				var mode = dwmResolveMode(requested, anchor !== null);
+				if (modeRef.current !== mode) {
+					modeRef.current = mode;
+					setResolvedMode(mode);
+				}
+				if (!dwmModeIsDocked(mode)) {
+					setDock(null);
+					return;
+				}
+				var target = dwmFindDockAnchor(mode);
+				if (!target) {
+					/* Anchor vanished (settings page, full-screen view). Fall back to
+					 * the corner instead of disappearing — the reference plugin hides
+					 * the pet here, which reads as a bug. */
+					modeRef.current = 'float';
+					setResolvedMode('float');
+					setDock(null);
+					return;
+				}
+				var size = dwmModeSize(mode, options) || 110;
+				var geometry = dwmDockGeometry(
+					mode,
+					target.getBoundingClientRect(),
+					{ width: window.innerWidth, height: window.innerHeight },
+					size,
+				);
+				setDock(geometry);
+			}
+
+			measure();
+			timer = setInterval(measure, 800);
+			window.addEventListener('resize', measure);
+			window.addEventListener('scroll', measure, true);
+			return function () {
+				if (timer !== null) clearInterval(timer);
+				window.removeEventListener('resize', measure);
+				window.removeEventListener('scroll', measure, true);
+			};
+		},
+		[options.mode, options.size],
+	);
+
 	/* --- close the menu on outside click / Escape ------------------------ */
 	useEffect(
 		function () {
@@ -1183,11 +1261,17 @@ function onRecall() {
 	);
 
 	/* --- position ------------------------------------------------------- */
-	var style = pos ? { left: pos.x, top: pos.y } : { right: 16, bottom: 16 };
+	var docked = dock !== null && dwmModeIsDocked(resolvedMode);
+	var style = docked
+		? { left: dock.left, top: dock.top }
+		: pos
+			? { left: pos.x, top: pos.y }
+			: { right: 16, bottom: 16 };
 	/* Inline, because the overlay layer's `.overlayLayer > *` rule sets
 	   `pointer-events:auto` on every direct child and inline style outranks it. */
 	style.pointerEvents = 'none';
-	if (options.size !== null) style['--dwm-pet-size'] = options.size + 'px';
+	var effectiveSize = dwmModeSize(resolvedMode, options);
+	if (effectiveSize !== null) style['--dwm-pet-size'] = effectiveSize + 'px';
 
 	return h(
 		'div',
@@ -1197,6 +1281,8 @@ function onRecall() {
 			style: style,
 			'data-dwm-pet-size': options.size !== null ? String(options.size) : undefined,
 			'data-dwm-lang': language,
+			'data-dwm-mode': resolvedMode,
+			'data-dwm-dock': docked ? '1' : undefined,
 			'data-dwm-work': workGlow ? '1' : undefined,
 		},
 		h(

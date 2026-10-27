@@ -1,0 +1,4 @@
+# scratch space for gen.py: raw renders, keyed cells, composed sheets
+.work/
+
+__pycache__/

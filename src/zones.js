@@ -202,6 +202,9 @@ var DWM_ZONE_BANK = {
 	feet: ['patFeet', 'patBelly'],
 	tail: ['patTailPart', 'patTail'],
 };
+/** Keyboard order for digits 1-9: the nine distinct body parts. */
+var DWM_ZONE_ORDER = ['horn', 'ear', 'face', 'head', 'waist', 'hand', 'belly', 'tail', 'feet'];
+
 var DWM_ZONE_FX = {
 	head: 'heart', belly: 'sparkle', tail: 'note',
 	horn: 'sparkle', ear: 'heart', hand: 'heart',

@@ -107,6 +107,45 @@ function SettingsSection(props) {
 		);
 	}
 
+	/* The five display modes (2.3.0). A radio group rather than a <select> so the
+	 * current one is visible without opening anything. */
+	var MODE_CHOICES = [
+		['float', '悬浮', 'Floating'],
+		['bar', '底栏', 'Composer'],
+		['side', '侧边', 'Sidebar'],
+		['mini', '迷你', 'Mini'],
+		['auto', '自动', 'Auto'],
+	];
+
+	function modeRow() {
+		var groupLabel = dwmT('settings.mode', '显示形态', 'Display mode');
+		return h(
+			'div',
+			{ className: 'dwm-settings-row dwm-settings-modes' },
+			h('span', { className: 'dwm-settings-label' }, groupLabel),
+			h(
+				'div',
+				{ className: 'dwm-settings-mode-group', role: 'group', 'aria-label': groupLabel },
+				MODE_CHOICES.map(function (choice) {
+					var active = options.mode === choice[0];
+					return h(
+						'button',
+						{
+							key: choice[0],
+							type: 'button',
+							className: active ? 'dwm-mode-button is-active' : 'dwm-mode-button',
+							'aria-pressed': active ? 'true' : 'false',
+							onClick: function () {
+								commit({ mode: choice[0] });
+							},
+						},
+						dwmT('settings.mode.' + choice[0], choice[1], choice[2]),
+					);
+				}),
+			),
+		);
+	}
+
 	function rangeRow(key, zhTitle, enTitle, min, max, step, digits, format) {
 		var value = options[key];
 		var title = dwmT('settings.' + key, zhTitle, enTitle);
@@ -164,6 +203,7 @@ function SettingsSection(props) {
 				'The whale girl is ported from the 1024Store plugin-market character. Drag to move, click to greet and open Feed / Play; left alone she thinks, wanders and falls asleep.',
 			),
 		),
+		modeRow(),
 		sizeRow(),
 		rangeRow('speed', '动画速度', 'Animation speed', 0.2, 3, 0.1, 1, function (value) {
 			return formatNumber(value, 1) + '×';

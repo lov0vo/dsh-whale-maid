@@ -1,0 +1,16 @@
+{
+  "reference": "src/sprites/idle.png",
+  "reference_frame": 0,
+  "jobs": [
+    {
+      "sheet": "poses/waiting",
+      "frame": 1,
+      "pose": "she shifts her weight onto one leg, both hands still clasped behind her back, head tilted up a little more, tail lifted and curling to her right."
+    },
+    {
+      "sheet": "poses/waiting",
+      "frame": 2,
+      "pose": "she leans forward a touch further, eyes bright and round, one foot up on its toe, the tail flicked up behind her."
+    }
+  ]
+}

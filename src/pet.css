@@ -541,3 +541,65 @@
 @media (prefers-reduced-motion: reduce) {
 	[data-dwm-portrait] { animation: none !important; background-position: 0% 0 !important; }
 }
+
+/* --- display modes (2.3.0) ---------------------------------------------- */
+/* Docked modes are anchored to a host element, so the grab cursor would lie
+   about what the pet does there: clicking still works, dragging does not. */
+.dwm-root[data-dwm-dock='1'] .dwm {
+	cursor: default;
+}
+
+.dwm-root[data-dwm-mode='mini'] .dwm-bubble {
+	font-size: 12px;
+	padding: 6px 10px;
+}
+
+.dwm-root[data-dwm-mode='mini'] .dwm-menu {
+	gap: 4px;
+}
+
+.dwm-root[data-dwm-mode='mini'] .dwm-action {
+	width: 30px;
+	height: 30px;
+}
+
+/* Keyboard focus: the pet is a real <button>, so it can be tabbed to. */
+.dwm-root .dwm:focus-visible {
+	outline: 2px solid var(--dsw-alias-brand-primary, #2f5fbf);
+	outline-offset: 3px;
+	border-radius: 12px;
+}
+
+/* --- settings: the mode picker ------------------------------------------ */
+.dwm-settings-modes {
+	flex-direction: column;
+	align-items: stretch;
+	gap: 6px;
+}
+
+.dwm-settings-mode-group {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 6px;
+}
+
+.dwm-mode-button {
+	border: 1px solid var(--dsw-alias-border-l2, #e2e4ea);
+	background: var(--dsw-alias-bg-layer-2, #fff);
+	color: var(--dsw-alias-label-primary, #1c1f26);
+	border-radius: 999px;
+	padding: 4px 12px;
+	font-size: 12px;
+	line-height: 1.4;
+	cursor: pointer;
+}
+
+.dwm-mode-button:hover {
+	background: var(--dsw-alias-interactive-bg-hover, #f4f5f8);
+}
+
+.dwm-mode-button.is-active {
+	border-color: var(--dsw-alias-brand-primary, #2f5fbf);
+	color: var(--dsw-alias-brand-primary, #2f5fbf);
+	font-weight: 600;
+}

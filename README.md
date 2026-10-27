@@ -23,8 +23,21 @@
 - **自动行为**：空闲 15–35 秒思考一次、25–45 秒随机漫步一次、60 秒无交互后入睡、点击唤醒
 - **位置记忆**：拖动后的位置写进 `localStorage`，重开仍在原处
 - **跟随主题**：气泡、菜单按钮用 DSH 主题 token（`--dsw-alias-*`），深色/浅色主题都自适应
-- **设置面板**：`设置 → 鲸鱼女仆`，可调尺寸、动画速度、气泡停留时长、气泡打字机、气泡语言，以及问候/漫步/睡眠开关
+- **设置面板**：`设置 → 鲸鱼女仆`，可调显示形态、尺寸、动画速度、气泡停留时长、气泡打字机、气泡语言，以及问候/漫步/睡眠开关
 - **零运行时依赖**：不装任何 npm 包，不发任何网络请求，不读写文件系统
+
+### 2.3.0 新增：五种显示形态 + 键盘互动
+
+- **显示形态（五种）**：`设置 → 鲸鱼女仆 → 显示形态` 里切换。
+  - `悬浮`（默认）：原来的自由摆放，可拖动、会自己散步。
+  - `底栏`：贴在输入框上方、靠右对齐，96px。
+  - `侧边`：挂在聊天栏右缘、略高于中线，72px。
+  - `迷你`：56px 小号版，菜单按钮同步缩小，仍可拖动。
+  - `自动`：有输入框时按「底栏」摆放，没有输入框（例如设置页）时回到悬浮。
+- **锚点消失会回落，不会消失**：底栏/侧边每 800ms 以及窗口 resize、滚动时重新测量锚点；找不到锚点时回落到悬浮。参考插件在这种情况下直接把宠物 `display:none`，是它最常见的「宠物不见了」反馈。
+- **底栏/侧边不拖动、不散步**：它们锚在宿主元素上，拖动会在下一个测量周期被拉回。点击、喂食、玩耍、分区反应照常。
+- **键盘互动**：宠物是可 Tab 聚焦的按钮（带可见焦点环），聚焦后按数字键 **1–9** 依次摸「呆毛 / 耳朵 / 脸 / 头 / 腰 / 手 / 肚子 / 尾巴 / 脚」。此前这九个部位只能用鼠标点。
+- **尺寸按形态生效**：显式设置的 `size` 仍然优先于形态默认值。
 
 ### 1.1.0 新增：陪伴层
 
@@ -190,6 +203,7 @@ target: <本仓库的绝对路径>
 | `bubbleDuration` | `number` | `4500` | 气泡停留毫秒数 1000–10000 |
 | `typewriter` | `boolean` | `true` | 气泡文字逐字显示（`false` = 整句直接出现） |
 | `city` | `string` | `'北京'` | 定位失败时用于查天气的城市名（1.3.0） |
+| `mode` | `'float' \| 'bar' \| 'side' \| 'mini' \| 'auto'` | `'float'` | 显示形态（2.3.0）；底栏 96px、侧边 72px、迷你 56px，显式 `size` 优先 |
 | `language` | `'auto' \| 'zh' \| 'en'` | `'auto'` | 气泡文案语言，`auto` 跟随界面 |
 | `greeting` | `boolean` | `true` | 首次打开是否主动打招呼 |
 | `walk` | `boolean` | `true` | 是否允许随机漫步 |
@@ -261,6 +275,12 @@ dshWhaleMaid.refreshWeather()              // 立刻重新拉一次（同面板�
 dshWhaleMaid.setCity('上海')                // 改备用城市并立即刷新
 ```
 
+2.3.0 追加：
+
+```js
+dshWhaleMaid.modes()                       // 形态清单 + 锚点选择器 + 纯函数几何计算（可在无 DOM 环境断言）
+```
+
 ## 姿态资源（27 姿态对照）
 
 参考插件按「姿态名」组织立绘，本插件按「状态」组织精灵表。为了让两边能对上，下表把 27 个姿态逐一映射到本插件的图片来源。
@@ -307,7 +327,7 @@ dshWhaleMaid.setCity('上海')                // 改备用城市并立即刷新
 `src/sprites/poses/` 里的 19 张姿势立绘不再是单张静止图：每个文件现在是 **768×256** 的横排三格，每格 256×256，与原精灵帧同规格。
 
 - 三帧由原来那张单图生成，用的是 `drag` / `think` / `work` / `sad` 已经用过的伪帧配方：**缩放 1.00 → 1.02、纵向偏移 0 → −2px、旋转 −1° → +1°**，锚点固定在脚底中心，所以脚不会飘。
-- 生成脚本是 `_tmp/whale-gen/pseudo_poses.py`，放在包外、不随包发布；原图备份在 `_tmp/whale-gen/backup-poses/`。
+- 生成脚本过去是包外的 `_tmp/whale-gen/pseudo_poses.py`（不随包发布）；2.1.0 起这 19 张已改成逐帧真重绘，那条伪帧配方只留作历史。现在的管线在仓库里：`tools/art/`，见 [tools/art/README.md](tools/art/README.md)。
 - 播放不靠 JS 定时器：`@keyframes dwm-pose-cycle` 以 `background-size: 300% 100%` 把 `background-position` 依次走到 0% → 50% → 100%，每轮 0.9 s，再与原有的 `dwm-portrait-float` 浮动叠加。`prefers-reduced-motion` 下整段动画关掉，并钉在第 0 帧。
 - 渲染器 `dwmPortraitShow`（`src/runtime.js`）现在建的是带背景图的 `div[data-dwm-portrait]`，不再是 `<img>`；该层 `pointer-events: none`、`z-index: 60`，不会吃掉点击或拖动。
 
@@ -316,10 +336,13 @@ dshWhaleMaid.setCity('上海')                // 改备用城市并立即刷新
 ```
 dsh-whale-maid/
 ├── index.js              Host 半边：空 apply，只为让 Loader 挂载并暴露 dsh.client
-├── client.js             浏览器产物（约 300 KiB，由 build.mjs 生成，勿手改）
+├── client.js             浏览器产物（约 313 KiB，由 build.mjs 生成，勿手改）
 ├── cordis.patch.yml      手工安装用的 insert 行
 ├── package.json          清单：exports / files / dsh.bundle / dsh.client
-├── build.mjs             构建脚本：校验 PNG 尺寸 → base64 内联 → 拼 client.js
+├── build.mjs             构建脚本：校验 PNG 尺寸 → 复制到 assets/ → 拼 client.js
+├── tools/
+│   ├── art/                  美术管线（生图 → 抠图 → 拼表 → 修帧序 → 质检），见 tools/art/README.md
+│   └── asset-qc.mjs          资源质检，`npm run qc` 调它
 ├── src/
 │   ├── care.js               13 KB
 │   ├── fx.js                 3 KB
@@ -367,6 +390,34 @@ node --test test/companion.test.mjs
 
 测试不是 mock 组件，而是把真实的 `client.js` 载进一个 stub DOM（`window` / `document` / `localStorage` / `MutationObserver` / `requestAnimationFrame` + React stub），跑真实的 `apply(ctx)`，再通过公开 API 驱动。覆盖：三个 slot 注册、样式注入与清理、1.0.0 API 默认值不变、陪伴开关持久化、成长快照形状、签到幂等、任务领取门禁、工作状态机（含宽限期与错误基线）、`forget` 清键、所有 effect 的 disposer 不抛。
 
+### 资源质检
+
+```bash
+npm run qc          # 等价于 node tools/asset-qc.mjs，零依赖，CI 在 node build.mjs 之后跑
+```
+
+六项检查，任一失败即退出码 1：**帧表**——每张精灵图是否等于 `build.mjs` 里 `SHEETS` 声明的 `帧数 × 256`，少文件或多出未声明的图都算错；**立绘**——`poses/*.png` 是否都是 768×256，`pose-map.js` 要用的姿态有没有图或可用的回退动作；**墨迹**——每帧是否贴底（y≥254）且水平居中（128±12），帧高差 ≤2px（手绘原稿 ≤4px）；**绿幕**——有没有残留的 chroma-key 绿像素（每帧上限 4）；**独立性**——相邻帧剪影 IoU 是否过高（同一张图冒充动画，>0.985）或过低（画串了，<0.30）；**一致性**——`assets/` 是否与 `src/sprites/` 逐字节相同，防止改了图忘记重新构建。
+
+### 重新生成美术
+
+`src/sprites/` 里的帧不是手绘的：由 `tools/art/` 下的一套脚本从绿幕生图抠出来、归一化、拼表。管线顺序、归一化契约、质量闸门和授权说明都在 [tools/art/README.md](tools/art/README.md)。
+
+最短路径（`python` 换成你的解释器，Windows 上可能不在 PATH 里）：
+
+```bash
+# 1. 改 tools/art/jobs.example.json（或另写一份），先看计划：不联网、不写盘
+python tools/art/gen.py tools/art/jobs.example.json --dry-run
+# 2. 真跑：提交 → 轮询 → 抠图 → 拼表
+python tools/art/gen.py tools/art/jobs.example.json
+# 3. 修帧序与点击配准表，再质检
+python tools/art/fix_anim.py --dry-run && python tools/art/fix_anim.py
+python tools/art/qc_look.py && python tools/art/audit_assets.py
+# 4. 重新构建
+node build.mjs
+```
+
+只有 `gen.py` 需要联网与密钥（`DSH_CREDENTIALS` 或 `--credentials`）；不想调生图模型的话，自己画好 256×256 的帧交给 `compose_frames.py` 和 `fix_anim.py` 就行。注意 `fix_anim.py` 会改写 `src/zones.js` 里的 `DWM_HIT_REG` 块，跑完看一眼 `git diff`。
+
 ## 与 dsh-whale-musume 的关系
 
 1.1.0 的陪伴层是参考 [Sutera-Diffusus/dsh-whale-musume](https://github.com/Sutera-Diffusus/dsh-whale-musume) 的**功能行为**做的，仅此而已：
@@ -408,12 +459,12 @@ node --test test/companion.test.mjs
 
 13 张动作精灵表全部为 3 帧真实重绘（`sleep` / `joy` / `eat` / `play` / `welcome` / `wake` / `walk` 保留原版帧数），19 张姿势立绘也全部换成 3 帧独立绘制。此前 `drag` / `think` / `work` / `sad` 是「单帧 + 程序化微动」、19 个姿势是「同一张图缩放/位移/旋转」的伪帧，现已全部替换。
 
-帧独立性可用 `_tmp/whale-gen/verify_frames.py` 复核：相邻帧轮廓 IoU 越高越像伪帧，真实重绘一般在 0.5–0.95。
+帧独立性可用 `tools/art/verify_frames.py` 复核：相邻帧轮廓 IoU 越高越像伪帧，真实重绘一般在 0.5–0.95。
 ## 与网页原版的差异
 
 | 差异 | 原因 |
 | --- | --- |
-| 精灵图 base64 内联进 `client.js` | 渲染进程是 sandbox，`nodeIntegration: false`，读不了磁盘；DSH 也不为插件提供静态资源路由 |
+| 精灵图走宿主只读路由 `/api/dsh-whale-maid/assets`，**不内联**进 `client.js` | 渲染进程是 sandbox，`nodeIntegration: false`，读不了磁盘；原站靠站点静态目录，插件里改由宿主半边 `index.js` 注册路由提供，`client.js` 因此只有约 313 KiB |
 | 样式变量桥接到 `--dsw-alias-*` | 原站用站点自己的 CSS 变量；插件内改用 DSH 主题 token，并保留原值作兜底 |
 | 所有选择器加 `.dwm-root` 前缀 | 宿主 shell 有 `button[attr]` 这类特异性 `0,1,1` 的规则，会压过单类选择器，导致菜单按钮变形 |
 | 高光层用当前帧做 `mask-image` | 原站浅色页面下 `#ffffff42` 高光几乎不可见，深色主题下会变成一个浅色圆角方块 |
@@ -456,7 +507,7 @@ node --test test/companion.test.mjs
 
 - 宠物渲染在 `shell.overlay` 层（`z-index: 20`，自成层叠上下文），**DSH 的弹窗与吐司会盖住它**，这是宿主层级决定的。
 - 拖到屏幕边缘时会被夹回视口内（留 12px 边距），窗口缩小时也会被夹取。
-- `client.js` 约 300 KiB；精灵图与姿势图（3.4 MB）通过 `/api/dsh-whale-maid/assets` 由宿主提供，不再内联进包。
+- `client.js` 约 313 KiB；精灵图与姿势图（3.4 MB）通过 `/api/dsh-whale-maid/assets` 由宿主提供，不再内联进包。
 - 系统开启「减少动态效果」时，帧动画与摇摆会自动停用，只保留静态姿态。
 - **工作状态联动依赖宿主 DOM 契约**（1.1.0）。探测器读的是 `[data-chat-running]`、`[data-tool][data-state]`、`[data-variant="think"]` 这些属性；宿主改版后可能失效。失效时的表现是「她不再跟着工作换姿态」，其余功能不受影响——用 `dshWhaleMaid.scanNow()` 一看就知道是不是探测不到。探测器只读 DOM，不发请求、不碰 host 总线。
 - 探测间隔 1.5 秒（`MutationObserver` 去抖），所以姿态切换有最多 1.5 秒延迟，这是刻意的：轮询太密会让长会话掉帧。
