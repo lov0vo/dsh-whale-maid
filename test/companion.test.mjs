@@ -388,8 +388,11 @@ test('hit zones follow the artwork layout', () => {
 	assert.equal(api.zoneAt(0.412, 0.8), 'belly');
 	assert.equal(api.zoneAt(0.825, 0.695), 'tail');
 	assert.equal(api.zoneAt(0.415, 0.955), 'feet');
-	/* a miss is far more likely to be the body than the head */
-	assert.equal(api.zoneAt(0.02, 0.99), 'belly');
+	/* A miss goes to the geometrically nearest rect instead of a fixed
+	 * 'belly': the bottom-left corner sits closest to the shoes, and a tap just
+	 * below the tail's lower edge sits closest to the tail. */
+	assert.equal(api.zoneAt(0.02, 0.99), 'feet');
+	assert.equal(api.zoneAt(0.99, 0.92), 'tail');
 });test('topics and keyword reactions', () => {
 	assert.deepEqual(api.probe('这段代码报错了，帮我看看'), { topic: 'debug', keyword: 'broken' });
 	assert.deepEqual(api.probe('谢谢你'), { topic: 'thanks', keyword: 'thanks' });

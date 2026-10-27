@@ -380,7 +380,9 @@ function dwmPortraitShow(result, ms, hold) {
 		style.backgroundSize = '300% 100%';
 		style.backgroundPosition = '0% 0';
 		style.position = 'fixed';
-		style.animation = 'dwm-pose-cycle 0.9s steps(1) infinite, dwm-portrait-float 2.8s ease-in-out infinite';
+		/* 1.4s for the three cells (2.1 fps): the drawings sit up to 21 px apart, so
+		 * the old 0.9s cycle read as three unrelated poses rather than one motion. */
+		style.animation = 'dwm-pose-cycle 1.4s steps(1) infinite, dwm-portrait-float 2.8s ease-in-out infinite';
 		dwmPortraitHideSprite(true);
 		style.left = rect.left + 'px';
 		style.top = rect.top + 'px';

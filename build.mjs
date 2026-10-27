@@ -80,7 +80,7 @@ const SHEETS = {
 	drag: 3,
 	think: 3,
 	work: 3,
-	sad: 3,
+	sad: 2,
 	sleep: 2,
 	wake: 2,
 	walk: 3,
@@ -103,7 +103,12 @@ function fail(message) {
 function readText(relative) {
 	const path = join(root, relative);
 	if (!existsSync(path)) fail('missing ' + relative);
-	return readFileSync(path, 'utf8');
+	// Line endings are normalised here, at the single point every source file is
+	// read through. A Windows checkout has CRLF sources and a Linux CI checkout
+	// has LF ones; embedding either verbatim means the same sources produce two
+	// different bundles and the `git diff --exit-code -- client.js` step in CI
+	// fails on whichever platform did not build the committed file.
+	return readFileSync(path, 'utf8').replace(/\r\n?/g, '\n');
 }
 
 /** Read a PNG's pixel dimensions straight out of its IHDR chunk. */
@@ -224,6 +229,8 @@ try {
 } catch (error) {
 	fail('generated bundle does not parse: ' + error.message);
 }
+
+if (out.indexOf('\r') !== -1) fail('generated bundle contains CR; sources were not normalised');
 
 const target = join(root, 'client.js');
 writeFileSync(target, out, 'utf8');

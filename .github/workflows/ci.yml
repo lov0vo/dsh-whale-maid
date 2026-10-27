@@ -24,4 +24,6 @@ jobs:
         run: git diff --exit-code -- client.js
 
       - name: Unit tests
-        run: node --test test/companion.test.mjs
+        # --test-force-exit: the pet owns timers, so the test runner would other-
+        # wise stay alive until the job times out.
+        run: node --test --test-force-exit test/companion.test.mjs

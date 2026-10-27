@@ -49,15 +49,21 @@ var ANIM = {
 	idle: { sheet: 'idle', frames: 3, fps: 2, playback: 'blink' },
 	joy: { sheet: 'joy', frames: 2, fps: 5, playback: 'loop' },
 	eat: { sheet: 'eat', frames: 3, fps: 8, playback: 'loop' },
-	play: { sheet: 'play', frames: 3, fps: 4, playback: 'loop' },
+	play: { sheet: 'play', frames: 3, fps: 3, playback: 'loop' },
 	welcome: { sheet: 'welcome', frames: 2, fps: 3, playback: 'loop' },
-	drag: { sheet: 'drag', frames: 3, fps: 5, playback: 'loop', motion: 'tilt' },
+	/* `drag` used to run at 5 fps with the `tilt` motion on top. Its three frames
+	 * are drawn 20 px apart, so 5 fps meant a 100 px/s jump, and the CSS tilt
+	 * (±6 deg) fought the rotation already inside the frames. Slower, and the
+	 * motion is off. */
+	drag: { sheet: 'drag', frames: 3, fps: 2, playback: 'loop' },
 	think: { sheet: 'think', frames: 3, fps: 2, playback: 'loop', motion: 'float' },
 	work: { sheet: 'work', frames: 3, fps: 2, playback: 'loop', motion: 'float' },
-	sad: { sheet: 'sad', frames: 3, fps: 2, playback: 'loop' },
+	/* Two frames since 2.2.0: the middle drawing was 196 px tall against 226/225
+	 * for its neighbours, which read as a 13% size pop once per loop. */
+	sad: { sheet: 'sad', frames: 2, fps: 2, playback: 'loop' },
 	/* Added in 1.5.1 for the bond Lv3 unlock; never entered by the idle loop.
-	 * Three frames since 2.1.0 (other eye, then both eyes closed with two V signs). */
-	wink: { sheet: 'wink', frames: 3, fps: 2, playback: 'loop' },
+	 * Three frames since 2.1.0; 1.5 fps since 2.2.0, the frames sit 20 px apart. */
+	wink: { sheet: 'wink', frames: 3, fps: 1.5, playback: 'loop' },
 	sleep: { sheet: 'sleep', frames: 2, fps: 1, playback: 'loop' },
 	wake: { sheet: 'wake', frames: 2, fps: 3, playback: 'once' },
 	walk: { sheet: 'walk', frames: 3, fps: 6, playback: 'pingpong' },
