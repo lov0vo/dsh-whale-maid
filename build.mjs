@@ -71,7 +71,7 @@ const SOURCES = [
 
 /** Sheet name -> expected frame count. Must mirror the ANIM table in src/pet.js. */
 const SHEETS = {
-	wink: 1,
+	wink: 3,
 	idle: 3,
 	joy: 2,
 	eat: 3,

@@ -3495,8 +3495,9 @@ var ANIM = {
 	think: { sheet: 'think', frames: 3, fps: 2, playback: 'loop', motion: 'float' },
 	work: { sheet: 'work', frames: 3, fps: 2, playback: 'loop', motion: 'float' },
 	sad: { sheet: 'sad', frames: 3, fps: 2, playback: 'loop' },
-	/* Added in 1.5.1 for the bond Lv3 unlock; never entered by the idle loop. */
-	wink: { sheet: 'wink', frames: 1, fps: 2, playback: 'loop' },
+	/* Added in 1.5.1 for the bond Lv3 unlock; never entered by the idle loop.
+	 * Three frames since 2.1.0 (other eye, then both eyes closed with two V signs). */
+	wink: { sheet: 'wink', frames: 3, fps: 2, playback: 'loop' },
 	sleep: { sheet: 'sleep', frames: 2, fps: 1, playback: 'loop' },
 	wake: { sheet: 'wake', frames: 2, fps: 3, playback: 'once' },
 	walk: { sheet: 'walk', frames: 3, fps: 6, playback: 'pingpong' },

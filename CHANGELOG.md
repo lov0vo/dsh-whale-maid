@@ -1,3 +1,23 @@
+## 2.1.0 — 2026-10-27
+
+**全部动作态与全部姿势都用真正独立绘制的帧**（不再有「同一张图加缩放/位移/旋转」的伪帧）。
+
+### 动作态（13 张精灵表）
+
+- `drag` / `think` / `work` / `sad` / `wink` 各补 2 帧真实重绘（原为单帧 + 程序化微动或三格伪帧），现全部 3 帧。
+- 帧间轮廓 IoU 实测 0.49–0.93（伪帧会接近 1.0），构建产物内每帧内容独立。
+- `sleep` / `joy` / `eat` / `play` / `welcome` / `wake` / `walk` 保持原始帧数不变（它们是随插件发布的原版美术，未重采样）。
+
+### 姿势立绘（19 张，768×256 三格）
+
+- 19 个姿势全部换成 3 帧独立绘制，帧间为真实相位变化（例如 `sweep` 站立→弯腰扫地→直身擦汗、`workRam` 手搭键盘→抬手→砸下、`night` 打哈欠→低头→抱枕入睡）。
+- 逐帧做基线校验：帧高偏离同表中位数超过 12px 的离群帧按表内中位数重采样对齐（只修了 `drag` f1、`sad` f1、`night` f2），`sleep` 这类本来就矮的蜷睡姿态不做拉伸。
+- 播放仍由 CSS `dwm-pose-cycle` 步进背景位置（0.9s 循环），叠加 `dwm-portrait-float` 浮动；减弱动效下钉在第 0 帧。
+
+### 工程
+
+- `build.mjs` 的 `SHEETS` 与 `src/pet.js` 的 `ANIM` 同步：`wink` 帧数 1 → 3。
+- 生成管线脚本留在仓库外的 `_tmp/whale-gen/`（`gen_pose_frames.py`、`gen_action_frames.py`、`key_pose.py`、`compose_frames.py`、`conform_sheets.py`、`verify_frames.py`、`contact_sheet.py`），不进发布包。
 ## 2.0.1 — 2026-10-26
 
 修掉 2.0.0 里三个能看见的问题，并补上 2.0.0 缺失的发布流程。
